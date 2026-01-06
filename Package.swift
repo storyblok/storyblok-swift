@@ -4,14 +4,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "URLSessionExtension",
+    name: "Storyblok",
     platforms: [
        .macOS(.v13),
        .iOS(.v16),
        .tvOS(.v16),
        .watchOS(.v9)
     ],
-    
+
     products: [
         .library(
             name: "URLSessionExtension",
@@ -27,7 +27,8 @@ let package = Package(
             name: "URLSessionExtension",
             dependencies: [
                 .product(name: "Logging", package: "swift-log")
-            ]
+            ],
+            path: "URLSessionExtension/Sources"
         ),
         .testTarget(
             name: "URLSessionExtensionTests",
@@ -35,11 +36,12 @@ let package = Package(
                 "URLSessionExtension",
                 .product(name: "Mocker", package: "Mocker")
             ],
+            path: "URLSessionExtension/Tests"
         ),
         .testTarget(
             name: "Examples",
             dependencies: ["URLSessionExtension"],
-            path: "Examples",
+            path: "URLSessionExtension/Examples",
         ),
     ]
 )

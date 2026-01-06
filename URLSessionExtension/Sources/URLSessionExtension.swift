@@ -104,8 +104,10 @@ public extension URLRequest {
                 }
                 url.append(path: path)
                 url.append(queryItems: [URLQueryItem(name: "token", value: accessToken), URLQueryItem(name: "version", value: version.rawValue)])
+                var cdnCachePolicy = cachePolicy
                 if let cv = cv {
                     url.append(queryItems: [URLQueryItem(name: "cv", value: cv)])
+                    cdnCachePolicy = .returnCacheDataElseLoad
                 }
                 if let language = language {
                     url.append(queryItems: [URLQueryItem(name: "language", value: language)])
@@ -113,7 +115,7 @@ public extension URLRequest {
                 if let fallbackLanguage = fallbackLanguage {
                     url.append(queryItems: [URLQueryItem(name: "fallback_lang", value: fallbackLanguage)])
                 }
-                self.init(url: url, cachePolicy: cachePolicy, timeoutInterval: timeoutInterval)
+                self.init(url: url, cachePolicy: cdnCachePolicy, timeoutInterval: timeoutInterval)
             case let .mapi(accessToken, region, _):
                 var url = switch region {
                     case .eu: URL(string: "https://mapi.storyblok.com/v1/")!
@@ -161,9 +163,14 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         observers[task] = task.observe(\.state) { [self] task, _ in
             switch task.state {
                 case .running:
-                    switch(previousState) {
+                    suspendIfNecessary: switch(previousState) {
                         case .running: break
                         case .suspended where backoffUntil > .now():
+                            switch(task.currentRequest!.cachePolicy) {
+                                case .returnCacheDataDontLoad: break suspendIfNecessary
+                                case .returnCacheDataElseLoad where session.configuration.urlCache?.cachedResponse(for: task.currentRequest!) != nil: break suspendIfNecessary
+                                default: break
+                            }
                             log.debug("Suspending task", metadata: [
                               "task.currentRequest.url": "\(task.currentRequest?.url?.absoluteString ?? "?")",
                               "delay": "\(DispatchTime.now().distance(to: backoffUntil))"
