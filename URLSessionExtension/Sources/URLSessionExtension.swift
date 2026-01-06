@@ -94,6 +94,7 @@ public extension URLRequest {
         let api: Api = (session.delegate as! Storyblok).api
         switch api {
             case let .cdn(accessToken, language, fallbackLanguage, version, cv, region, _):
+                var cachePolicy = cachePolicy
                 var url = switch region {
                     case .eu: URL(string: "https://api.storyblok.com/v2/cdn/")!
                     case .usa: URL(string: "https://api-us.storyblok.com/v2/cdn/")!
@@ -104,10 +105,12 @@ public extension URLRequest {
                 }
                 url.append(path: path)
                 url.append(queryItems: [URLQueryItem(name: "token", value: accessToken), URLQueryItem(name: "version", value: version.rawValue)])
-                var cdnCachePolicy = cachePolicy
                 if let cv = cv {
                     url.append(queryItems: [URLQueryItem(name: "cv", value: cv)])
-                    cdnCachePolicy = .returnCacheDataElseLoad
+                    //override default cache policy to serve subsequent requests for the same resource from the cache
+                    if(cachePolicy == .useProtocolCachePolicy) {
+                        cachePolicy = .returnCacheDataElseLoad
+                    }
                 }
                 if let language = language {
                     url.append(queryItems: [URLQueryItem(name: "language", value: language)])
@@ -115,7 +118,7 @@ public extension URLRequest {
                 if let fallbackLanguage = fallbackLanguage {
                     url.append(queryItems: [URLQueryItem(name: "fallback_lang", value: fallbackLanguage)])
                 }
-                self.init(url: url, cachePolicy: cdnCachePolicy, timeoutInterval: timeoutInterval)
+                self.init(url: url, cachePolicy: cachePolicy, timeoutInterval: timeoutInterval)
             case let .mapi(accessToken, region, _):
                 var url = switch region {
                     case .eu: URL(string: "https://mapi.storyblok.com/v1/")!
@@ -190,14 +193,6 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
                             backoffUntil = max(backoffUntil, .now() + min(pow(2.0, Double(failedRequestCount)), 60))
                         default:
                             failedRequestCount = 0
-                            if case let .cdn(accessToken, language, fallbackLanguage, version, _, region, requestsPerSecond) = api {
-                                if task.currentRequest == task.originalRequest { break }
-                                let components = URLComponents(string: task.currentRequest?.url?.absoluteString ?? "")!
-                                if let cv = components.queryItems?.first(where: { $0.name == "cv" })?.value {
-                                    log.info("Updating cv", metadata: ["cv": "\(cv)"])
-                                    api = .cdn(accessToken: accessToken, language: language, fallbackLanguage: fallbackLanguage, version: version, cv: cv, region: region, requestsPerSecond: requestsPerSecond)
-                                }
-                            }
                     }
                 default:
                     break
@@ -258,6 +253,18 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
     }
     
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @Sendable @escaping (URLRequest?) -> Void) {
+        var request = request
+        if case let .cdn(accessToken, language, fallbackLanguage, version, _, region, requestsPerSecond) = api {
+            let components = URLComponents(string: request.url?.absoluteString ?? "")!
+            if let cv = components.queryItems?.first(where: { $0.name == "cv" })?.value {
+                log.info("Updating cv", metadata: ["cv": "\(cv)"])
+                api = .cdn(accessToken: accessToken, language: language, fallbackLanguage: fallbackLanguage, version: version, cv: cv, region: region, requestsPerSecond: requestsPerSecond)
+                //override default cache policy to serve the new request from the cache if present now we have a cv
+                if(request.cachePolicy == .useProtocolCachePolicy) {
+                    request.cachePolicy = .returnCacheDataElseLoad
+                }
+            }
+        }
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
     }
     
