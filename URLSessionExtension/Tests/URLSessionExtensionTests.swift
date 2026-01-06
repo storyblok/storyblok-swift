@@ -259,8 +259,8 @@ import Mocker
         
         @Test
         func `subsequent requests for the same resource will be served from the cache`() async throws {
-            let storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key", cv: "mock-cv"), configuration: mockConfiguration)
-            let request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
+            var storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key", cv: "mock-cv"), configuration: mockConfiguration)
+            var request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
             let mock = Mock(
                 request: request,
                 cacheStoragePolicy: .allowedInMemoryOnly,
@@ -275,8 +275,13 @@ import Mocker
                 let (data, _) = try await storyblok.data(for: request)
                 let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                 #expect(json["story"] != nil)
+                let location = request.url!.absoluteString
                 Mocker.removeAll()
                 Mocker.ignore(request.url!)
+                storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key"), configuration: mockConfiguration)
+                request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
+                let redirect = Mock(url: request.url!, statusCode: 301, data: [.get: "Location: \(location)".data(using: .utf8)!])
+                redirect.register()
             }
         }
         
