@@ -106,7 +106,7 @@ public extension URLRequest {
                 if let cv = cv {
                     url.append(queryItems: [URLQueryItem(name: "cv", value: cv)])
                     //override default cache policy to serve subsequent requests for the same resource from the cache
-                    if(cachePolicy == .useProtocolCachePolicy) {
+                    if(version == .published && cachePolicy == .useProtocolCachePolicy) {
                         cachePolicy = .returnCacheDataElseLoad
                     }
                 }

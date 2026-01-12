@@ -317,6 +317,31 @@ import Mocker
             }
             #expect(duration < .seconds(1) - .milliseconds(15))
         }
+
+        @Test
+        func `requests for draft resources are not cached`() async throws {
+            let storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
+            let request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
+            let mock = Mock(
+                request: request,
+                cacheStoragePolicy: .allowedInMemoryOnly,
+                contentType: .json,
+                statusCode: 200,
+                data: "{\"story\": { \"content\": {}}}".data(using: .utf8)!,
+                additionalHeaders: ["Cache-Control" : "max-age=0, private, must-revalidate"]
+            )
+            mock.register()
+
+            let (data, _) = try await storyblok.data(for: request)
+            let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+            #expect(json["story"] != nil)
+
+            Mocker.ignore(request.url!)
+
+            let (cachedData, _) = try await storyblok.data(for: request)
+            let cachedJson = try JSONSerialization.jsonObject(with: cachedData) as! [String : Any]
+            #expect(cachedJson["story"] == nil)
+        }
     }
     
     @Suite
