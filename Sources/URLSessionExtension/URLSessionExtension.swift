@@ -59,8 +59,7 @@ public enum Api : Sendable {
         case personal(token: String)
     }
 
-
-    enum ResponseError: Error {
+    public enum ResponseError: Error {
         case client(statusCode: Int, data: Data, response: URLResponse)
         case server(statusCode: Int, data: Data, response: URLResponse)
     }
