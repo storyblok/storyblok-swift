@@ -9,7 +9,6 @@ public extension URLSession {
 
     convenience init(storyblok api: Api) {
         let configuration: URLSessionConfiguration = URLSessionConfiguration.default
-        configuration.waitsForConnectivity = true
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: nil), delegateQueue: nil)
     }
 
