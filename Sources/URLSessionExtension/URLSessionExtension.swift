@@ -190,7 +190,7 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
                     switch (task.response as? HTTPURLResponse)?.statusCode ?? 0 {
                         case 0, 429, 500..<600:
                             failedRequestCount += 1
-                            backoffUntil = max(backoffUntil, .now() + min(pow(2.0, Double(failedRequestCount)), 60))
+                            backoffUntil = max(backoffUntil, .now() + min(pow(2.0, Double(failedRequestCount)), 60) + Double.random(in: 0..<1.0))
                         default:
                             failedRequestCount = 0
                     }
