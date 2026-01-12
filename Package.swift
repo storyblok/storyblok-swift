@@ -28,7 +28,6 @@ let package = Package(
             dependencies: [
                 .product(name: "Logging", package: "swift-log")
             ],
-            path: "URLSessionExtension/Sources"
         ),
         .testTarget(
             name: "URLSessionExtensionTests",
@@ -36,12 +35,11 @@ let package = Package(
                 "URLSessionExtension",
                 .product(name: "Mocker", package: "Mocker")
             ],
-            path: "URLSessionExtension/Tests"
         ),
         .testTarget(
             name: "Examples",
             dependencies: ["URLSessionExtension"],
-            path: "URLSessionExtension/Examples",
+            path: "Examples/URLSessionExtension",
         ),
     ]
 )

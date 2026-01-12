@@ -6,24 +6,24 @@ private let log = Logger(label: "com.storyblok.URLSessionExtension")
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public extension URLSession {
-            
+
     convenience init(storyblok api: Api) {
         let configuration: URLSessionConfiguration = URLSessionConfiguration.default
         configuration.waitsForConnectivity = true
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: nil), delegateQueue: nil)
     }
-    
+
     convenience init(storyblok api: Api, configuration: URLSessionConfiguration) {
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: nil), delegateQueue: nil)
     }
-    
+
     convenience init(storyblok api: Api, configuration: URLSessionConfiguration, delegate: (any URLSessionDelegate)?, delegateQueue queue: OperationQueue?) {
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: delegate), delegateQueue: queue)
     }
 }
 
 public enum Api : Sendable {
-    
+
     case cdn(
         accessToken: String,
         language: String? = nil,
@@ -33,13 +33,13 @@ public enum Api : Sendable {
         region: Region = .eu,
         requestsPerSecond: Int = 1000
     )
-    
+
     case mapi(
         accessToken: AccessToken,
         region: Region = .eu,
         requestsPerSecond: Int = 6
     )
-    
+
     public enum Region : Sendable {
         case eu
         case usa
@@ -48,7 +48,7 @@ public enum Api : Sendable {
         case chn
         case custom(url: URL)
     }
-    
+
 
     public enum Version: String, Sendable {
         case draft = "draft"
@@ -59,8 +59,8 @@ public enum Api : Sendable {
         case oauth(token: String)
         case personal(token: String)
     }
-    
-    
+
+
     enum ResponseError: Error {
         case client(statusCode: Int, data: Data, response: URLResponse)
         case server(statusCode: Int, data: Data, response: URLResponse)
@@ -68,7 +68,7 @@ public enum Api : Sendable {
 }
 
 public extension URLSession.DataTaskPublisher {
-    
+
     enum ErrorResponseType {
         case recoverable
         case all
@@ -150,7 +150,7 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
     private var failedRequestCount = 0
     private var backoffUntil = DispatchTime.now() // to share back off across all requests pre-flight
     private var observers: [URLSessionTask : NSKeyValueObservation] = [:]
-    
+
     init(api: Api, delegate: (any URLSessionDelegate)?) {
         self.api = api
         self.delegate = delegate
@@ -160,7 +160,7 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         }
         self.minDelayBetweenRequests = .seconds(1) / requestsPerSecond
     }
-    
+
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
         nonisolated(unsafe) var previousState = task.state
         observers[task] = task.observe(\.state) { [self] task, _ in
@@ -213,45 +213,45 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
         delegate?.urlSessionDidFinishEvents?(forBackgroundURLSession: session)
     }
-    
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @Sendable @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didReceive: challenge, completionHandler: completionHandler) ?? completionHandler(.performDefaultHandling, nil)
     }
-    
-    
+
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didFinishCollecting: metrics)
 
     }
-    
+
     func urlSession(_ session: URLSession, taskIsWaitingForConnectivity task: URLSessionTask) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, taskIsWaitingForConnectivity: task)
     }
-    
+
     func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStream completionHandler: @Sendable @escaping (InputStream?) -> Void) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStream: completionHandler) ?? completionHandler(nil)
     }
-    
+
     @available(macOS 14.0, *)
     func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStreamFrom offset: Int64, completionHandler: @Sendable @escaping (InputStream?) -> Void) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStreamFrom: offset, completionHandler: completionHandler) ?? completionHandler(nil)
     }
-        
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didCompleteWithError: error)
 
     }
-    
+
     func urlSession(_ session: URLSession, task: URLSessionTask, willBeginDelayedRequest request: URLRequest, completionHandler: @Sendable @escaping (URLSession.DelayedRequestDisposition, URLRequest?) -> Void) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willBeginDelayedRequest: request, completionHandler: completionHandler) ?? completionHandler(.continueLoading, nil)
     }
-    
+
     @available(macOS 14.0, *)
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceiveInformationalResponse response: HTTPURLResponse) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didReceiveInformationalResponse: response)
 
     }
-    
+
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @Sendable @escaping (URLRequest?) -> Void) {
         var request = request
         if case let .cdn(accessToken, language, fallbackLanguage, version, _, region, requestsPerSecond) = api {
@@ -267,31 +267,31 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         }
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
     }
-    
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend)
     }
-    
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didBecome downloadTask: URLSessionDownloadTask) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didBecome: downloadTask)
     }
-    
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didBecome streamTask: URLSessionStreamTask) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didBecome: streamTask)
     }
-    
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didReceive: data)
     }
-    
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @Sendable @escaping (URLSession.ResponseDisposition) -> Void) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didReceive: response, completionHandler: completionHandler) ?? completionHandler(.allow)
     }
-    
+
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, willCacheResponse proposedResponse: CachedURLResponse, completionHandler: @Sendable @escaping (CachedURLResponse?) -> Void) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, willCacheResponse: proposedResponse, completionHandler: completionHandler) ?? completionHandler(proposedResponse)
     }
-    
+
 }
 
 

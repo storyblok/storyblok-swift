@@ -284,7 +284,7 @@ import Mocker
                 redirect.register()
             }
         }
-        
+
         @Test
         func `requests served from the cache are not subject to delays`() async throws {
             let storyblok = URLSession(
@@ -305,7 +305,7 @@ import Mocker
                 additionalHeaders: ["Cache-Control" : "max-age=0, public, s-maxage=604800"]
             )
             mock.register()
-            
+
             let duration = try await ContinuousClock.continuous.measure {
                 for _ in 0..<2 {
                     let (data, _) = try await storyblok.data(for: request)
