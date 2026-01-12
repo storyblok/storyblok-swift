@@ -276,7 +276,6 @@ import Mocker
                 let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                 #expect(json["story"] != nil)
                 let location = request.url!.absoluteString
-                Mocker.removeAll()
                 Mocker.ignore(request.url!)
                 storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key"), configuration: mockConfiguration)
                 request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
@@ -311,7 +310,6 @@ import Mocker
                     let (data, _) = try await storyblok.data(for: request)
                     let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                     #expect(json["story"] != nil)
-                    Mocker.removeAll()
                     Mocker.ignore(request.url!)
                 }
             }
