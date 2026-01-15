@@ -1,0 +1,25 @@
+name: Publish
+
+on:
+  release:
+    types: [ released, prereleased ]
+
+jobs:
+  docc:
+    name: Generate and publish documentation
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate documentation
+        uses: fwcd/swift-docc-action@v1
+        with:
+          target: URLSessionExtension
+          output: ./docs
+          hosting-base-path: storyblok-swift
+          transform-for-static-hosting: 'true'
+      - name: Deploy API documentation to Github Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs
+          target-folder: docs
