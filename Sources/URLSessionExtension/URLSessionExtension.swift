@@ -6,23 +6,34 @@ private let log = Logger(label: "com.storyblok.URLSessionExtension")
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public extension URLSession {
-
-    convenience init(storyblok api: Api) {
-        let configuration: URLSessionConfiguration = URLSessionConfiguration.default
+    /// Creates a session configured for the specified API and with the specified session configuration.
+    convenience init(storyblok api: Api, configuration: URLSessionConfiguration = URLSessionConfiguration.default) {
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: nil), delegateQueue: nil)
     }
 
-    convenience init(storyblok api: Api, configuration: URLSessionConfiguration) {
-        self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: nil), delegateQueue: nil)
-    }
-
+    /// Creates a session configured for the specified API and with the specified session configuration, delegate, and operation queue.
     convenience init(storyblok api: Api, configuration: URLSessionConfiguration, delegate: (any URLSessionDelegate)?, delegateQueue queue: OperationQueue?) {
         self.init(configuration: configuration, delegate: Storyblok(api: api, delegate: delegate), delegateQueue: queue)
     }
 }
 
+/**
+ * It is necessary to specify a case of `Api` when [initializing](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) `URLSession` to configure it for either the [Content Delivery API](doc:Api/cdn(accessToken:language:fallbackLanguage:version:cv:region:requestsPerSecond:)) or the [Management API](doc:Api/mapi(accessToken:region:requestsPerSecond:))
+ */
 public enum Api : Sendable {
 
+    /// Configure the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) for the [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2)
+    /// - Parameters:
+    ///   - accessToken: It is necessary to specify an API access token to [authenticate requests to the Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/authentication).
+    ///   - language: Optionally, specify the default language to retrieve resources. Accepts any language code configured in the Storyblok space. Note that the language code needs to be provided with underscores, even if it is defined with hyphens. E.g., es_co instead of es-co.
+    ///   - fallbackLanguage:Optionally, specify the default fallback language to handle untranslated fields. Accepts any language code configured in the Storyblok space. Note that the language code needs to be provided with underscores, even if it is defined with hyphens. E.g., es_co instead of es-co.
+    ///   - version: Optionally, specify the [version](doc:Version) to retrieve all resources. Defaults to [.published`](doc:Version/published).
+    ///   - cv: Optionally, specify the cached version Unix timestamp (see [Cache Invalidation](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/cache-invalidation)). Note this is set automatically, set this property manually if you want to retrieve a specific cached version of a resource. Learn more in [How stories are cached in the Content Delivery API](https://www.storyblok.com/faq/how-stories-are-cached-content-delivery-api#how-the-js-client-uses-the-cv-param).
+    ///   - region: Optionally, specify the [region](doc:Region) depending on the server location of your space. Defaults to the [European Union](doc:Region/eu)
+    ///   - requestsPerSecond: Optionally, specify the maximum number of API requests allowed per second. Defaults to 1000 requests per second, you can lower the value if necessary to avoid exceeding the [rate limits](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit).
+    /// ## See Also
+    /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)``
+    /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:delegate:delegateQueue:)``
     case cdn(
         accessToken: String,
         language: String? = nil,
@@ -33,45 +44,110 @@ public enum Api : Sendable {
         requestsPerSecond: Int = 1000
     )
 
+    /// Configure the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) for the [Management API](https://www.storyblok.com/docs/api/management)
+    /// - Parameters:
+    ///   - accessToken: It is necessary to specify an case of ``AccessToken`` to [authenticate requests to the Management API](https://www.storyblok.com/docs/api/management/getting-started/authentication).
+    ///   - region: Optionally, specify the [region](doc:Region) depending on the server location of your space. Defaults to the [European Union](doc:Region/eu)
+    ///   - requestsPerSecond: Optionally, specify the maximum number of API requests allowed per second. Defaults to 6 requests per second, you can lower the value if necessary to avoid exceeding the [rate limits](https://www.storyblok.com/pricing/technical-limits).
+    /// ## See Also
+    /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)``
+    /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:delegate:delegateQueue:)``
     case mapi(
         accessToken: AccessToken,
         region: Region = .eu,
         requestsPerSecond: Int = 6
     )
 
+    /// The server location of the space.
+    ///
+    /// Optionally, specify a case  of `Region` when configuring a [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession)
+    /// depending on the server location of your space.
+    ///
+    /// Defaults to the [European Union](doc:Api/Region/eu).
+    ///
+    /// Learn more in the [Content Delivery API Reference](https://www.storyblok.com/docs/api/content-delivery/v2)
+    /// or [Management API Reference](https://www.storyblok.com/docs/api/management).
     public enum Region : Sendable {
+        /// European Union API server location.
         case eu
+        /// United States API server location.
         case usa
+        /// Canada API server location.
         case can
+        /// Australia API server location.
         case aus
+        /// China API server location.
         case chn
+        /// A custom API server location you specify.
+        /// - Parameter url: The base URL of the custom API server
         case custom(url: URL)
     }
 
-
+    /// The version of a resource.
+    ///
+    /// Optionally, specify a case  of `Version` when configuring a [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession)
+    /// for the [Content Delivery API](doc:Api/cdn(accessToken:language:fallbackLanguage:version:cv:region:requestsPerSecond:)) that will affect all requests.
+    ///
+    /// Resources have two potential versions: draft (unpublished) or published.
+    ///
+    /// Defaults to [published](doc:Api/Version/published).
     public enum Version: String, Sendable {
+        /// The draft (unpublished) version of your resource.
         case draft = "draft"
+        /// This published (live) version of your resource.
         case published = "published"
     }
 
+    /// A Management API access token.
+    ///
+    /// It is necessary to specify a case of `AccessToken` when configuring a [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to
+    /// [authenticate requests](https://www.storyblok.com/docs/api/management/getting-started/authentication) to the [Management API](doc:Api/mapi(accessToken:region:requestsPerSecond:)).
     public enum AccessToken : Sendable {
+        /// An OAuth Access Token is obtained via the OAuth2 authentication flow and is tied to a single space.
         case oauth(token: String)
+        /// A Personal Access Token is obtained from the Storyblok UI and grants access to all spaces associated with your account
         case personal(token: String)
     }
 
+    /// A  client (`4xx`) or server (`5xx`) error received from the API.
+    ///
+    ///  A `ResponseError` is published  by the ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/failOnErrorResponse(_:)`` operator when an error response is received from the API.
     public enum ResponseError: Error {
+        /// A client error (`4xx`) response received from the API.
+        /// - Parameters:
+        ///   - statusCode: The HTTP status code of the response.
+        ///   - data: A data object containing the response body.
+        ///   - response: The full error response that provides response metadata..
         case client(statusCode: Int, data: Data, response: URLResponse)
+        /// A server error (`5xx`) response  received from the API.
+        /// - Parameters:
+        ///   - statusCode: The HTTP status code of the response.
+        ///   - data: A data object containing the response body.
+        ///   - response: The full error response that provides response metadata.
         case server(statusCode: Int, data: Data, response: URLResponse)
     }
 }
 
 public extension URLSession.DataTaskPublisher {
-
+    /// The type of error responses to fail on.
+    ///
+    /// Specify a case of `ErrorResponseType` when invoking ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/failOnErrorResponse(_:)``.
     enum ErrorResponseType {
+        /// A transient error that can be retried, includes server errors (`5xx`) and `Too Many Requests (429)`.
         case recoverable
+        /// All client errors (`4xx`) and server errors (`5xx`)
         case all
     }
-
+    /// Publishes a ``Api/ResponseError`` in the stream when an error response of the specified type is received.
+    ///
+    /// The `failOnErrorResponse` operator is designed to be used with Combine's error handling operators to process error responses received from the API:
+    /// - Precede the [`retry`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) operator with `failOnErrorResponse(.recoverable)` to retry transient error responses such as `Too Many Requests (429)`.
+    /// - Precede the [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) operator with `failOnErrorResponse(.all)` to handle any client (`4xx`) or server (`5xx`) error.
+    ///
+    /// Learn more about <doc:UserGuide#Retrying-failed-requests> in <doc:UserGuide>.
+    ///
+    /// - Parameters:
+    ///   - type: The type of error response to fail on, can be either `.recoverable` or `.all`.
     func failOnErrorResponse(_ type: ErrorResponseType) -> AnyPublisher<(data: Data, response: URLResponse), Error> {
         tryFilter { (data, response) in
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -88,6 +164,7 @@ public extension URLSession.DataTaskPublisher {
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public extension URLRequest {
+    /// Creates and initializes a URL request with the given session, path, cache policy, and timeout interval.
     init(storyblok session: URLSession, path: String, cachePolicy: URLRequest.CachePolicy = .useProtocolCachePolicy, timeoutInterval: TimeInterval = 60.0) {
         let api: Api = (session.delegate as! Storyblok).api
         switch api {
@@ -289,7 +366,6 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, willCacheResponse proposedResponse: CachedURLResponse, completionHandler: @Sendable @escaping (CachedURLResponse?) -> Void) {
         (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, willCacheResponse: proposedResponse, completionHandler: completionHandler) ?? completionHandler(proposedResponse)
     }
-
 }
 
 
