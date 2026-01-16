@@ -56,7 +56,7 @@ Via the associated values of ``Api/cdn(accessToken:language:fallbackLanguage:ver
 
 ### Authentication
 
-As API requests must be authenticated, you'll need to provide an access token. The Content Delivery API requires a read-only access token, whilst the Management API requires either an [OAuth](doc:Api/AccessToken/oauth(token:)) or [personal](doc:Api/AccessToken/personal(token:)) access token. You can learn more about authentication in the [Access Tokens concept](https://www.storyblok.com/docs/concepts/access-tokens).
+As API requests must be authenticated, you'll need to provide an access token. The Content Delivery API requires a read-only access token, whilst the Management API requires either an [OAuth](doc:Api/AccessToken/oauth(_:)) or [personal](doc:Api/AccessToken/personal(_:)) access token. You can learn more about authentication in the [Access Tokens concept](https://www.storyblok.com/docs/concepts/access-tokens).
 
 **Content Delivery API**
 
@@ -66,9 +66,9 @@ let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN"))
 **Management API**
 
 ```swift
-let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_ACCESS_TOKEN"))
+let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_ACCESS_TOKEN")))
 //...or...
-let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACESSS_TOKEN"))
+let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACESSS_TOKEN")))
 ```
 
 ### Specifying a region

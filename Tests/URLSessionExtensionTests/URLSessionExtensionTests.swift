@@ -29,7 +29,7 @@ import Mocker
         }
         
         @Test func `adds json content type header on put and post requests`() async throws {
-            let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth(token: "mock-api-key")), configuration: mockConfiguration)
+            let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("mock-api-key")), configuration: mockConfiguration)
             var request = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
             var mock = Mock(url: request.url!, statusCode: 200, data: [.post: Data(), .put: Data()])
             mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
@@ -44,7 +44,7 @@ import Mocker
         
         @Test func `requests are throttled according to the specified value in requestsPerSecond`() async throws {
             let storyblok = URLSession(
-                storyblok: .mapi(accessToken: .personal(token: "mock-api-key"), requestsPerSecond: 1),
+                storyblok: .mapi(accessToken: .personal("mock-api-key"), requestsPerSecond: 1),
                 configuration: mockConfiguration
             )
             let request = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
@@ -100,7 +100,7 @@ import Mocker
         
         @Test func `on server error or 429 (too many requests) status codes subsequent requests are subject to an exponential backoff`() async throws {
             let storyblok = URLSession(
-                storyblok: .mapi(accessToken: .personal(token: "mock-api-key")),
+                storyblok: .mapi(accessToken: .personal("mock-api-key")),
                 configuration: mockConfiguration
             )
             
@@ -135,7 +135,7 @@ import Mocker
         
         @Test func `retried requests are also subject to an exponential backoff`() async throws {
             let storyblok = URLSession(
-                storyblok: .mapi(accessToken: .personal(token: "mock-api-key")),
+                storyblok: .mapi(accessToken: .personal("mock-api-key")),
                 configuration: mockConfiguration
             )
             let failingRequest = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
@@ -360,7 +360,7 @@ import Mocker
         func `specifying a personal access token is added as auth header`() async throws {
             let storyblok = URLSession(
                 storyblok: .mapi(
-                    accessToken: .personal(token: "mock-api-key"),
+                    accessToken: .personal("mock-api-key"),
                     region: .eu
                 ),
                 configuration: mockConfiguration
@@ -382,7 +382,7 @@ import Mocker
         func `specifying an oauth access token is added as auth header with bearer prefix`() async throws {
             let storyblok = URLSession(
                 storyblok: .mapi(
-                    accessToken: .oauth(token: "mock-api-key"),
+                    accessToken: .oauth("mock-api-key"),
                     region: .eu
                 ),
                 configuration: mockConfiguration
@@ -402,7 +402,7 @@ import Mocker
 
         @Test
         func `requests per second defaults to 6`() async throws {
-            let api = Api.mapi(accessToken: .oauth(token: "mock-api-key"))
+            let api = Api.mapi(accessToken: .oauth("mock-api-key"))
             switch api {
                 case .mapi(_, _, requestsPerSecond: let requestsPerSecond): #expect(requestsPerSecond == 6)
                 default: Issue.record("api is not mapi")

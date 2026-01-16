@@ -104,9 +104,9 @@ public enum Api : Sendable {
     /// [authenticate requests](https://www.storyblok.com/docs/api/management/getting-started/authentication) to the [Management API](doc:Api/mapi(accessToken:region:requestsPerSecond:)).
     public enum AccessToken : Sendable {
         /// An OAuth Access Token is obtained via the OAuth2 authentication flow and is tied to a single space.
-        case oauth(token: String)
+        case oauth(_ token: String)
         /// A Personal Access Token is obtained from the Storyblok UI and grants access to all spaces associated with your account
-        case personal(token: String)
+        case personal(_ token: String)
     }
 
     /// A  client (`4xx`) or server (`5xx`) error received from the API.
