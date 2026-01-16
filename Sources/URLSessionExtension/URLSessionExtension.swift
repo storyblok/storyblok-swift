@@ -109,9 +109,19 @@ public enum Api : Sendable {
         case personal(_ token: String)
     }
 
+    /// The type of error responses to fail on.
+    ///
+    /// Specify a case of `ErrorResponseType` when invoking ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)``.
+    public enum ErrorResponseType {
+        /// A transient error that can be retried, includes server errors (`5xx`) and `Too Many Requests (429)`.
+        case recoverable
+        /// All client errors (`4xx`) and server errors (`5xx`)
+        case all
+    }
+
     /// A  client (`4xx`) or server (`5xx`) error received from the API.
     ///
-    ///  A `ResponseError` is published  by the ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/failOnErrorResponse(_:)`` operator when an error response is received from the API.
+    ///  A `ResponseError` is published  by the ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)`` operator when an error response is received from the API.
     public enum ResponseError: Error {
         /// A client error (`4xx`) response received from the API.
         /// - Parameters:
@@ -128,16 +138,7 @@ public enum Api : Sendable {
     }
 }
 
-public extension URLSession.DataTaskPublisher {
-    /// The type of error responses to fail on.
-    ///
-    /// Specify a case of `ErrorResponseType` when invoking ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/failOnErrorResponse(_:)``.
-    enum ErrorResponseType {
-        /// A transient error that can be retried, includes server errors (`5xx`) and `Too Many Requests (429)`.
-        case recoverable
-        /// All client errors (`4xx`) and server errors (`5xx`)
-        case all
-    }
+public extension Publisher where Output == (data: Data, response: URLResponse) {
     /// Publishes a ``Api/ResponseError`` in the stream when an error response of the specified type is received.
     ///
     /// The `failOnErrorResponse` operator is designed to be used with Combine's error handling operators to process error responses received from the API:
@@ -148,7 +149,7 @@ public extension URLSession.DataTaskPublisher {
     ///
     /// - Parameters:
     ///   - type: The type of error response to fail on, can be either `.recoverable` or `.all`.
-    func failOnErrorResponse(_ type: ErrorResponseType) -> AnyPublisher<(data: Data, response: URLResponse), Error> {
+    func failOnErrorResponse(_ type: Api.ErrorResponseType) -> AnyPublisher<(data: Data, response: URLResponse), Error> {
         tryFilter { (data, response) in
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             switch statusCode {

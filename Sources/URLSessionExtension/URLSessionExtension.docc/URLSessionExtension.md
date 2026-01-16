@@ -20,7 +20,7 @@ Read <doc:UserGuide> to get started.
 
 ### Retrying failed requests
 
-- ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/failOnErrorResponse(_:)``
-- ``URLSessionExtension/Foundation/URLSession/DataTaskPublisher/ErrorResponseType``
+- ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)``
+- ``URLSessionExtension/Api/ErrorResponseType``
 - ``URLSessionExtension/Api/ResponseError``
 
