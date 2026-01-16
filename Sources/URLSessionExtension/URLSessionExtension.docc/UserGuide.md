@@ -37,12 +37,12 @@ To create a request, use the Storyblok `URLRequest` [convenience initializer](do
 
 
 ```swift
-let request = URLRequest(storyblok: storyblok, path: "stories")
-request.url.append(queryItems: [
-    URLQueryItem(name: "starts_with", value: "articles")
-    URLQueryItem(name: "search_term", value: "mars"), 
+var request = URLRequest(storyblok: storyblok, path: "stories")
+request.url!.append(queryItems: [
+    URLQueryItem(name: "starts_with", value: "articles"),
+    URLQueryItem(name: "search_term", value: "mars"),
 ])
-let (data, response) = try await session.data(for: request)
+let (data, response) = try await storyblok.data(for: request)
 ```
 
 ## Detailed Guide
@@ -83,7 +83,7 @@ let storyblok = URLSession(storyblok: .cdn(region: .usa))
 You can also specify a [custom region](doc:Api/Region/custom(url:)) by providing a custom base URL:
 
 ```swift
-let storyblok = URLSession(storyblok: .cdn(region: .custom(url: URL(string: "https://app.storyblokchina.cn/cdn")!))
+let storyblok = URLSession(storyblok: .cdn(region: .custom(url: URL(string: "https://app.storyblokchina.cn/cdn")!)))
 ```
 
 ### Rate limit handling
@@ -93,7 +93,7 @@ The Content Delivery and Management APIs have different rate limits depending on
 The plugin implements *API throttling* to slow down the API requests by introducing intermediate delays. You can specify the maximum number of requests per second allowed:
 
 ```swift
-let storyblok = URLSession(storyblok: .mapi(requestsPerSecond: 3)
+let storyblok = URLSession(storyblok: .mapi(requestsPerSecond: 3))
 ```
 
 > Note: The value of `requestsPerSecond` defaults to `1000` for the Content Delivery API and `6` for the Management API.
@@ -112,10 +112,10 @@ You can optionally set [default parameters](doc:Api/cdn(accessToken:language:fal
 
 ```swift
 let storyblok = URLSession(storyblok: .cdn(
-    cv: "1706094649" //cached version Unix timestamp
-    language: "en" //language to retrieve resources
-    fallbackLang: "de" //language for untranslated fields
-    version: .draft //the version of resources to retrieve
+    language: "en", // language to retrieve resources
+    fallbackLanguage: "de", // language for untranslated fields
+    version: .draft, // the version of resources to retrieve
+    cv: "1706094649", // cached version Unix timestamp
 ))
 ```
 
@@ -136,14 +136,24 @@ Requests to the Storyblok APIs can fail due to network errors or the API respond
 You can use Combine to easily [retry transient network errors](https://developer.apple.com/documentation/foundation/processing-url-session-data-task-results-with-combine#Retry-transient-errors-and-catch-and-replace-persistent-errors) and with the help of the ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)`` operator you can also retry recoverable HTTP status error codes returned by the API:
 
  ```swift
-let request = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
-let (data, response) = try await storyblok.dataTaskPublisher(for: request)
+storyblok.dataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234"))
     .failOnErrorResponse(.recoverable)
     .retry(5)
     .failOnErrorResponse(.all)
-    .catch()
-    .values
-    .first { _ in true }
+    .catch { error in
+        switch(error) {
+            case Api.ResponseError.client(let statusCode, let data, let response): switch(statusCode) {
+                case 400: fatalError("The wrong format was sent (e.g., XML instead of JSON).")
+                case 401: fatalError("No valid API key was provided.")
+                case 404: fatalError("The requested resource doesn’t exist (e.g., due to not yet published content entries).")
+                case 422: fatalError("The request was unacceptable, often due to missing a required parameter.")
+                case 429: fatalError("Too many requests hit the API too quickly.")
+                default: print(error.localizedDescription)
+            }
+            default: print(error.localizedDescription)
+        }
+        return Empty<(data: Data, response: URLResponse), Never>()
+    }
 ```
 
 The pattern in the example above can be used as a robust way to handle failed requests:
@@ -152,6 +162,8 @@ The pattern in the example above can be used as a robust way to handle failed re
 - [`retry(5)`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
 - For unrecoverable error responses, [`failOnErrorResponse(.all)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on recieving any other error response from the API.
 - Finally, [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) will handle any errors published by the preceeding `failOnErrorResponse(.all)`, in addition to errors thrown by the preceeding `retry(5)` in the case the fifth and final retry also resulted in failure.
+
+In the catch closure you would need to decide how to handle the error; the example above handles [common client errors](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/errors) (`4xx`) which would usually indicate programmer error (with the possible exception of `404`) by stopping execution.
 
 **Introducing delays between retries**
 
@@ -165,7 +177,7 @@ The delay is automatically applied before retries and all other pending requests
 
 All Storyblok APIs responses, including errors, return JSON which you can convert to objects and values [using Foundation APIs](https://developer.apple.com/documentation/foundation/archives-and-serialization/#overview) or [with Combine operators](https://developer.apple.com/documentation/foundation/processing-url-session-data-task-results-with-combine#Convert-incoming-raw-data-to-your-types-with-Combine-operators). 
 
-Requests bodies should also be sent as JSON, and the content type of requests are automatically set to `application/json` by the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)).
+Requests bodies should also be sent as JSON, and the content type of requests is automatically set to `application/json` by the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)).
 
 **JSONSerialization example**
 
@@ -184,42 +196,44 @@ request.httpBody = try JSONSerialization.data(withJSONObject: [
     ],
 ])
 let (data, _) = try await URLSession.shared.data(for: request)
-print("Story \(try JSONSerialization.jsonObject(with: data)["story"]["name"]) created")
-
+let body = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+let story = body["story"] as! [String: Any]
+print("Story \(story["name"]!) created")
 ```
 
-**Custom type example**
+**Codable example**
 
 ```swift
-struct Content {
+struct Content: Codable {
     var component: String
     var body: [String]
 }
-struct Story {
+struct Story: Codable {
     var name: String
-    var slug: String 
+    var slug: String
     var content: Content
-)
-struct Body {
-    var story: Story, 
+}
+struct Body: Codable {
     var publish: Int = 0
+    var story: Story
 }
 
 var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/stories")
 request.httpMethod = "POST"
-request.httpBody = try Encoder.data(withObject: Body(
-    publish = 1,
-    story = Story(
-        content = Content(
-            component = "page",
-            body = emptyList()
-        ),
-        name = "Story Name",
-        slug = "story-name"
-    ))
-) 
+request.httpBody = try JSONEncoder().encode(Body(
+    publish: 1,
+    story: Story(
+        name: "Story Name",
+        slug: "story-name",
+        content: Content(
+            component: "page",
+            body: []
+        )
+    )
+))
 let (data, _) = try await URLSession.shared.data(for: request)
-print("Story \(try JSONSerialization.jsonObject(with: data)["story"]["name"]) created")
+let body = try JSONDecoder().decode(Body.self, from: data)
+print("Story \(body.story.name) created")
 ```
 
 ## See Also
