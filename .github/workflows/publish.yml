@@ -16,6 +16,7 @@ jobs:
           target: URLSessionExtension
           output: ./docs
           hosting-base-path: storyblok-swift
+          disable-indexing: 'true'
           transform-for-static-hosting: 'true'
       - name: Deploy API documentation to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4
