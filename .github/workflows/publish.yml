@@ -2,7 +2,7 @@ name: Publish
 
 on:
   release:
-    types: [ released, prereleased ]
+    types: [released, prereleased]
 
 jobs:
   docc:
@@ -10,6 +10,7 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Generate documentation
         uses: fwcd/swift-docc-action@v1
         with:
@@ -18,6 +19,12 @@ jobs:
           hosting-base-path: storyblok-swift
           disable-indexing: 'true'
           transform-for-static-hosting: 'true'
+
+      - name: Update favicon
+        run: |
+          cp -f images/favicon.svg docs/favicon.svg
+          rm -f docs/favicon.ico
+
       - name: Deploy API documentation to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
