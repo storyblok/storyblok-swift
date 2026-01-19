@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: GettingStarted` {
 
@@ -9,7 +10,12 @@ import Testing
      */
     @Test
     func Authentication() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?token=wANpEQEsMYGOwLxwXQ76Ggtt&version=published")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "wANpEQEsMYGOwLxwXQ76Ggtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "version", value: "published")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -20,7 +26,9 @@ import Testing
      */
     @Test
     func `Cache Invalidation`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/spaces/me?token=wANpEQEsMYGOwLxwXQ76Ggtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "wANpEQEsMYGOwLxwXQ76Ggtt"))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/me")
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -31,7 +39,12 @@ import Testing
      */
     @Test
     func `Cache Invalidation 2`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?cv=1541863983&token=wANpEQEsMYGOwLxwXQ76Ggtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "wANpEQEsMYGOwLxwXQ76Ggtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "cv", value: "1541863983")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

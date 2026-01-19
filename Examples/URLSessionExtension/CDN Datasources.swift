@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: Datasources` {
 
@@ -9,7 +10,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Datasource`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/datasources/product-labels?token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        let request = URLRequest(storyblok: storyblok, path: "datasources/product-labels")
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -20,7 +23,13 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Datasource Entries`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/datasource_entries/?datasource=product-labels&dimension=de&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "datasource_entries/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "datasource", value: "product-labels"),
+            URLQueryItem(name: "dimension", value: "de")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -31,7 +40,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Datasources`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/datasources?token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        let request = URLRequest(storyblok: storyblok, path: "datasources")
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

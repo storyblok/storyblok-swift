@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: AiTranslate` {
 
@@ -9,10 +10,9 @@ import Testing
      */
     @Test
     func `AI Languages`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/ai_languages")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "ai_languages")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

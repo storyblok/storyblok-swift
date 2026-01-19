@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: Collaborators` {
 
@@ -9,8 +10,8 @@ import Testing
      */
     @Test
     func `Add a Collaborator`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "allow_multiple_roles_creation": false,
@@ -20,7 +21,7 @@ import Testing
             "space_role_id": nil,
             "space_role_ids": [ ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -30,8 +31,8 @@ import Testing
      */
     @Test
     func `Add a Collaborator 2`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "allow_multiple_roles_creation": false,
@@ -41,7 +42,7 @@ import Testing
             "space_role_id": 62454,
             "space_role_ids": [ ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -51,8 +52,8 @@ import Testing
      */
     @Test
     func `Add a Collaborator 3`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "allow_multiple_roles_creation": true,
@@ -65,7 +66,7 @@ import Testing
                 123123,
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -75,8 +76,8 @@ import Testing
      */
     @Test
     func `Add a User with SSO`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "collaborator": [
@@ -86,7 +87,7 @@ import Testing
                 "sso_id": "123456789",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -96,10 +97,9 @@ import Testing
      */
     @Test
     func `Delete a Collaborator`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/2362")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "DELETE"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/2362")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -109,10 +109,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Collaborators`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -122,8 +121,8 @@ import Testing
      */
     @Test
     func `Update a Collaborator Roles and Permissions`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/collaborators/2362")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/2362")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "collaborator": [
@@ -131,7 +130,7 @@ import Testing
                 "space_role_id": 49707,
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

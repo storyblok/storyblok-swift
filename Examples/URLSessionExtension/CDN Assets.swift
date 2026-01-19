@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: Assets` {
 
@@ -9,7 +10,12 @@ import Testing
      */
     @Test
     func `Get Signed URL`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/assets/me?token=cNGPp8cvuCfoAZB3g3eHrAtt&filename=https%3A%2F%2Fa.storyblok.com%2Ff%2F44203%2Fx%2F5231aa9c8a%2Ffavicon.ico")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "cNGPp8cvuCfoAZB3g3eHrAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "assets/me")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filename", value: "https://a.storyblok.com/f/44203/x/5231aa9c8a/favicon.ico")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: Spaces` {
 
@@ -9,7 +10,9 @@ import Testing
      */
     @Test
     func `Retrieve Current Space`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/spaces/me?token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/me")
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

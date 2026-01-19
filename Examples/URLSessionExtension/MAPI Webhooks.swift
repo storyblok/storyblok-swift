@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: Webhooks` {
 
@@ -9,8 +10,8 @@ import Testing
      */
     @Test
     func `Add a Webhook`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/webhook_endpoints/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/webhook_endpoints/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "webhook_endpoint": [
@@ -23,7 +24,7 @@ import Testing
                 "secret": "",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -33,10 +34,9 @@ import Testing
      */
     @Test
     func `Delete a Webhook`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/webhook_endpoints/4573")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "DELETE"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/webhook_endpoints/4573")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -46,10 +46,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Webhook`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/webhook_endpoints/4570")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/webhook_endpoints/4570")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -59,10 +58,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Webhooks`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/webhook_endpoints/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/webhook_endpoints/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -72,8 +70,8 @@ import Testing
      */
     @Test
     func `Update a Webhook`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/webhook_endpoints/4570")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/webhook_endpoints/4570")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "webhook_endpoint": [
@@ -87,7 +85,7 @@ import Testing
                 "secret": "HelloSecret",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

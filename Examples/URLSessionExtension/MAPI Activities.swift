@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: Activities` {
 
@@ -9,10 +10,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Activity`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/activities/1234312323")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/activities/1234312323")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -22,10 +22,13 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Activities`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/activities/?created_at_gte=2018-12-14&created_at_lte=2018-12-18")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/activities/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "created_at_gte", value: "2018-12-14"),
+            URLQueryItem(name: "created_at_lte", value: "2018-12-18")
+        ])
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

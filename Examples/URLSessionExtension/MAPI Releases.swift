@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: Releases` {
 
@@ -9,8 +10,8 @@ import Testing
      */
     @Test
     func `Create a Release`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/releases/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "release": [
@@ -22,7 +23,7 @@ import Testing
                 "release_at": "2025-01-01 01:01",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -32,10 +33,9 @@ import Testing
      */
     @Test
     func `Delete a Release`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/releases/18")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "DELETE"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/18")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -45,10 +45,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Release`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/releases/18")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/18")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -58,10 +57,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Releases`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/releases/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -71,8 +69,8 @@ import Testing
      */
     @Test
     func `Update a Release`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/spaces/288868932106293/releases/123")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/123")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "do_release": true,
@@ -85,7 +83,7 @@ import Testing
                 "release_at": "2025-01-01 01:01",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

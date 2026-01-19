@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: Links` {
 
@@ -9,7 +10,13 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Links`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/links?token=krcV6QGxWORpYLUWt12xKQtt&version=published&starts_with=articles")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "links")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "version", value: "published"),
+            URLQueryItem(name: "starts_with", value: "articles")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

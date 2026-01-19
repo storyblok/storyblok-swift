@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `MAPI: FieldPlugins` {
 
@@ -9,15 +10,15 @@ import Testing
      */
     @Test
     func `Create a Field Plugin`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/field_types/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "field_types/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "field_type": [
                 "name": "my-geo-selector",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -27,10 +28,9 @@ import Testing
      */
     @Test
     func `Delete a Field Plugin`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/field_types/1")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "DELETE"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "field_types/1")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -40,10 +40,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Field Plugin`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/field_types/124")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "field_types/124")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -53,10 +52,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Field Plugin 2`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/org_field_types/124")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "org_field_types/124")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -66,10 +64,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Field Plugin 3`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/partner_field_types/124")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "partner_field_types/124")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -79,10 +76,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Field Plugins`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/field_types/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "field_types/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -92,10 +88,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Field Plugins 2`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/org_field_types/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "org_field_types/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -105,10 +100,9 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Field Plugins 3`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/partner_field_types/")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
-        request.httpMethod = "GET"
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "partner_field_types/")
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
@@ -118,8 +112,8 @@ import Testing
      */
     @Test
     func `Update a Field Plugin`() async throws {
-        var request = URLRequest(url: URL(string: "https://mapi.storyblok.com/v1/field_types/123123")!)
-        request.setValue("YOUR_OAUTH_TOKEN", forHTTPHeaderField: "Authorization")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "field_types/123123")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "field_type": [
@@ -127,7 +121,7 @@ import Testing
                 "compiled_body": "",
             ],
         ])
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 

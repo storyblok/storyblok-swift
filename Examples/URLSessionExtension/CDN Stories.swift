@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: Stories` {
 
@@ -9,7 +10,9 @@ import Testing
      */
     @Test
     func `Retrieve a Single Story`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/posts/my-third-post?token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        let request = URLRequest(storyblok: storyblok, path: "stories/posts/my-third-post")
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -20,7 +23,31 @@ import Testing
      */
     @Test
     func `Retrieve Multiple Stories`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?token=ask9soUkv02QqbZgmZdeDAtt&version=published&starts_with=articles")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "version", value: "published"),
+            URLQueryItem(name: "starts_with", value: "articles")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
+        print(try JSONSerialization.jsonObject(with: data))
+        #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
+    }
+
+    /**
+     * Example showing how to retrieve a version of a story from a specific release by using the from_release query parameter.
+     * https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-an-edited-version-of-a-story-from-a-release
+     */
+    @Test
+    func `Retrieving a Story from a Specific Release`() async throws {
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/home")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "version", value: "draft"),
+            URLQueryItem(name: "cv", value: "1765990908"),
+            URLQueryItem(name: "from_release", value: "124105888551306")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -31,7 +58,14 @@ import Testing
      */
     @Test
     func `Retrieving Localized Stories by UUID`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/660452d2-1a68-4493-b5b6-2f03b6fa722b?find_by=uuid&language=de&token=krcV6QGxWORpYLUWt12xKQtt&version=published")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/660452d2-1a68-4493-b5b6-2f03b6fa722b")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "find_by", value: "uuid"),
+            URLQueryItem(name: "language", value: "de"),
+            URLQueryItem(name: "version", value: "published")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -42,7 +76,13 @@ import Testing
      */
     @Test
     func `Retrieving Stories from a Folder`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?starts_with=articles%2F&version=draft&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "starts_with", value: "articles/"),
+            URLQueryItem(name: "version", value: "draft")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -53,7 +93,13 @@ import Testing
      */
     @Test
     func `Retrieving Stories in a Particular Language`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/articles/earths-symphony-navigating-wonders-challenges-blue-oasis?language=de&token=krcV6QGxWORpYLUWt12xKQtt&version=published")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/articles/earths-symphony-navigating-wonders-challenges-blue-oasis")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "language", value: "de"),
+            URLQueryItem(name: "version", value: "published")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -64,7 +110,12 @@ import Testing
      */
     @Test
     func `Retrieving Stories with Resolved Relations`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?resolve_relations=article.categories%2Carticle.author&token=krcV6QGxWORpYLUWt12xKQtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "resolve_relations", value: "article.categories,article.author")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -75,7 +126,12 @@ import Testing
      */
     @Test
     func `Sorting by Fields Associated with a Story Type`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?token=krcV6QGxWORpYLUWt12xKQtt&sort_by=content.headline%3Aasc")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "sort_by", value: "content.headline:asc")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -86,7 +142,12 @@ import Testing
      */
     @Test
     func `Sorting by Story Object Property`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?token=krcV6QGxWORpYLUWt12xKQtt&sort_by=first_published_at%3Adesc")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "krcV6QGxWORpYLUWt12xKQtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "sort_by", value: "first_published_at:desc")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }

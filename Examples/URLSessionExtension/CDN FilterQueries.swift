@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import URLSessionExtension
 
 @Suite struct `CDN: FilterQueries` {
 
@@ -9,7 +10,14 @@ import Testing
      */
     @Test
     func `Filter Queries with Field-level Translation`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?filter_query%5Bheadline__i18n__es_co%5D%5Bin%5D=Sinfon%C3%ADa+de+la+Tierra%3A+Navegar+por+las+maravillas+y+los+desaf%C3%ADos+de+nuestro+oasis+azul&version=published&language=es-co&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[headline__i18n__es_co][in]", value: "Sinfonía de la Tierra: Navegar por las maravillas y los desafíos de nuestro oasis azul"),
+            URLQueryItem(name: "version", value: "published"),
+            URLQueryItem(name: "language", value: "es-co")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -20,7 +28,12 @@ import Testing
      */
     @Test
     func `Filter Queries with Nestable Blocks and Fields`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories?filter_query%5Bbody.0.name%5D%5Bin%5D=This+is+a+nested+blok&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[body.0.name][in]", value: "This is a nested blok")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -31,7 +44,12 @@ import Testing
      */
     @Test
     func all_in_array() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Btopics%5D%5Ball_in_array%5D=solar-system%2Cspace-exploration&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[topics][all_in_array]", value: "solar-system,space-exploration")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -42,7 +60,12 @@ import Testing
      */
     @Test
     func any_in_array() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Btopics%5D%5Bany_in_array%5D=solar-system%2Cspace-exploration&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[topics][any_in_array]", value: "solar-system,space-exploration")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -53,7 +76,12 @@ import Testing
      */
     @Test
     func gt_date() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bscheduled%5D%5Bgt_date%5D=2023-12-31+09%3A00&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[scheduled][gt_date]", value: "2023-12-31 09:00")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -64,7 +92,12 @@ import Testing
      */
     @Test
     func gt_float() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bprice%5D%5Bgt_float%5D=1199.99&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[price][gt_float]", value: "1199.99")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -75,7 +108,12 @@ import Testing
      */
     @Test
     func gt_int() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bprice%5D%5Bgt_int%5D=1200&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[price][gt_int]", value: "1200")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -86,7 +124,12 @@ import Testing
      */
     @Test
     func `in`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bcategories%5D%5Bin%5D=space-exploration%2Csolar-system&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[categories][in]", value: "space-exploration,solar-system")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -97,7 +140,12 @@ import Testing
      */
     @Test
     func `is`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bauthor%5D%5Bis%5D=not_empty_array&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[author][is]", value: "not_empty_array")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -108,7 +156,12 @@ import Testing
      */
     @Test
     func like() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bheadline%5D%5Blike%5D=*space*&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[headline][like]", value: "*space*")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -119,7 +172,12 @@ import Testing
      */
     @Test
     func lt_date() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bscheduled%5D%5Blt_date%5D=2023-12-31+09%3A00&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[scheduled][lt_date]", value: "2023-12-31 09:00")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -130,7 +188,12 @@ import Testing
      */
     @Test
     func lt_float() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bprice%5D%5Blt_float%5D=1199.99&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[price][lt_float]", value: "1199.99")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -141,7 +204,12 @@ import Testing
      */
     @Test
     func lt_int() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bprice%5D%5Blt_int%5D=1200&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[price][lt_int]", value: "1200")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -152,7 +220,12 @@ import Testing
      */
     @Test
     func not_in() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bcategories%5D%5Bnot_in%5D=space-exploration%2Cculture&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[categories][not_in]", value: "space-exploration,culture")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -163,7 +236,12 @@ import Testing
      */
     @Test
     func not_like() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?filter_query%5Bheadline%5D%5Bnot_like%5D=*Mysteries*&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "filter_query[headline][not_like]", value: "*Mysteries*")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -174,7 +252,13 @@ import Testing
      */
     @Test
     func `Filtering Stories by a Boolean Value`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?starts_with=articles%2F&filter_query%5Bhighlighted%5D%5Bin%5D=true&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "starts_with", value: "articles/"),
+            URLQueryItem(name: "filter_query[highlighted][in]", value: "true")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
@@ -185,7 +269,14 @@ import Testing
      */
     @Test
     func `Filtering Stories by Defining a Value Range`() async throws {
-        let (data, response) = try await URLSession.shared.data(from: URL(string: "https://api.storyblok.com/v2/cdn/stories/?starts_with=products%2F&filter_query%5Bprice%5D%5Blt_float%5D=300&filter_query%5Bprice%5D%5Bgt_float%5D=100&token=ask9soUkv02QqbZgmZdeDAtt")!)
+        let storyblok = URLSession(storyblok: .cdn(accessToken: "ask9soUkv02QqbZgmZdeDAtt"))
+        var request = URLRequest(storyblok: storyblok, path: "stories/")
+        request.url!.append(queryItems: [
+            URLQueryItem(name: "starts_with", value: "products/"),
+            URLQueryItem(name: "filter_query[price][lt_float]", value: "300"),
+            URLQueryItem(name: "filter_query[price][gt_float]", value: "100")
+        ])
+        let (data, response) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
         #expect((200...299).contains((response as! HTTPURLResponse).statusCode))
     }
