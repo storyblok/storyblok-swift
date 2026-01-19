@@ -32,6 +32,13 @@ This package consists of the following libraries:
 |------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
 | [URLSessionExtension](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension) | An extension to simplify calling Storyblok's APIs with URLSession |
 
+## 📚 Examples
+
+The [Examples](https://github.com/storyblok/storyblok-swift/tree/main/Examples) folder contains example Swift code snippets from [Storyblok's docs site](https://www.storyblok.com/docs) as executable unit tests for both the [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) and the [Management API](https://www.storyblok.com/docs/api/management).
+
+> [!TIP]
+> You can run individual tests classes and functions via the play icon in the gutter in XCode.
+
 ## 📄 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](https://github.com/storyblok/storyblok-kotlin?tab=contributing-ov-file) for details on:

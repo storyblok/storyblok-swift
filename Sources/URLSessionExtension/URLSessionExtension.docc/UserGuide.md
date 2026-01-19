@@ -102,7 +102,7 @@ let storyblok = URLSession(storyblok: .mapi(requestsPerSecond: 3))
 
 > Warning: Be careful when using multiple sessions concurrently as the requests sent to the API from their combined usage may still exceed the rate limit.
 
-If you do exceed the rate limit, the API will respond with an HTTP status error code 429 which  [retry mechanism](#retrying-failed-requests) along with an exponential backoff if the HTTP status `429 Too Many Requests` is received.
+If you do exceed the rate limit, the API will respond with HTTP status error code 429, see <doc:UserGuide#Retrying-failed-requests> on how to handle this.
 
 ### Configuring default parameters for all requests
 
@@ -195,7 +195,7 @@ request.httpBody = try JSONSerialization.data(withJSONObject: [
         "slug": "story-name",
     ],
 ])
-let (data, _) = try await URLSession.shared.data(for: request)
+let (data, _) = try await storyblok.data(for: request)
 let body = try JSONSerialization.jsonObject(with: data) as! [String: Any]
 let story = body["story"] as! [String: Any]
 print("Story \(story["name"]!) created")
@@ -231,7 +231,7 @@ request.httpBody = try JSONEncoder().encode(Body(
         )
     )
 ))
-let (data, _) = try await URLSession.shared.data(for: request)
+let (data, _) = try await storyblok.data(for: request)
 let body = try JSONDecoder().decode(Body.self, from: data)
 print("Story \(body.story.name) created")
 ```
