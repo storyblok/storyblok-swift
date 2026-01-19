@@ -23,7 +23,7 @@ jobs:
       - name: Update favicon
         run: |
           cp -f images/favicon.svg docs/favicon.svg
-          rm -f docs/favicon.ico
+          cp -f images/favicon.ico docs/favicon.ico
 
       - name: Deploy API documentation to Github Pages
         uses: JamesIves/github-pages-deploy-action@v4
