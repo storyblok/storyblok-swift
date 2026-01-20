@@ -1,0 +1,37 @@
+name: Examples
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/**.swift'
+      - 'Examples/**.swift'
+      - '.github/workflows/examples.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/**.swift'
+      - 'Examples/**.swift'
+      - '.github/workflows/examples.yml'
+  workflow_call:
+concurrency:
+  # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run example tests
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v3
+      - name: Build
+        run: swift build --target Examples
+      - name: Run tests
+        run: swift test --filter Examples

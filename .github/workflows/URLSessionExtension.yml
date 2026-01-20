@@ -1,0 +1,37 @@
+name: URLSession extension
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/URLSessionExtension/**.swift'
+      - 'Tests/URLSessionExtensionTests/**.swift'
+      - '.github/workflows/URLSessionExtension.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/URLSessionExtension/**.swift'
+      - 'Tests/URLSessionExtensionTests/**.swift'
+      - '.github/workflows/URLSessionExtension.yml'
+  workflow_call:
+concurrency:
+  # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run URLSessionExtension tests
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v3
+      - name: Build
+        run: swift build --target URLSessionExtensionTests
+      - name: Run tests
+        run: swift test --filter URLSessionExtensionTests
