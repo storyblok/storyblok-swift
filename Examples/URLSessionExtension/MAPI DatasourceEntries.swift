@@ -31,7 +31,8 @@ import URLSessionExtension
     @Test
     func `Delete a Datasource Entry`() async throws {
         let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
+        request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }

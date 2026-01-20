@@ -30,7 +30,8 @@ import URLSessionExtension
     @Test
     func `Delete an Extension`() async throws {
         let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        let request = URLRequest(storyblok: storyblok, path: "org_apps/123123")
+        var request = URLRequest(storyblok: storyblok, path: "org_apps/123123")
+        request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }

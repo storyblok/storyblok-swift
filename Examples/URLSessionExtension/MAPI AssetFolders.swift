@@ -30,7 +30,8 @@ import URLSessionExtension
     @Test
     func `Delete an Asset Folder`() async throws {
         let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/asset_folders/41")
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/asset_folders/41")
+        request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }

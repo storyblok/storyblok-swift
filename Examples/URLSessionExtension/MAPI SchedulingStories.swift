@@ -31,7 +31,8 @@ import URLSessionExtension
     @Test
     func `Delete a Story Schedule`() async throws {
         let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/story_schedulings/123/")
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/story_schedulings/123/")
+        request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }

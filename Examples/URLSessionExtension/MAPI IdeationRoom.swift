@@ -53,7 +53,8 @@ import URLSessionExtension
     @Test
     func `Delete an Idea`() async throws {
         let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/123ab45c-6d78-9101-11ef-213gh1i4j1k5")
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/123ab45c-6d78-9101-11ef-213gh1i4j1k5")
+        request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
