@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: WorkflowStage` {
+@Suite(.serialized) struct `MAPI: WorkflowStage` {
 
     /**
      * This endpoint allows you to create a workflow stage.

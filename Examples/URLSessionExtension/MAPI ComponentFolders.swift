@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: ComponentFolders` {
+@Suite(.serialized) struct `MAPI: ComponentFolders` {
 
     /**
      * Create a new component folder

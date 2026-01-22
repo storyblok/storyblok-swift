@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Spaces` {
+@Suite(.serialized) struct `MAPI: Spaces` {
 
     /**
      * Trigger the backup task for your space. Make sure you've configured backups in your space options.

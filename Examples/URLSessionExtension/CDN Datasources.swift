@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: Datasources` {
+@Suite(.serialized) struct `CDN: Datasources` {
 
     /**
      * Retrieve a single datasource by ID using Storyblok's Content Delivery API to access key-value pairs for options and settings.

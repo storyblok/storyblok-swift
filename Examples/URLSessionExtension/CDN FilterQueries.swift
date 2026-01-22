@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: FilterQueries` {
+@Suite(.serialized) struct `CDN: FilterQueries` {
 
     /**
      * Learn how to use filter queries with field-level translation in Storyblok by extending field keys with i18n and language codes for multilingual content filtering.

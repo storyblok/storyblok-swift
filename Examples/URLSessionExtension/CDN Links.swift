@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: Links` {
+@Suite(.serialized) struct `CDN: Links` {
 
     /**
      * Retrieve a concise representation of stories and folders using the links endpoint in the Content Delivery API.

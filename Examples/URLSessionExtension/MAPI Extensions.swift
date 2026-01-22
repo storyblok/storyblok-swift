@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Extensions` {
+@Suite(.serialized) struct `MAPI: Extensions` {
 
     /**
      * This endpoint allows you to create an extension inside the organization or partner extensions.

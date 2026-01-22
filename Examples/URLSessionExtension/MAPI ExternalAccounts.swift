@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: ExternalAccounts` {
+@Suite(.serialized) struct `MAPI: ExternalAccounts` {
 
     /**
      * Use this endpoint to obtain details of the GitHub account connected to Storyblok.

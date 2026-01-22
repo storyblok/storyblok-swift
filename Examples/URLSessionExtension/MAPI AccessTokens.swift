@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: AccessTokens` {
+@Suite(.serialized) struct `MAPI: AccessTokens` {
 
     /**
      * Create an access token for a particular space.

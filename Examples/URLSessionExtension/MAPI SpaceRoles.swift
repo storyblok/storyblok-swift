@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: SpaceRoles` {
+@Suite(.serialized) struct `MAPI: SpaceRoles` {
 
     /**
      * This endpoint allows you to create a new space role.

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: FieldPlugins` {
+@Suite(.serialized) struct `MAPI: FieldPlugins` {
 
     /**
      * This endpoint allows you to create a field type plugin.

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Tasks` {
+@Suite(.serialized) struct `MAPI: Tasks` {
 
     /**
      * This endpoint creates a new task.

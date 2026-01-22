@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Approvals` {
+@Suite(.serialized) struct `MAPI: Approvals` {
 
     /**
      * 

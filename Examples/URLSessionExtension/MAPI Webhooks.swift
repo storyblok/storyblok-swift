@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Webhooks` {
+@Suite(.serialized) struct `MAPI: Webhooks` {
 
     /**
      * You can set some of the fields available in the webhook object, below we only list the properties in the example and the possible required fields.

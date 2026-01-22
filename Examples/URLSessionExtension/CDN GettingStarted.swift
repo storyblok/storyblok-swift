@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: GettingStarted` {
+@Suite(.serialized) struct `CDN: GettingStarted` {
 
     /**
      * Discover how Storyblok's API authentication mechanism works through API access tokens.

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: Assets` {
+@Suite(.serialized) struct `CDN: Assets` {
 
     /**
      * Retrieves a signed URL to access a private asset.

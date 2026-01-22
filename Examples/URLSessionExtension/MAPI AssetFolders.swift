@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: AssetFolders` {
+@Suite(.serialized) struct `MAPI: AssetFolders` {
 
     /**
      * This endpoint allows you to create a new asset folder.

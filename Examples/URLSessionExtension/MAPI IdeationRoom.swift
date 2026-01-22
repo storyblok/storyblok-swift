@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: IdeationRoom` {
+@Suite(.serialized) struct `MAPI: IdeationRoom` {
 
     /**
      * This endpoint is to create an Idea in the Ideation Room. In the request body, passing name in the idea object is a minimum requirement.

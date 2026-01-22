@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Tags` {
+@Suite(.serialized) struct `MAPI: Tags` {
 
     /**
      * Create a new tag and assign it to a story

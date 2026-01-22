@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: AiTranslate` {
+@Suite(.serialized) struct `MAPI: AiTranslate` {
 
     /**
      * An object that lists all languages available for use with the AI translation feature

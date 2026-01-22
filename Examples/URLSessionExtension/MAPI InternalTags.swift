@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: InternalTags` {
+@Suite(.serialized) struct `MAPI: InternalTags` {
 
     /**
      * This endpoint allows creating an internal tag inside a particular space.

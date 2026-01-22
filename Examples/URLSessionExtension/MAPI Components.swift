@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Components` {
+@Suite(.serialized) struct `MAPI: Components` {
 
     /**
      * Create a component with properties available in the collaborator object

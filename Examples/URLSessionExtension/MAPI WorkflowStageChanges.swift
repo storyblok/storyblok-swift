@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: WorkflowStageChanges` {
+@Suite(.serialized) struct `MAPI: WorkflowStageChanges` {
 
     /**
      * Create a workflow stage change. It is important to pass a story ID along with the object.

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: SchedulingStories` {
+@Suite(.serialized) struct `MAPI: SchedulingStories` {
 
     /**
      * This endpoint allows you to create a new story schedule.

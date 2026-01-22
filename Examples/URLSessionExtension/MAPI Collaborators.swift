@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Collaborators` {
+@Suite(.serialized) struct `MAPI: Collaborators` {
 
     /**
      * Add collaborators with specific roles and permissions available in the collaborator object

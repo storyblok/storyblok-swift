@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: Spaces` {
+@Suite(.serialized) struct `CDN: Spaces` {
 
     /**
      * Retrieve information about the current Storyblok space including cache version, domain, and language configuration using the Content Delivery API.

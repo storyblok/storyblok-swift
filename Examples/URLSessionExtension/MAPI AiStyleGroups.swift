@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: AiStyleGroups` {
+@Suite(.serialized) struct `MAPI: AiStyleGroups` {
 
     /**
      * Creates a new AI style group for the organization

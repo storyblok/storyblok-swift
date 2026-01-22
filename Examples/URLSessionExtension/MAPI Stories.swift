@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Stories` {
+@Suite(.serialized) struct `MAPI: Stories` {
 
     /**
      * This endpoint returns the story content, translated by AI.

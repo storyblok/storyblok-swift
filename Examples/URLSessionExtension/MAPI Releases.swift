@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Releases` {
+@Suite(.serialized) struct `MAPI: Releases` {
 
     /**
      * This endpoint allows you to create a new release.

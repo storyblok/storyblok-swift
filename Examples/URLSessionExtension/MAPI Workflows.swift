@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Workflows` {
+@Suite(.serialized) struct `MAPI: Workflows` {
 
     /**
      * This end point creates a new workflow.

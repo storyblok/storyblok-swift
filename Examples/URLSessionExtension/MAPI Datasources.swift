@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Datasources` {
+@Suite(.serialized) struct `MAPI: Datasources` {
 
     /**
      * Create a new datasource

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Discussions` {
+@Suite(.serialized) struct `MAPI: Discussions` {
 
     /**
      * This endpoint allows the creation of a comment in a particular discussion using the ID.

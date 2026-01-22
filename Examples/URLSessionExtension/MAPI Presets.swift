@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Presets` {
+@Suite(.serialized) struct `MAPI: Presets` {
 
     /**
      * This endpoint can be used to create new presets.

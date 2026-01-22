@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `CDN: Tags` {
+@Suite(.serialized) struct `CDN: Tags` {
 
     /**
      * Retrieve tags used in a space.

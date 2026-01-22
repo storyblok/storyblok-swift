@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Assets` {
+@Suite(.serialized) struct `MAPI: Assets` {
 
     /**
      * This endpoint allows moving multiple assets using their IDs to a specific folder.

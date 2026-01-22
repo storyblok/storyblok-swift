@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import URLSessionExtension
 
-@Suite struct `MAPI: Pipelines` {
+@Suite(.serialized) struct `MAPI: Pipelines` {
 
     /**
      * This endpoint creates a new branch.
