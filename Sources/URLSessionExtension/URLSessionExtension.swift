@@ -308,7 +308,7 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStream: completionHandler) ?? completionHandler(nil)
     }
 
-    @available(macOS 14.0, *)
+    @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
     func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStreamFrom offset: Int64, completionHandler: @Sendable @escaping (InputStream?) -> Void) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStreamFrom: offset, completionHandler: completionHandler) ?? completionHandler(nil)
     }
@@ -322,7 +322,7 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willBeginDelayedRequest: request, completionHandler: completionHandler) ?? completionHandler(.continueLoading, nil)
     }
 
-    @available(macOS 14.0, *)
+    @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
     func urlSession(_ session: URLSession, task: URLSessionTask, didReceiveInformationalResponse response: HTTPURLResponse) {
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didReceiveInformationalResponse: response)
 
