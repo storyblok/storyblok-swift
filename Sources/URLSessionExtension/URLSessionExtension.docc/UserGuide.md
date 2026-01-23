@@ -16,7 +16,9 @@ dependencies: [
 targets: [
     .target(
         …
-        dependencies: ["URLSessionExtension"]
+        dependencies: [
+            .product(name: "URLSessionExtension", package: "storyblok-swift")
+        ]
     )
 ]
 ```
