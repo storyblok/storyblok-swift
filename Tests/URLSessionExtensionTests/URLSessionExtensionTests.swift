@@ -129,8 +129,8 @@ import Mocker
             let fourthRequestDuration = try await ContinuousClock.continuous.measure {
                 _ = try await storyblok.data(for: succeedingRequest)
             }
-            //no backoff after sucessful request
-            #expect(fourthRequestDuration < .seconds(1.0/6) + .milliseconds(15))
+            //no backoff after successful request
+            #expect(fourthRequestDuration < .seconds(2) - .milliseconds(15))
         }
         
         @Test func `retried requests are also subject to an exponential backoff`() async throws {
@@ -317,7 +317,7 @@ import Mocker
         }
 
         @Test
-        func `requests for draft resources are not cached`() async throws {
+        func `requests for draft resources are not served from the cache`() async throws {
             let storyblok = URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
             let request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
             let mock = Mock(

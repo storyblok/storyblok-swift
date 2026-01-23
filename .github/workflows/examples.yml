@@ -23,15 +23,33 @@ concurrency:
 
 permissions:
   contents: read
-
 jobs:
   test:
     name: Run example tests
     runs-on: macOS-latest
+    strategy:
+      matrix:
+        include:
+          - platform: macOS
+            build: swift build --target Examples
+            test: swift test --filter Examples
+          - platform: iOS
+            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=iOS Simulator,name=iPhone 17'
+          - platform: watchOS
+            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+          - platform: tvOS
+            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=tvOS Simulator,name=Apple TV'
     steps:
       - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v3
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Show SDKS
+        run: xcodebuild -showsdks
       - name: Build
-        run: swift build --target Examples
-      - name: Run tests
-        run: swift test --filter Examples
+        run: ${{ matrix.build }}
+      - name: Run tests on ${{ matrix.platform }}
+        run: ${{ matrix.test }}

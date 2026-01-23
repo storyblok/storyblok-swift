@@ -26,12 +26,31 @@ permissions:
 
 jobs:
   test:
-    name: Run URLSessionExtension tests
+    name: Run tests
     runs-on: macOS-latest
+    strategy:
+      matrix:
+        include:
+          - platform: macOS
+            build: swift build --target URLSessionExtensionTests
+            test: swift test --filter URLSessionExtensionTests
+          - platform: iOS
+            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
+          - platform: watchOS
+            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+          - platform: tvOS
+            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
     steps:
       - uses: actions/checkout@v4
-      - uses: swift-actions/setup-swift@v3
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Show SDKS
+        run: xcodebuild -showsdks
       - name: Build
-        run: swift build --target URLSessionExtensionTests
-      - name: Run tests
-        run: swift test --filter URLSessionExtensionTests
+        run: ${{ matrix.build }}
+      - name: Run tests on ${{ matrix.platform }}
+        run: ${{ matrix.test }}
