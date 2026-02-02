@@ -129,7 +129,7 @@ public enum Api : Sendable {
         ///   - data: A data object containing the response body.
         ///   - response: The full error response that provides response metadata..
         case client(statusCode: Int, data: Data, response: URLResponse)
-        /// A server error (`5xx`) response  received from the API.
+        /// A server error (`5xx`) response received from the API.
         /// - Parameters:
         ///   - statusCode: The HTTP status code of the response.
         ///   - data: A data object containing the response body.

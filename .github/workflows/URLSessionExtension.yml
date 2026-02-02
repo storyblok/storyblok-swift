@@ -48,8 +48,8 @@ jobs:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
-      - name: Show SDKS
-        run: xcodebuild -showsdks
+      - name: List simulators
+        run: xcrun simctl list
       - name: Build
         run: ${{ matrix.build }}
       - name: Run tests on ${{ matrix.platform }}
