@@ -8,6 +8,7 @@ on:
       - 'Sources/**.swift'
       - 'Examples/**.swift'
       - '.github/workflows/examples.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/Examples.xcscheme'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -15,11 +16,12 @@ on:
       - 'Sources/**.swift'
       - 'Examples/**.swift'
       - '.github/workflows/examples.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/Examples.xcscheme'
   workflow_call:
   workflow_dispatch:
 concurrency:
   # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
-  group: ${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -35,14 +37,14 @@ jobs:
             build: swift build --target Examples
             test: swift test --filter Examples
           - platform: iOS
-            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=iOS Simulator,name=iPhone 17'
-            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=iOS Simulator,name=iPhone 17'
+            build: xcodebuild build -scheme Examples -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme Examples -destination 'platform=iOS Simulator,name=iPhone 17'
           - platform: watchOS
-            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
-            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            build: xcodebuild build -scheme Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme Examples -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
           - platform: tvOS
-            build: xcodebuild build -scheme Storyblok -target Examples -destination 'platform=tvOS Simulator,name=Apple TV'
-            test: xcodebuild test -scheme Storyblok -only-testing Examples -destination 'platform=tvOS Simulator,name=Apple TV'
+            build: xcodebuild build -scheme Examples -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme Examples -destination 'platform=tvOS Simulator,name=Apple TV'
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1

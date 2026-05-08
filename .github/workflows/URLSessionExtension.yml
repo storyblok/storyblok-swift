@@ -8,6 +8,7 @@ on:
       - 'Sources/URLSessionExtension/**.swift'
       - 'Tests/URLSessionExtensionTests/**.swift'
       - '.github/workflows/URLSessionExtension.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/URLSessionExtensionTests.xcscheme'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -15,11 +16,12 @@ on:
       - 'Sources/URLSessionExtension/**.swift'
       - 'Tests/URLSessionExtensionTests/**.swift'
       - '.github/workflows/URLSessionExtension.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/URLSessionExtensionTests.xcscheme'
   workflow_call:
   workflow_dispatch:
 concurrency:
   # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
-  group: ${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -36,14 +38,14 @@ jobs:
             build: swift build --target URLSessionExtensionTests
             test: swift test --filter URLSessionExtensionTests
           - platform: iOS
-            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
-            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
+            build: xcodebuild build -scheme URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme URLSessionExtensionTests -destination 'platform=iOS Simulator,name=iPhone 17'
           - platform: watchOS
-            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
-            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            build: xcodebuild build -scheme URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme URLSessionExtensionTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
           - platform: tvOS
-            build: xcodebuild build -scheme Storyblok -target URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
-            test: xcodebuild test -scheme Storyblok -only-testing URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
+            build: xcodebuild build -scheme URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme URLSessionExtensionTests -destination 'platform=tvOS Simulator,name=Apple TV'
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
