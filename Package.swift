@@ -61,13 +61,23 @@ let package = Package(
             ],
         ),
         .testTarget(
+            name: "ContentDeliveryClientMacroTests",
+            dependencies: [
+                "ContentDeliveryClientMacros",
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
+            ],
+            path: "Tests/ContentDeliveryClientTests",
+            sources: ["BlockLibraryMacroTests.swift", "BlockMacroTests.swift"]
+        ),
+        .testTarget(
             name: "ContentDeliveryClientTests",
             dependencies: [
                 "ContentDeliveryClient",
-                "ContentDeliveryClientMacros",
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                 .product(name: "Mocker", package: "Mocker")
             ],
+            path: "Tests/ContentDeliveryClientTests",
+            sources: ["RelationResolutionTests.swift", "StoryTests.swift", "StoryblokClientTests.swift"]
         ),
         .testTarget(
             name: "Examples",
