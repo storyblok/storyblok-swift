@@ -16,6 +16,7 @@ on:
       - 'Tests/URLSessionExtensionTests/**.swift'
       - '.github/workflows/URLSessionExtension.yml'
   workflow_call:
+  workflow_dispatch:
 concurrency:
   # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
   group: ${{ github.head_ref || github.run_id }}
