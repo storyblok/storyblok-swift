@@ -74,7 +74,7 @@ public struct Story<T : Block>: Sendable {
     /// Array of translated slug objects (if the Translatable Slugs app is installed).
     public let translatedSlugs: [TranslatedSlug]?
 
-    init<R : Block>(_ story: Story<R>, content: T) {
+    public init<R : Block>(_ story: Story<R>, content: T) {
         self.id = story.id
         self.uuid = story.uuid
         self.name = story.name

@@ -169,7 +169,8 @@ private func generateDecoding(
     }
     """
 
-    guard generateCodingKeys else { return [initDecl] }
+    let helpers = generateUnwrapHelpers(cases: cases, enumName: enumName, nestedStructs: nestedStructs)
+    guard generateCodingKeys else { return [initDecl] + helpers }
 
     let allLabels = Array(
         Set(["component"] + cases.flatMap { $0.params.filter { !$0.unlabeled }.map { $0.label } })
@@ -182,7 +183,39 @@ private func generateDecoding(
     }
     """
 
-    return [initDecl, codingKeysDecl]
+    return [initDecl, codingKeysDecl] + helpers
+}
+
+/// Generates private static unwrap helpers for each unique nested-struct Story type referenced in cases.
+private func generateUnwrapHelpers(
+    cases: [CaseInfo],
+    enumName: String,
+    nestedStructs: [String: [(label: String, type: TypeSyntax)]]
+) -> [DeclSyntax] {
+    var seen = Set<String>()
+    var helpers: [DeclSyntax] = []
+    for c in cases {
+        for param in c.params
+            where !param.unlabeled
+                && isStoryType(param.type)
+                && storyTypeArgIsNestedStruct(param.type, nestedStructs: nestedStructs)
+        {
+            let structName = storyTypeArgument(param.type)!
+            guard !seen.contains(structName) else { continue }
+            seen.insert(structName)
+            let matchCase = caseNameForNestedStruct(structName, allCases: cases)
+            let helper: DeclSyntax = """
+            private static func _unwrap\(raw: structName)(_ story: Story<\(raw: enumName)>) throws -> Story<\(raw: structName)> {
+                guard case .\(raw: matchCase)(let content) = story.content else {
+                    throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .\(raw: matchCase) but got: \\(story.content)"))
+                }
+                return Story(story, content: content)
+            }
+            """
+            helpers.append(helper)
+        }
+    }
+    return helpers
 }
 
 /// Returns the body lines for one switch case (indented 8 spaces, ending with newline).
@@ -249,14 +282,7 @@ private func buildSelfAssignmentWithArray(
     allCases: [CaseInfo],
     indent: String
 ) -> String {
-    let inner = "    "
-    let mapBody =
-        "try \(nestedParam.label).map {\n" +
-        "\(indent)\(inner)if case .\(matchCaseName)(let content) = $0.content {\n" +
-        "\(indent)\(inner)    return Story($0, content: content)\n" +
-        "\(indent)\(inner)}\n" +
-        "\(indent)\(inner)throw DecodingError.dataCorruptedError(forKey: .\(nestedParam.label), in: container, debugDescription: \"Expected Story<\(storyArg)> but got: \\\\($0.content)\")\n" +
-        "\(indent)}"
+    let mapBody = "try \(nestedParam.label).map { try Self._unwrap\(storyArg)($0) }"
 
     let labeledParams = c.params.filter { !$0.unlabeled }
     if labeledParams.count == 1 {
@@ -285,28 +311,19 @@ private func buildSelfAssignmentWithSingle(
     allCases: [CaseInfo],
     indent: String
 ) -> String {
-    let innerIndent = indent + "    "
-    var body = "\(indent)if case .\(matchCaseName)(let content) = \(nestedParam.label).content {\n"
-
     let labeledParams = c.params.filter { !$0.unlabeled }
     if labeledParams.count == 1 {
-        body += "\(innerIndent)self = .\(c.caseName)(\(nestedParam.label): Story(\(nestedParam.label), content: content))\n"
-    } else {
-        var args: [String] = []
-        for param in labeledParams {
-            if param.label == nestedParam.label {
-                args.append("                \(param.label): Story(\(param.label), content: content)")
-            } else {
-                args.append("                \(simpleDecodeExpr(param))")
-            }
-        }
-        body += "\(innerIndent)self = .\(c.caseName)(\n\(args.joined(separator: ",\n"))\n\(innerIndent))\n"
+        return "\(indent)self = .\(c.caseName)(\(nestedParam.label): try Self._unwrap\(storyArg)(\(nestedParam.label)))\n"
     }
-
-    body += "\(indent)} else {\n"
-    body += "\(innerIndent)throw DecodingError.dataCorruptedError(forKey: .\(nestedParam.label), in: container, debugDescription: \"Expected Story<\(storyArg)> but got: \\\\(\(nestedParam.label).content)\")\n"
-    body += "\(indent)}\n"
-    return body
+    var args: [String] = []
+    for param in labeledParams {
+        if param.label == nestedParam.label {
+            args.append("            \(param.label): try Self._unwrap\(storyArg)(\(param.label))")
+        } else {
+            args.append("            \(simpleDecodeExpr(param))")
+        }
+    }
+    return "\(indent)self = .\(c.caseName)(\n\(args.joined(separator: ",\n"))\n\(indent))\n"
 }
 
 /// Standard multi-arg case body where no nested-struct Story unwrapping is needed.
