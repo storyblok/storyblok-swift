@@ -53,7 +53,7 @@ extension Block {
 /// }
 /// extension Content: Block {}
 /// ```
-@attached(member, names: named(relations), named(init), named(CodingKeys))
+@attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
 @attached(extension, conformances: Block)
 public macro BlockLibrary() = #externalMacro(
     module: "ContentDeliveryClientMacros",
