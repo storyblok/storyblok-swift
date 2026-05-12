@@ -1,10 +1,17 @@
 import Foundation
 
+/// A rich text node that contains child nodes.
+public protocol RichTextComposite {
+    associatedtype BlockLibrary: Decodable
+    /// Child nodes contained within this element.
+    var content: [RichText<BlockLibrary>] { get }
+}
+
 /// Storyblok rich text nodes.
 ///
 /// Represents the hierarchical structure of rich text content from the Storyblok editor. The
 /// value of the `type` JSON field is used to dispatch to the corresponding case.
-public indirect enum RichText: Decodable {
+public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
 
     /// Root document node containing all rich text content.
     case document(Document)
@@ -134,25 +141,19 @@ public indirect enum RichText: Decodable {
         case center
     }
 
-    /// A rich text node that contains child nodes.
-    public protocol Composite {
-        /// Child nodes contained within this element.
-        var content: [RichText] { get }
-    }
-
     /// Root document node containing all rich text content.
-    public struct Document: Decodable, Composite {
-        public let content: [RichText]
+    public struct Document: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Heading node with configurable level (1-6).
-    public struct Heading: Decodable, Composite {
+    public struct Heading: Decodable, RichTextComposite {
         /// Heading level (1-6).
         public let level: Int
         /// Optional text alignment.
         public let textAlign: TextAlign?
         /// Child nodes contained within this element.
-        public let content: [RichText]
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let level: Int
@@ -169,21 +170,21 @@ public indirect enum RichText: Decodable {
             let attributes = try container.decode(Attributes.self, forKey: .attrs)
             self.level = attributes.level
             self.textAlign = attributes.textAlign
-            self.content = try container.decodeIfPresent([RichText].self, forKey: .content) ?? []
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
     /// Unordered (bullet) list node.
-    public struct BulletList: Decodable, Composite {
-        public let content: [RichText]
+    public struct BulletList: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Ordered (numbered) list node.
-    public struct OrderedList: Decodable, Composite {
+    public struct OrderedList: Decodable, RichTextComposite {
         /// Starting number for the list.
         public let order: Int?
         /// Child nodes contained within this element.
-        public let content: [RichText]
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let order: Int?
@@ -197,19 +198,19 @@ public indirect enum RichText: Decodable {
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.order = try container.decodeIfPresent(Attributes.self, forKey: .attrs)?.order
-            self.content = try container.decodeIfPresent([RichText].self, forKey: .content) ?? []
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
     /// List item node.
-    public struct ListItem: Decodable, Composite {
-        public let content: [RichText]
+    public struct ListItem: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Image node with source and metadata.
     public struct Image: Decodable {
         /// Unique identifier for the image.
-        public let id: String
+        public let id: Int64
         /// Image source URL.
         public let src: String
         /// Alternative text for accessibility.
@@ -224,7 +225,7 @@ public indirect enum RichText: Decodable {
         public let metadata: [String: String]?
 
         private struct Attributes: Decodable {
-            let id: String
+            let id: Int64
             let src: String
             let alt: String?
             let title: String?
@@ -256,13 +257,13 @@ public indirect enum RichText: Decodable {
     }
 
     /// Code block node with optional language hint.
-    public struct CodeBlock: Decodable, Composite {
+    public struct CodeBlock: Decodable, RichTextComposite {
         /// Programming language for syntax highlighting.
         public let language: String?
         /// CSS class name.
         public let cssClass: String?
         /// Child nodes contained within this element.
-        public let content: [RichText]
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let language: String?
@@ -284,23 +285,23 @@ public indirect enum RichText: Decodable {
             let attributes = try container.decodeIfPresent(Attributes.self, forKey: .attrs)
             self.language = attributes?.language
             self.cssClass = attributes?.cssClass
-            self.content = try container.decodeIfPresent([RichText].self, forKey: .content) ?? []
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
     /// Block quote node.
-    public struct Blockquote: Decodable, Composite {
-        public let content: [RichText]
+    public struct Blockquote: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Table container node.
-    public struct Table: Decodable, Composite {
-        public let content: [RichText]
+    public struct Table: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Table row node.
-    public struct TableRow: Decodable, Composite {
-        public let content: [RichText]
+    public struct TableRow: Decodable, RichTextComposite {
+        public let content: [RichText<BlockLibrary>]
     }
 
     /// Table header cell.
@@ -364,11 +365,11 @@ public indirect enum RichText: Decodable {
     }
 
     /// Paragraph node with optional text alignment.
-    public struct Paragraph: Decodable, Composite {
+    public struct Paragraph: Decodable, RichTextComposite {
         /// Optional text alignment.
         public let textAlign: TextAlign?
         /// Child nodes contained within this element.
-        public let content: [RichText]
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let textAlign: TextAlign?
@@ -382,7 +383,7 @@ public indirect enum RichText: Decodable {
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.textAlign = try container.decodeIfPresent(Attributes.self, forKey: .attrs)?.textAlign
-            self.content = try container.decodeIfPresent([RichText].self, forKey: .content) ?? []
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
@@ -522,11 +523,11 @@ public indirect enum RichText: Decodable {
     /// Embedded component block within rich text.
     public struct Blok: Decodable {
         /// List of embedded components.
-        public let body: [Decodable & Sendable]
+        public let body: [BlockLibrary]
 
         private struct Attributes: Decodable {
             let id: String
-            let body: [String]
+            let body: [BlockLibrary]
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -584,11 +585,11 @@ public indirect enum RichText: Decodable {
     }
 }
 
-public extension RichText.Composite {
+public extension RichTextComposite {
     /// Recursively flattens all descendant nodes into a sequence, yielding leaf nodes for
     /// composite nodes and the node itself otherwise.
-    func flatten() -> [RichText] {
-        content.flatMap { node -> [RichText] in
+    func flatten() -> [RichText<BlockLibrary>] {
+        content.flatMap { node -> [RichText<BlockLibrary>] in
             switch node {
                 case .document(let doc): return doc.flatten()
                 case .heading(let h): return h.flatten()
