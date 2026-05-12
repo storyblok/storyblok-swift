@@ -4,13 +4,13 @@ import Testing
 
 @Suite struct StoryTests {
 
-    struct PageContent: ContentDeliveryClient.Block, Equatable {
+    struct PageContent: ContentDeliveryClient.BlockLibrary, Decodable, Equatable {
         let component: String
         let title: String?
     }
 
     private func makeDecoder() -> JSONDecoder {
-        StoryblokClient(accessToken: "mock").decoder
+        StoryblokClient(library: PageContent.self, accessToken: "mock").decoder
     }
 
     @Test

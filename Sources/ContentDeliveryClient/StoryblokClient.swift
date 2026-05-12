@@ -24,7 +24,7 @@ private let log = Logger(label: "com.storyblok.ContentDeliveryClient")
 ///     )
 /// ```
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public final class StoryblokClient: Sendable {
+public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// An error thrown by ``StoryblokClient`` when a request fails.
     public struct Error: Swift.Error, LocalizedError, Sendable {
@@ -47,6 +47,8 @@ public final class StoryblokClient: Sendable {
 
     /// The underlying URL session configured for the Storyblok Content Delivery API.
     public let session: URLSession
+    
+    internal let relations: String
 
     /// A pre-configured `JSONDecoder` without a relation store, used for direct story decoding
     /// (e.g., in tests). For relation-aware decoding use `storyPublisher` which injects a fresh store.
@@ -64,6 +66,7 @@ public final class StoryblokClient: Sendable {
     ///   - requestsPerSecond: Optional maximum number of API requests per second. Defaults to `1000`.
     ///   - configuration: The [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) to use for the underlying session. Defaults to `.default`.
     public convenience init(
+        library: Library.Type,
         accessToken: String,
         version: Api.Version = .published,
         region: Api.Region = .eu,
@@ -85,7 +88,7 @@ public final class StoryblokClient: Sendable {
             ),
             configuration: configuration
         )
-        self.init(session: session)
+        self.init(library: library, session: session)
     }
 
     /// Creates a client wrapping a pre-configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -97,7 +100,8 @@ public final class StoryblokClient: Sendable {
     ///   - session: The [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to use for API requests. It must have been created
     ///     with the [`URLSession.init(storyblok:configuration:)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/foundation/urlsession/init(storyblok:configuration:))
     ///     initializer with [`Api.cdn(...)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/api/cdn(accesstoken:language:fallbacklanguage:version:cv:region:requestspersecond:)).
-    public init(session: URLSession) {
+    public init(library: Library.Type, session: URLSession) {
+        self.relations = library.relations
         self.session = session
         self.decoder = Self.makeDecoder()
     }
@@ -116,7 +120,7 @@ public final class StoryblokClient: Sendable {
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
-    public func story<T: Block>(_ slug: String) -> AnyPublisher<Story<T>, Error> {
+    public func story<Content>(_ slug: String) -> AnyPublisher<Story<Content>, Error> {
         storyPublisher(path: "stories/\(slug)")
     }
 
@@ -127,14 +131,14 @@ public final class StoryblokClient: Sendable {
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
-    public func story<T: Block>(_ uuid: UUID) -> AnyPublisher<Story<T>, Error> {
+    public func story<Content>(_ uuid: UUID) -> AnyPublisher<Story<Content>, Error> {
         storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true)
     }
 
     // MARK: -
 
-    private func storyPublisher<T: Block>(path: String, findByUuid: Bool = false) -> AnyPublisher<Story<T>, Error> {
-        let request = buildRequest(path: path, findByUuid: findByUuid, relations: T.relations)
+    private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false) -> AnyPublisher<Story<Content>, Error> {
+        let request = buildRequest(path: path, findByUuid: findByUuid)
 
         var cachedRequest = request
         cachedRequest.cachePolicy = .returnCacheDataDontLoad
@@ -156,7 +160,7 @@ public final class StoryblokClient: Sendable {
             .tryMap { data in
                 let store = RelationStore()
                 let decoder = Self.makeDecoder(relStore: store)
-                return try decoder.decode(StoryResponse<T>.self, from: data).story
+                return try decoder.decode(StoryResponse<Content, Library>.self, from: data).story
             }
             .mapError { error in
                 if let error = error as? Error { return error }
@@ -172,7 +176,7 @@ public final class StoryblokClient: Sendable {
             .eraseToAnyPublisher()
     }
 
-    private func buildRequest(path: String, findByUuid: Bool, relations: String = "") -> URLRequest {
+    private func buildRequest(path: String, findByUuid: Bool) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
         var queryItems: [URLQueryItem] = []
         if !relations.isEmpty {
