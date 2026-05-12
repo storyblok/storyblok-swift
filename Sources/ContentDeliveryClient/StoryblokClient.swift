@@ -199,6 +199,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             if let date = isoFormatterFractional.date(from: string) { return date }
             if let date = isoFormatter.date(from: string) { return date }
             if let date = localDateFormatter.date(from: string) { return date }
+            if let date = localDateTimeFormatter.date(from: string) { return date }
             throw DecodingError.dataCorruptedError(
                 in: try decoder.singleValueContainer(),
                 debugDescription: "Cannot decode date from string: \(string)"
@@ -228,6 +229,14 @@ nonisolated(unsafe) private let isoFormatter: ISO8601DateFormatter = {
 private let localDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone(identifier: "UTC")
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    return formatter
+}()
+
+private let localDateTimeFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd HH:mm"
     formatter.timeZone = TimeZone(identifier: "UTC")
     formatter.locale = Locale(identifier: "en_US_POSIX")
     return formatter
