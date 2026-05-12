@@ -169,4 +169,47 @@ import Testing
         #expect(story.defaultFullSlug == nil)
         #expect(story.translatedSlugs == nil)
     }
+
+    @Test
+    func `Story decodes sort_by_date in yyyy-MM-dd HH:mm format`() throws {
+        let jsonString = """
+        {
+            "id": 1,
+            "uuid": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "Home",
+            "content": {
+                "_uid": "54bac0c7-bf25-46d0-ba66-a0ea51091a8d",
+                "component": "page"
+            },
+            "slug": "home",
+            "full_slug": "home",
+            "created_at": "2025-07-09T14:35:26.851Z",
+            "published_at": null,
+            "first_published_at": null,
+            "updated_at": null,
+            "sort_by_date": "2025-04-02 00:00",
+            "position": 1,
+            "tag_list": [],
+            "is_startpage": false,
+            "parent_id": null,
+            "meta_data": null,
+            "group_id": "57350688-5a28-49d1-b5a9-086ae0d4c0d2",
+            "release_id": null,
+            "lang": "default",
+            "path": null,
+            "alternates": [],
+            "default_full_slug": null,
+            "translated_slugs": null
+        }
+        """
+
+        let data = jsonString.data(using: .utf8)!
+        let story = try makeDecoder().decode(Story<PageContent>.self, from: data)
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        #expect(story.sortByDate == dateFormatter.date(from: "2025-04-02 00:00"))
+    }
 }
