@@ -38,7 +38,6 @@ extension BlockLibraryMacro: MemberMacro {
         validateCaseAssociatedValues(in: declaration, nestedStructs: nestedStructs, context: context)
         validateNestedStructsHaveCases(nestedStructs: nestedStructs, cases: cases, in: declaration, context: context)
         validateStoryRelationTypes(enumName: enumName, in: cases, nestedStructs: nestedStructs, context: context)
-        validateNestedStructsHaveBlockConformance(in: declaration, context: context)
 
         return [
             "static let relations: String = \(literal: relations)",
@@ -60,7 +59,7 @@ extension BlockLibraryMacro: ExtensionMacro {
         var extensions: [ExtensionDeclSyntax] = []
 
         if !protocols.isEmpty {
-            let ext = try ExtensionDeclSyntax("extension \(type.trimmed): ContentDeliveryClient.Block {}")
+            let ext = try ExtensionDeclSyntax("extension \(type.trimmed): ContentDeliveryClient.BlockLibrary {}")
             extensions.append(ext)
         }
 
@@ -461,12 +460,6 @@ private func caseNameForNestedStruct(_ structName: String, allCases: [CaseInfo])
     }?.caseName ?? structName.lowercased()
 }
 
-private func structHasBlockConformance(_ structDecl: StructDeclSyntax) -> Bool {
-    structDecl.inheritanceClause?.inheritedTypes.contains {
-        $0.type.trimmedDescription == "Block"
-    } ?? false
-}
-
 // MARK: - Validation
 
 /// Each Story<T> labeled param must use the enclosing enum type or a nested struct type.
@@ -490,31 +483,6 @@ private func validateStoryRelationTypes(
                     )
                 ))
             }
-        }
-    }
-}
-
-/// Every nested struct must carry the @Block attribute or declare ': Block' inline.
-private func validateNestedStructsHaveBlockConformance(
-    in declaration: some DeclGroupSyntax,
-    context: some MacroExpansionContext
-) {
-    for member in declaration.memberBlock.members {
-        guard let structDecl = member.decl.as(StructDeclSyntax.self) else { continue }
-        let hasBlockAttribute = structDecl.attributes.contains {
-            guard case .attribute(let attr) = $0 else { return false }
-            return attr.attributeName.trimmedDescription == "Block"
-        }
-        let hasBlockConformance = structHasBlockConformance(structDecl)
-        if !hasBlockAttribute && !hasBlockConformance {
-            context.diagnose(Diagnostic(
-                node: structDecl.name,
-                message: BlockLibraryMacroDiagnostic(
-                    message: "nested struct '\(structDecl.name.text)' must conform to Block; apply the @Block macro or declare ': Block'",
-                    id: MessageID(domain: "ContentDeliveryClientMacros", id: "nestedStructMissingBlock"),
-                    severity: .error
-                )
-            ))
         }
     }
 }
@@ -627,5 +595,5 @@ struct BlockLibraryMacroDiagnostic: DiagnosticMessage {
 
 @main
 struct ContentDeliveryClientPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self, BlockMacro.self]
+    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self]
 }

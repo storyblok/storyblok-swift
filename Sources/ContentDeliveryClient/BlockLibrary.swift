@@ -14,7 +14,7 @@ import Foundation
 /// }
 /// // Content.relations == "article.author,popular.articles"
 /// ```
-public protocol Block: Decodable, Sendable {
+public protocol BlockLibrary : Decodable {
 
     /// Comma-separated `component.field` pairs for the `resolve_relations` API parameter.
     ///
@@ -23,7 +23,7 @@ public protocol Block: Decodable, Sendable {
     static var relations: String { get }
 }
 
-extension Block {
+extension BlockLibrary {
     public static var relations: String { "" }
 }
 
@@ -54,33 +54,10 @@ extension Block {
 /// extension Content: Block {}
 /// ```
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
-@attached(extension, conformances: Block)
+@attached(extension, conformances: BlockLibrary)
 public macro BlockLibrary() = #externalMacro(
     module: "ContentDeliveryClientMacros",
     type: "BlockLibraryMacro"
-)
-
-/// Conforms a nested struct to ``Block`` when used inside a ``BlockLibrary()``-annotated enum.
-///
-/// Apply this macro to every nested struct inside a `@BlockLibrary` enum. The ``BlockLibrary()``
-/// macro validates that all nested structs carry `@Block` (or declare `: Block` inline) and
-/// emits a compile error for any that do not.
-///
-/// ```swift
-/// @BlockLibrary
-/// enum Content {
-///     case article(Article)
-///
-///     @Block
-///     struct Article: Decodable {
-///         let title: String
-///     }
-/// }
-/// ```
-@attached(extension, conformances: Block)
-public macro Block() = #externalMacro(
-    module: "ContentDeliveryClientMacros",
-    type: "BlockMacro"
 )
 
 internal extension CodingUserInfoKey {

@@ -4,16 +4,16 @@ import Testing
 
 @Suite struct RelationResolutionTests {
 
-    indirect enum MyBlock : ContentDeliveryClient.Block {
+    indirect enum MyBlock : Decodable, ContentDeliveryClient.BlockLibrary {
         case author(Author)
         case article(Article)
         case popular(articles: [Story<Article>])
         
-        struct Author : ContentDeliveryClient.Block {
+        struct Author : Decodable {
             let name: String
         }
 
-        struct Article : ContentDeliveryClient.Block {
+        struct Article : Decodable {
             let headline: String
             let author: Story<Author>
                         
@@ -69,7 +69,7 @@ import Testing
     private let otherUuid = "55555555-5555-5555-5555-555555555555"
 
     private func makeDecoder(relStore: RelationStore) -> JSONDecoder {
-        let decoder = StoryblokClient(accessToken: "mock").decoder
+        let decoder = StoryblokClient<MyBlock>(library: MyBlock.self, accessToken: "mock").decoder
         decoder.userInfo[.storyblokRelations] = relStore
         return decoder
     }
@@ -258,4 +258,5 @@ import Testing
 
     }
 }
+
 
