@@ -16,14 +16,12 @@ indirect enum Block : Decodable {
     case popular(title: String, posts: [Story<Post>])
     case recommended(strapline: String, posts: [Story<Post>])
     
-    @Block
-    struct Page {
+    struct Page: Decodable {
         let title: String
         let body: [Block]
     }
-    
-    @Block
-    struct Post {
+
+    struct Post: Decodable {
         let title: String
         let subtitle: String?
         let url: Field.Link
@@ -35,8 +33,7 @@ indirect enum Block : Decodable {
         let readTimeMinutes: Int
     }
 
-    @Block
-    struct Author {
+    struct Author: Decodable {
         let name: String
         let url: Field.Link?
     }
@@ -118,6 +115,7 @@ extension Block {
             mock.register()
             
             let client = StoryblokClient(
+                library: Block.self,
                 session: URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
             )
 
@@ -147,6 +145,7 @@ extension Block {
             mock.register()
             
             let client = StoryblokClient(
+                library: Block.self,
                 session: URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
             )
 

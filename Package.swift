@@ -68,7 +68,7 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ],
             path: "Tests/ContentDeliveryClientTests",
-            sources: ["BlockLibraryMacroTests.swift", "BlockMacroTests.swift"]
+            sources: ["BlockLibraryMacroTests.swift"]
         ),
         .testTarget(
             name: "ContentDeliveryClientTests",

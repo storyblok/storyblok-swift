@@ -17,9 +17,9 @@ final class RelationStore: @unchecked Sendable {
 /// `StoryResponse` populates the ``RelationStore`` from `rels` **before** decoding `story`,
 /// so that `Story.init(from:)` can transparently resolve UUID-string placeholders.
 /// A rel that cannot be decoded as `Story<T>` throws a `DecodingError`.
-struct StoryResponse<T: Block>: Decodable {
+struct StoryResponse<Content: Decodable, Library: Decodable>: Decodable {
 
-    let story: Story<T>
+    let story: Story<Content>
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -28,12 +28,12 @@ struct StoryResponse<T: Block>: Decodable {
            container.contains(.rels) {
             var rels = try container.nestedUnkeyedContainer(forKey: .rels)
             while !rels.isAtEnd {
-                let rel = try rels.decode(Story<T>.self)
+                let rel = try rels.decode(Story<Library>.self)
                 store.stories[rel.uuid.uuidString.lowercased()] = rel
             }
         }
 
-        story = try container.decode(Story<T>.self, forKey: .story)
+        story = try container.decode(Story<Content>.self, forKey: .story)
     }
 
     private enum CodingKeys: String, CodingKey {

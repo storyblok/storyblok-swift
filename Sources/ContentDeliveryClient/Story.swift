@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a single story retrieved from the [Storyblok Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
-public struct Story<T : Block>: Sendable {
+public struct Story<T : Decodable> {
 
     /// Story ID.
     public let id: Int64
@@ -74,7 +74,7 @@ public struct Story<T : Block>: Sendable {
     /// Array of translated slug objects (if the Translatable Slugs app is installed).
     public let translatedSlugs: [TranslatedSlug]?
 
-    public init<R : Block>(_ story: Story<R>, content: T) {
+    public init<R : Decodable>(_ story: Story<R>, content: T) {
         self.id = story.id
         self.uuid = story.uuid
         self.name = story.name
@@ -162,7 +162,6 @@ public struct Alternate: Decodable, Sendable {
         case parentId = "parent_id"
     }
 }
-
 
 extension Story: Sendable where T: Sendable {}
 

@@ -101,7 +101,6 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Wrapper {
                 case author(Author)
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
@@ -111,7 +110,6 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Wrapper {
                 case author(Author)
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
@@ -485,12 +483,10 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(Article)
                 case popular(articles: [Story<Article>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
 
-                @Block
                 struct Article: Decodable {
                     let headline: String
                     let author: Story<Author>
@@ -503,12 +499,10 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(Article)
                 case popular(articles: [Story<Article>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
 
-                @Block
                 struct Article: Decodable {
                     let headline: String
                     let author: Story<Author>
@@ -598,7 +592,6 @@ final class BlockLibraryMacroTests: XCTestCase {
             @BlockLibrary
             enum Foo {
                 case baz(value: String)
-                @Block
                 struct Bar: Decodable {
                     let value: String
                 }
@@ -607,7 +600,6 @@ final class BlockLibraryMacroTests: XCTestCase {
             expandedSource: """
             enum Foo {
                 case baz(value: String)
-                @Block
                 struct Bar: Decodable {
                     let value: String
                 }
@@ -634,53 +626,6 @@ final class BlockLibraryMacroTests: XCTestCase {
             diagnostics: [
                 DiagnosticSpec(
                     message: "nested struct 'Bar' must have a corresponding enum case with it as an unlabeled associated value",
-                    line: 5,
-                    column: 12
-                ),
-            ],
-            macros: macros
-        )
-    }
-
-    func test_errorWhenNestedStructMissingBlockAttribute() {
-        assertMacroExpansion(
-            """
-            @BlockLibrary
-            enum Foo {
-                case bar(Bar)
-                struct Bar: Decodable {
-                    let value: String
-                }
-            }
-            """,
-            expandedSource: """
-            enum Foo {
-                case bar(Bar)
-                struct Bar: Decodable {
-                    let value: String
-                }
-
-                static let relations: String = ""
-
-                init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
-                    let component = try container.decode(String.self, forKey: .component)
-                    switch component {
-                    case "bar":
-                        self = .bar(try Bar(from: decoder))
-                    default:
-                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
-                    }
-                }
-
-                enum CodingKeys: String, CodingKey {
-                    case component
-                }
-            }
-            """,
-            diagnostics: [
-                DiagnosticSpec(
-                    message: "nested struct 'Bar' must conform to Block; apply the @Block macro or declare ': Block'",
                     line: 4,
                     column: 12
                 ),
@@ -697,7 +642,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(headline: String, author: [Story<Author>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
@@ -708,7 +652,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(headline: String, author: [Story<Author>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
@@ -761,12 +704,10 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(Article)
                 case popular(articles: [Story<Article>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
 
-                @Block
                 struct Article: Decodable {
                     let headline: String
                     let author: Story<Author>
@@ -779,12 +720,10 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(Article)
                 case popular(articles: [Story<Article>])
 
-                @Block
                 struct Author: Decodable {
                     let name: String
                 }
 
-                @Block
                 struct Article: Decodable {
                     let headline: String
                     let author: Story<Author>
@@ -835,7 +774,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case page(Page)
                 case highlighted(title: String, post: Story<Page>)
 
-                @Block
                 struct Page {
                     let title: String
                 }
@@ -846,7 +784,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case page(Page)
                 case highlighted(title: String, post: Story<Page>)
 
-                @Block
                 struct Page {
                     let title: String
                 }
