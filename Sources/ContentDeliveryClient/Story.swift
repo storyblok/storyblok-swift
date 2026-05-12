@@ -164,6 +164,8 @@ public struct Alternate: Decodable, Sendable {
 }
 
 
+extension Story: Sendable where T: Sendable {}
+
 extension Story : Decodable {
     
     private enum CodingKeys: String, CodingKey {

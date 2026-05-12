@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Represents the hierarchical structure of rich text content from the Storyblok editor. The
 /// value of the `type` JSON field is used to dispatch to the corresponding case.
-public indirect enum RichText: Decodable, Sendable {
+public indirect enum RichText: Decodable {
 
     /// Root document node containing all rich text content.
     case document(Document)
@@ -125,7 +125,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Text alignment options for paragraph and heading nodes.
-    public enum TextAlign: String, Decodable, Sendable {
+    public enum TextAlign: String, Decodable {
         /// Left-aligned text.
         case left
         /// Right-aligned text.
@@ -141,12 +141,12 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Root document node containing all rich text content.
-    public struct Document: Decodable, Sendable, Composite {
+    public struct Document: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Heading node with configurable level (1-6).
-    public struct Heading: Decodable, Sendable, Composite {
+    public struct Heading: Decodable, Composite {
         /// Heading level (1-6).
         public let level: Int
         /// Optional text alignment.
@@ -174,12 +174,12 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Unordered (bullet) list node.
-    public struct BulletList: Decodable, Sendable, Composite {
+    public struct BulletList: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Ordered (numbered) list node.
-    public struct OrderedList: Decodable, Sendable, Composite {
+    public struct OrderedList: Decodable, Composite {
         /// Starting number for the list.
         public let order: Int?
         /// Child nodes contained within this element.
@@ -202,12 +202,12 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// List item node.
-    public struct ListItem: Decodable, Sendable, Composite {
+    public struct ListItem: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Image node with source and metadata.
-    public struct Image: Decodable, Sendable {
+    public struct Image: Decodable {
         /// Unique identifier for the image.
         public let id: String
         /// Image source URL.
@@ -256,7 +256,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Code block node with optional language hint.
-    public struct CodeBlock: Decodable, Sendable, Composite {
+    public struct CodeBlock: Decodable, Composite {
         /// Programming language for syntax highlighting.
         public let language: String?
         /// CSS class name.
@@ -289,22 +289,22 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Block quote node.
-    public struct Blockquote: Decodable, Sendable, Composite {
+    public struct Blockquote: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Table container node.
-    public struct Table: Decodable, Sendable, Composite {
+    public struct Table: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Table row node.
-    public struct TableRow: Decodable, Sendable, Composite {
+    public struct TableRow: Decodable, Composite {
         public let content: [RichText]
     }
 
     /// Table header cell.
-    public struct TableHeader: Decodable, Sendable {
+    public struct TableHeader: Decodable {
         /// Number of columns this cell spans.
         public let columnSpan: Int?
         /// Number of rows this cell spans.
@@ -332,7 +332,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Table data cell.
-    public struct TableCell: Decodable, Sendable {
+    public struct TableCell: Decodable {
         /// Number of columns this cell spans.
         public let columnSpan: Int?
         /// Number of rows this cell spans.
@@ -364,7 +364,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Paragraph node with optional text alignment.
-    public struct Paragraph: Decodable, Sendable, Composite {
+    public struct Paragraph: Decodable, Composite {
         /// Optional text alignment.
         public let textAlign: TextAlign?
         /// Child nodes contained within this element.
@@ -387,7 +387,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Text node containing plain text with optional marks (formatting).
-    public struct Text: Decodable, Sendable {
+    public struct Text: Decodable {
         /// The text content.
         public let text: String
         /// Applied formatting marks.
@@ -406,7 +406,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// A text formatting mark applied inline to text content.
-    public enum Mark: Decodable, Sendable {
+    public enum Mark: Decodable {
         /// Bold text formatting.
         case bold
         /// Italic text formatting.
@@ -479,7 +479,7 @@ public indirect enum RichText: Decodable, Sendable {
         }
 
         /// Hyperlink mark with URL and metadata.
-        public struct Link: Decodable, Sendable {
+        public struct Link: Decodable {
             /// Link destination URL.
             public let href: String
             /// UUID of linked story (for internal links).
@@ -520,7 +520,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Embedded component block within rich text.
-    public struct Blok: Decodable, Sendable {
+    public struct Blok: Decodable {
         /// List of embedded components.
         public let body: [Decodable & Sendable]
 
@@ -541,7 +541,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Emoji node with fallback image support.
-    public struct Emoji: Decodable, Sendable {
+    public struct Emoji: Decodable {
         /// Emoji name/identifier.
         public let name: String
         /// Unicode emoji character.
@@ -569,7 +569,7 @@ public indirect enum RichText: Decodable, Sendable {
     }
 
     /// Hard line break node.
-    public struct HardBreak: Decodable, Sendable {
+    public struct HardBreak: Decodable {
         /// Applied formatting marks carried across the break.
         public let marks: [Mark]
 

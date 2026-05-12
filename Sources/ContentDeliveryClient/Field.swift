@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Represents special field types like ``Link`` and ``Asset``. The value of the `fieldtype`
 /// JSON field is used to dispatch to the corresponding case.
-public enum Field: Decodable, Sendable {
+public enum Field: Decodable {
 
     /// A Storyblok multi-link field.
     case link(Link)
@@ -41,7 +41,7 @@ public enum Field: Decodable, Sendable {
     /// A Storyblok multi-link field.
     ///
     /// Supports various link types including URLs, stories, emails, and assets.
-    public struct Link: Decodable, Sendable {
+    public struct Link: Decodable {
 
         /// Optional field identifier.
         public let id: String?
@@ -89,10 +89,10 @@ public enum Field: Decodable, Sendable {
     /// A Storyblok asset field.
     ///
     /// Contains metadata and URLs for images, documents, and other uploaded files.
-    public struct Asset: Decodable, Sendable {
+    public struct Asset: Decodable {
 
         /// Optional field identifier.
-        public let id: String?
+        public let id: Int64?
 
         /// Technical name of the field type. Always `"asset"`.
         public let fieldType: String
@@ -140,7 +140,7 @@ public enum Field: Decodable, Sendable {
 
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.id = try container.decodeIfPresent(String.self, forKey: .id)
+            self.id = try container.decodeIfPresent(Int64.self, forKey: .id)
             self.fieldType = try container.decodeIfPresent(String.self, forKey: .fieldType) ?? "asset"
             self.name = try container.decodeIfPresent(String.self, forKey: .name)
             self.source = try container.decodeIfPresent(String.self, forKey: .source)
