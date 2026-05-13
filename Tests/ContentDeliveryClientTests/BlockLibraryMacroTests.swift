@@ -420,7 +420,7 @@ final class BlockLibraryMacroTests: XCTestCase {
 
     // MARK: - Diagnostics
 
-    func test_errorWhenStoryRelationTypesAreMixed() {
+    func test_errorWhenStoryRelationTypeIsNotVisibleToMacro() {
         assertMacroExpansion(
             """
             @BlockLibrary
@@ -458,12 +458,12 @@ final class BlockLibraryMacroTests: XCTestCase {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: "Story<T> relation field type 'Author' must be the enclosing enum type or a nested struct type declared within the enum",
+                    message: "Story<T> relation field type 'Author' must be the enclosing enum type or a nested struct declared within the enum; the macro can only discover nested Story fields for types defined in the enum body",
                     line: 3,
                     column: 26
                 ),
                 DiagnosticSpec(
-                    message: "Story<T> relation field type 'Item' must be the enclosing enum type or a nested struct type declared within the enum",
+                    message: "Story<T> relation field type 'Item' must be the enclosing enum type or a nested struct declared within the enum; the macro can only discover nested Story fields for types defined in the enum body",
                     line: 4,
                     column: 25
                 ),
@@ -519,10 +519,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "article":
                         self = .article(try Article(from: decoder))
                     case "popular":
-                        let articles = try container.decode([Story<Block>].self, forKey: .articles)
-                        self = .popular(articles: try articles.map {
-                                try Self._unwrapArticle($0)
-                            })
+                        self = .popular(articles: try container.decode([Story<Article>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
@@ -531,13 +528,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                 enum CodingKeys: String, CodingKey {
                     case articles
                     case component
-                }
-
-                private static func _unwrapArticle(_ story: Story<Block>) throws -> Story<Article> {
-                    guard case .article(let content) = story.content else {
-                        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .article but got: \\(story.content)"))
-                    }
-                    return Story(story, content: content)
                 }
             }
             """,
@@ -625,7 +615,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             """,
             diagnostics: [
                 DiagnosticSpec(
-                    message: "nested struct 'Bar' must have a corresponding enum case with it as an unlabeled associated value",
+                    message: "nested struct 'Bar' must have a corresponding enum case with it as an unlabeled associated value; the case name must match the block type's technical name",
                     line: 4,
                     column: 12
                 ),
@@ -665,12 +655,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "author":
                         self = .author(try Author(from: decoder))
                     case "article":
-                        let author = try container.decode([Story<Block>].self, forKey: .author)
                         self = .article(
                             headline: try container.decode(String.self, forKey: .headline),
-                            author: try author.map {
-                                try Self._unwrapAuthor($0)
-                            }
+                            author: try container.decode([Story<Author>].self, forKey: .author)
                         )
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
@@ -681,13 +668,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case author
                     case component
                     case headline
-                }
-
-                private static func _unwrapAuthor(_ story: Story<Block>) throws -> Story<Author> {
-                    guard case .author(let content) = story.content else {
-                        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .author but got: \\(story.content)"))
-                    }
-                    return Story(story, content: content)
                 }
             }
             """,
@@ -740,10 +720,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "article":
                         self = .article(try Article(from: decoder))
                     case "popular":
-                        let articles = try container.decode([Story<MyBlock>].self, forKey: .articles)
-                        self = .popular(articles: try articles.map {
-                                try Self._unwrapArticle($0)
-                            })
+                        self = .popular(articles: try container.decode([Story<Article>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
@@ -753,20 +730,13 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case articles
                     case component
                 }
-
-                private static func _unwrapArticle(_ story: Story<MyBlock>) throws -> Story<Article> {
-                    guard case .article(let content) = story.content else {
-                        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .article but got: \\(story.content)"))
-                    }
-                    return Story(story, content: content)
-                }
             }
             """,
             macros: macros
         )
     }
 
-    func test_singleNestedStoryRelationGeneratesUnwrapHelper() {
+    func test_singleNestedStoryRelationDecodesDirectly() {
         assertMacroExpansion(
             """
             @BlockLibrary
@@ -797,10 +767,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "page":
                         self = .page(try Page(from: decoder))
                     case "highlighted":
-                        let post = try container.decode(Story<MyBlock>.self, forKey: .post)
                         self = .highlighted(
                             title: try container.decode(String.self, forKey: .title),
-                            post: try Self._unwrapPage(post)
+                            post: try container.decode(Story<Page>.self, forKey: .post)
                         )
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
@@ -811,13 +780,6 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case component
                     case post
                     case title
-                }
-
-                private static func _unwrapPage(_ story: Story<MyBlock>) throws -> Story<Page> {
-                    guard case .page(let content) = story.content else {
-                        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .page but got: \\(story.content)"))
-                    }
-                    return Story(story, content: content)
                 }
             }
             """,
