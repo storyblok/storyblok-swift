@@ -74,6 +74,7 @@ private struct CaseInfo {
     let componentName: String
     let params: [(label: String, type: TypeSyntax, unlabeled: Bool)]
     let nestedStructFields: [(label: String, type: TypeSyntax)]
+    let perCaseCodingKeyMap: [String: String]  // Swift label → JSON key; empty = no override
 }
 
 private func collectNestedStructs(
@@ -128,11 +129,13 @@ private func collectCases(
                     }
                 }
             }
+            let perCaseCodingKeyMap = findPerCaseCodingKeys(caseName: caseName, in: declaration)
             cases.append(CaseInfo(
                 caseName: caseName,
                 componentName: componentName,
                 params: params,
-                nestedStructFields: nestedStructFields
+                nestedStructFields: nestedStructFields,
+                perCaseCodingKeyMap: perCaseCodingKeyMap
             ))
         }
     }
@@ -169,7 +172,9 @@ private func generateDecoding(
     guard generateCodingKeys else { return [initDecl] }
 
     let allLabels = Array(
-        Set(["component"] + cases.flatMap { $0.params.filter { !$0.unlabeled }.map { $0.label } })
+        Set(["component"] + cases.flatMap { c in
+            c.params.filter { !$0.unlabeled && c.perCaseCodingKeyMap.isEmpty }.map { $0.label }
+        })
     ).sorted()
     let keyCases = allLabels.map { "    case \($0)" }.joined(separator: "\n")
 
@@ -188,7 +193,29 @@ private func generateCaseBody(_ c: CaseInfo) -> String {
     if c.params.count == 1, c.params[0].unlabeled {
         return "\(indent)self = .\(c.caseName)(try \(c.params[0].type.trimmedDescription)(from: decoder))\n"
     }
+    if !c.perCaseCodingKeyMap.isEmpty {
+        return generatePerCaseCodingKeyBody(c, indent: indent)
+    }
     return generateStandardCaseBody(c, indent: indent)
+}
+
+private func generatePerCaseCodingKeyBody(_ c: CaseInfo, indent: String) -> String {
+    let containerTypeName = c.caseName.prefix(1).uppercased() + c.caseName.dropFirst() + "CodingKeys"
+    var lines = "\(indent)let caseContainer = try decoder.container(keyedBy: \(containerTypeName).self)\n"
+    let args = c.params.map { param -> String in
+        let baseType = "\(unwrapOptional(param.type).trimmed)"
+        if isOptionalType(param.type) {
+            return "\(param.label): try caseContainer.decodeIfPresent(\(baseType).self, forKey: .\(param.label))"
+        }
+        return "\(param.label): try caseContainer.decode(\(baseType).self, forKey: .\(param.label))"
+    }
+    if args.count == 1 {
+        lines += "\(indent)self = .\(c.caseName)(\(args[0]))\n"
+    } else {
+        let joined = args.map { "            \($0)" }.joined(separator: ",\n")
+        lines += "\(indent)self = .\(c.caseName)(\n\(joined)\n\(indent))\n"
+    }
+    return lines
 }
 
 /// Standard multi-arg case body where no nested-struct Story unwrapping is needed.
@@ -222,7 +249,7 @@ private func computeRelations(cases: [CaseInfo]) -> String {
         cases.flatMap { c -> [String] in
             let fromParams = c.params
                 .filter { isStoryType($0.type) && !$0.unlabeled }
-                .map { "\(c.componentName).\($0.label)" }
+                .map { "\(c.componentName).\(c.perCaseCodingKeyMap[$0.label] ?? $0.label)" }
             let fromNested = c.nestedStructFields
                 .filter { isStoryType($0.type) }
                 .map { "\(c.componentName).\($0.label)" }
@@ -236,6 +263,34 @@ private func findCodingKeys(in declaration: some DeclGroupSyntax) -> [String: St
     for member in declaration.memberBlock.members {
         guard let enumDecl = member.decl.as(EnumDeclSyntax.self),
               enumDecl.name.text == "CodingKeys"
+        else { continue }
+        for caseMember in enumDecl.memberBlock.members {
+            guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
+            for element in caseDecl.elements {
+                let name = element.name.text
+                if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
+                   literal.segments.count == 1,
+                   let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
+                    result[name] = segment.content.text
+                } else {
+                    result[name] = name
+                }
+            }
+        }
+        break
+    }
+    return result
+}
+
+private func findPerCaseCodingKeys(
+    caseName: String,
+    in declaration: some DeclGroupSyntax
+) -> [String: String] {
+    let targetName = caseName.prefix(1).uppercased() + caseName.dropFirst() + "CodingKeys"
+    var result: [String: String] = [:]
+    for member in declaration.memberBlock.members {
+        guard let enumDecl = member.decl.as(EnumDeclSyntax.self),
+              enumDecl.name.text == targetName
         else { continue }
         for caseMember in enumDecl.memberBlock.members {
             guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
