@@ -418,6 +418,187 @@ final class BlockLibraryMacroTests: XCTestCase {
         )
     }
 
+    // MARK: - Per-case CodingKeys
+
+    func test_perCaseCodingKeysGeneratesLocalContainer() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Block {
+                case header(altTitle: String, altSubtitle: String)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                    case altSubtitle = "alternative_subtitle"
+                }
+            }
+            """,
+            expandedSource: """
+            enum Block {
+                case header(altTitle: String, altSubtitle: String)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                    case altSubtitle = "alternative_subtitle"
+                }
+
+                static let relations: String = ""
+
+                init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "header":
+                        let caseContainer = try decoder.container(keyedBy: HeaderCodingKeys.self)
+                        self = .header(
+                            altTitle: try caseContainer.decode(String.self, forKey: .altTitle),
+                            altSubtitle: try caseContainer.decode(String.self, forKey: .altSubtitle)
+                        )
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum CodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    func test_perCaseCodingKeysMixedWithStandardCases() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Block {
+                case header(altTitle: String, altSubtitle: String)
+                case text(value: String)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                    case altSubtitle = "alternative_subtitle"
+                }
+            }
+            """,
+            expandedSource: """
+            enum Block {
+                case header(altTitle: String, altSubtitle: String)
+                case text(value: String)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                    case altSubtitle = "alternative_subtitle"
+                }
+
+                static let relations: String = ""
+
+                init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "header":
+                        let caseContainer = try decoder.container(keyedBy: HeaderCodingKeys.self)
+                        self = .header(
+                            altTitle: try caseContainer.decode(String.self, forKey: .altTitle),
+                            altSubtitle: try caseContainer.decode(String.self, forKey: .altSubtitle)
+                        )
+                    case "text":
+                        self = .text(value: try container.decode(String.self, forKey: .value))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum CodingKeys: String, CodingKey {
+                    case component
+                    case value
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    func test_perCaseCodingKeysRelationsUseJsonKey() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            indirect enum Block {
+                case header(altArticle: Story<Block>)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altArticle = "alt_article"
+                }
+            }
+            """,
+            expandedSource: """
+            indirect enum Block {
+                case header(altArticle: Story<Block>)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altArticle = "alt_article"
+                }
+
+                static let relations: String = "header.alt_article"
+
+                init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "header":
+                        let caseContainer = try decoder.container(keyedBy: HeaderCodingKeys.self)
+                        self = .header(altArticle: try caseContainer.decode(Story<Block>.self, forKey: .altArticle))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum CodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    func test_perCaseCodingKeysOptionalParam() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Block {
+                case header(altTitle: String?)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                }
+            }
+            """,
+            expandedSource: """
+            enum Block {
+                case header(altTitle: String?)
+                enum HeaderCodingKeys: String, CodingKey {
+                    case altTitle = "alternative_title"
+                }
+
+                static let relations: String = ""
+
+                init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "header":
+                        let caseContainer = try decoder.container(keyedBy: HeaderCodingKeys.self)
+                        self = .header(altTitle: try caseContainer.decodeIfPresent(String.self, forKey: .altTitle))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum CodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     // MARK: - Diagnostics
 
     func test_errorWhenStoryRelationTypeIsNotVisibleToMacro() {
