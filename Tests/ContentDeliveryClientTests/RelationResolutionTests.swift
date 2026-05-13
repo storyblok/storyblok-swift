@@ -214,6 +214,86 @@ import Testing
 
     }
 
+    // MARK: - Circular relation tests
+
+    /// A minimal block type whose `ref` field can point to another `CircularBlock` story,
+    /// enabling direct and indirect circular relation graphs.
+    indirect enum CircularBlock: Decodable {
+        case node(name: String, ref: Story<CircularBlock>?)
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let name = try container.decode(String.self, forKey: .name)
+            let ref = try container.decodeIfPresent(Story<CircularBlock>.self, forKey: .ref)
+            self = .node(name: name, ref: ref)
+        }
+
+        enum CodingKeys: String, CodingKey { case name, ref }
+    }
+
+    private let nodeAUuid = "a0000000-0000-0000-0000-000000000000"
+    private let nodeBUuid = "b0000000-0000-0000-0000-000000000000"
+    private let nodeCUuid = "c0000000-0000-0000-0000-000000000000"
+
+    private func makeRelJSON(uuid: String, name: String, ref: String?) -> String {
+        let refValue = ref.map { "\"\($0)\"" } ?? "null"
+        return """
+        {
+            "id": 1, "uuid": "\(uuid)", "name": "\(name)",
+            "content": { "name": "\(name)", "ref": \(refValue) },
+            "slug": "\(name.lowercased())", "full_slug": "nodes/\(name.lowercased())",
+            "created_at": "2025-01-01T00:00:00.000Z",
+            "published_at": null, "first_published_at": null, "updated_at": null,
+            "sort_by_date": null, "position": 0, "tag_list": [], "is_startpage": false,
+            "parent_id": null, "meta_data": null,
+            "group_id": "00000000-0000-0000-0000-000000000000",
+            "release_id": null, "lang": "default", "path": null, "alternates": [],
+            "default_full_slug": null, "translated_slugs": null
+        }
+        """
+    }
+
+    @Test
+    func `direct circular relation throws during decoding`() throws {
+        let data = """
+        {
+            "story": \(makeRelJSON(uuid: nodeAUuid, name: "A", ref: nodeBUuid)),
+            "rels": [
+                \(makeRelJSON(uuid: nodeAUuid, name: "A", ref: nodeBUuid)),
+                \(makeRelJSON(uuid: nodeBUuid, name: "B", ref: nodeAUuid))
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let store = RelationStore()
+        let decoder = makeDecoder(relStore: store)
+
+        #expect(throws: (any Error).self) {
+            _ = try decoder.decode(StoryResponse<CircularBlock>.self, from: data)
+        }
+    }
+
+    @Test
+    func `indirect circular relation via three stories throws during decoding`() throws {
+        let data = """
+        {
+            "story": \(makeRelJSON(uuid: nodeAUuid, name: "A", ref: nodeBUuid)),
+            "rels": [
+                \(makeRelJSON(uuid: nodeAUuid, name: "A", ref: nodeBUuid)),
+                \(makeRelJSON(uuid: nodeBUuid, name: "B", ref: nodeCUuid)),
+                \(makeRelJSON(uuid: nodeCUuid, name: "C", ref: nodeAUuid))
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let store = RelationStore()
+        let decoder = makeDecoder(relStore: store)
+
+        #expect(throws: (any Error).self) {
+            _ = try decoder.decode(StoryResponse<CircularBlock>.self, from: data)
+        }
+    }
+
     @Test
     func `story without rels decodes normally`() throws {
         let data = """

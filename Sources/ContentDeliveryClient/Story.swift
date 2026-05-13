@@ -199,8 +199,9 @@ extension Story : Decodable {
         if let single = try? decoder.singleValueContainer(),
            let uuidString = try? single.decode(String.self),
            UUID(uuidString: uuidString) != nil {
+            let key = uuidString.lowercased()
             guard let store = decoder.userInfo[.storyblokRelations] as? RelationStore,
-                let resolved = store.stories[uuidString.lowercased()] else {
+              let subdecoder = store.decoders[key] else {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: decoder.codingPath,
@@ -208,7 +209,16 @@ extension Story : Decodable {
                     )
                 )
             }
-            self = resolved as! Story<T>
+            guard store.decoding.insert(key).inserted else {
+                throw DecodingError.dataCorrupted(
+                    DecodingError.Context(
+                        codingPath: decoder.codingPath,
+                        debugDescription: "Circular story relation: \(uuidString) (Circular back-references must be modeled as String (UUID) rather than Story<T>)"
+                    )
+                )
+            }
+            defer { store.decoding.remove(key) }
+            self = try Story<T>(from: subdecoder)
             return
         }
 
