@@ -41,7 +41,7 @@ extension BlockLibraryMacro: MemberMacro {
 
         return [
             "static let relations: String = \(literal: relations)",
-        ] + generateDecoding(cases: cases, enumName: enumName, nestedStructs: nestedStructs, generateCodingKeys: !hasCodingKeys)
+        ] + generateDecoding(cases: cases, generateCodingKeys: !hasCodingKeys)
     }
 }
 
@@ -143,8 +143,6 @@ private func collectCases(
 
 private func generateDecoding(
     cases: [CaseInfo],
-    enumName: String,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]],
     generateCodingKeys: Bool
 ) -> [DeclSyntax] {
     var switchCases = ""
@@ -153,7 +151,7 @@ private func generateDecoding(
         if c.params.isEmpty {
             switchCases += "        self = .\(c.caseName)\n"
         } else {
-            switchCases += generateCaseBody(c, enumName: enumName, nestedStructs: nestedStructs, allCases: cases)
+            switchCases += generateCaseBody(c)
         }
     }
 
@@ -168,8 +166,7 @@ private func generateDecoding(
     }
     """
 
-    let helpers = generateUnwrapHelpers(cases: cases, enumName: enumName, nestedStructs: nestedStructs)
-    guard generateCodingKeys else { return [initDecl] + helpers }
+    guard generateCodingKeys else { return [initDecl] }
 
     let allLabels = Array(
         Set(["component"] + cases.flatMap { $0.params.filter { !$0.unlabeled }.map { $0.label } })
@@ -182,147 +179,16 @@ private func generateDecoding(
     }
     """
 
-    return [initDecl, codingKeysDecl] + helpers
-}
-
-/// Generates private static unwrap helpers for each unique nested-struct Story type referenced in cases.
-private func generateUnwrapHelpers(
-    cases: [CaseInfo],
-    enumName: String,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]]
-) -> [DeclSyntax] {
-    var seen = Set<String>()
-    var helpers: [DeclSyntax] = []
-    for c in cases {
-        for param in c.params
-            where !param.unlabeled
-                && isStoryType(param.type)
-                && storyTypeArgIsNestedStruct(param.type, nestedStructs: nestedStructs)
-        {
-            let structName = storyTypeArgument(param.type)!
-            guard !seen.contains(structName) else { continue }
-            seen.insert(structName)
-            let matchCase = caseNameForNestedStruct(structName, allCases: cases)
-            let helper: DeclSyntax = """
-            private static func _unwrap\(raw: structName)(_ story: Story<\(raw: enumName)>) throws -> Story<\(raw: structName)> {
-                guard case .\(raw: matchCase)(let content) = story.content else {
-                    throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "Expected .\(raw: matchCase) but got: \\(story.content)"))
-                }
-                return Story(story, content: content)
-            }
-            """
-            helpers.append(helper)
-        }
-    }
-    return helpers
+    return [initDecl, codingKeysDecl]
 }
 
 /// Returns the body lines for one switch case (indented 8 spaces, ending with newline).
-private func generateCaseBody(
-    _ c: CaseInfo,
-    enumName: String,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]],
-    allCases: [CaseInfo]
-) -> String {
+private func generateCaseBody(_ c: CaseInfo) -> String {
     let indent = "        "
-
-    // Single unlabeled param: decode the whole content as that type
     if c.params.count == 1, c.params[0].unlabeled {
         return "\(indent)self = .\(c.caseName)(try \(c.params[0].type.trimmedDescription)(from: decoder))\n"
     }
-
-    // Find the first labeled param that is Story<NestedStruct>
-    let nestedStoryParam = c.params.first {
-        !$0.unlabeled
-            && isStoryType($0.type)
-            && storyTypeArgIsNestedStruct($0.type, nestedStructs: nestedStructs)
-    }
-
-    guard let nestedParam = nestedStoryParam else {
-        // No nested-struct Story params — standard multi-arg decode
-        return generateStandardCaseBody(c, indent: indent)
-    }
-
-    let storyArg = storyTypeArgument(nestedParam.type)!
-    let matchCaseName = caseNameForNestedStruct(storyArg, allCases: allCases)
-    let isArray = isArrayStoryType(nestedParam.type)
-
-    var body = ""
-
-    if isArray {
-        // Decode as [Story<EnumName>], then .map with pattern match
-        body += "\(indent)let \(nestedParam.label) = try container.decode([Story<\(enumName)>].self, forKey: .\(nestedParam.label))\n"
-        body += buildSelfAssignmentWithArray(
-            c, nestedParam: nestedParam, matchCaseName: matchCaseName,
-            storyArg: storyArg, enumName: enumName, nestedStructs: nestedStructs,
-            allCases: allCases, indent: indent
-        )
-    } else {
-        // Decode as Story<EnumName>, then if-case
-        body += "\(indent)let \(nestedParam.label) = try container.decode(Story<\(enumName)>.self, forKey: .\(nestedParam.label))\n"
-        body += buildSelfAssignmentWithSingle(
-            c, nestedParam: nestedParam, matchCaseName: matchCaseName,
-            storyArg: storyArg, enumName: enumName, nestedStructs: nestedStructs,
-            allCases: allCases, indent: indent
-        )
-    }
-
-    return body
-}
-
-/// Generates `self = .case(...)` with the array Story param replaced by a `.map { }` expression.
-private func buildSelfAssignmentWithArray(
-    _ c: CaseInfo,
-    nestedParam: (label: String, type: TypeSyntax, unlabeled: Bool),
-    matchCaseName: String,
-    storyArg: String,
-    enumName: String,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]],
-    allCases: [CaseInfo],
-    indent: String
-) -> String {
-    let mapBody = "try \(nestedParam.label).map { try Self._unwrap\(storyArg)($0) }"
-
-    let labeledParams = c.params.filter { !$0.unlabeled }
-    if labeledParams.count == 1 {
-        return "\(indent)self = .\(c.caseName)(\(nestedParam.label): \(mapBody))\n"
-    }
-
-    var args: [String] = []
-    for param in labeledParams {
-        if param.label == nestedParam.label {
-            args.append("            \(param.label): \(mapBody)")
-        } else {
-            args.append("            \(simpleDecodeExpr(param))")
-        }
-    }
-    return "\(indent)self = .\(c.caseName)(\n\(args.joined(separator: ",\n"))\n\(indent))\n"
-}
-
-/// Generates `if case .match(let content) = param.content { self = .case(...) } else { throw }`.
-private func buildSelfAssignmentWithSingle(
-    _ c: CaseInfo,
-    nestedParam: (label: String, type: TypeSyntax, unlabeled: Bool),
-    matchCaseName: String,
-    storyArg: String,
-    enumName: String,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]],
-    allCases: [CaseInfo],
-    indent: String
-) -> String {
-    let labeledParams = c.params.filter { !$0.unlabeled }
-    if labeledParams.count == 1 {
-        return "\(indent)self = .\(c.caseName)(\(nestedParam.label): try Self._unwrap\(storyArg)(\(nestedParam.label)))\n"
-    }
-    var args: [String] = []
-    for param in labeledParams {
-        if param.label == nestedParam.label {
-            args.append("            \(param.label): try Self._unwrap\(storyArg)(\(param.label))")
-        } else {
-            args.append("            \(simpleDecodeExpr(param))")
-        }
-    }
-    return "\(indent)self = .\(c.caseName)(\n\(args.joined(separator: ",\n"))\n\(indent))\n"
+    return generateStandardCaseBody(c, indent: indent)
 }
 
 /// Standard multi-arg case body where no nested-struct Story unwrapping is needed.
@@ -404,15 +270,6 @@ private func isStoryType(_ type: TypeSyntax) -> Bool {
     return false
 }
 
-private func isArrayStoryType(_ type: TypeSyntax) -> Bool {
-    if let array = type.as(ArrayTypeSyntax.self),
-       let element = array.element.as(IdentifierTypeSyntax.self),
-       element.name.text == "Story" {
-        return true
-    }
-    return false
-}
-
 private func isOptionalType(_ type: TypeSyntax) -> Bool {
     type.is(OptionalTypeSyntax.self)
 }
@@ -442,27 +299,10 @@ private func storyTypeArgument(_ type: TypeSyntax) -> String? {
     return nil
 }
 
-/// Returns true if the Story<T> type argument is a key in `nestedStructs`.
-private func storyTypeArgIsNestedStruct(
-    _ type: TypeSyntax,
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]]
-) -> Bool {
-    guard let arg = storyTypeArgument(type) else { return false }
-    return nestedStructs[arg] != nil
-}
-
-/// Returns the case name of the enum case whose single unlabeled param is of type `structName`.
-private func caseNameForNestedStruct(_ structName: String, allCases: [CaseInfo]) -> String {
-    allCases.first {
-        $0.params.count == 1 &&
-        $0.params[0].unlabeled &&
-        $0.params[0].type.trimmedDescription == structName
-    }?.caseName ?? structName.lowercased()
-}
-
 // MARK: - Validation
 
-/// Each Story<T> labeled param must use the enclosing enum type or a nested struct type.
+/// Story<T> labeled params must use the enclosing enum or a nested struct so the macro
+/// can discover their Story fields and include them in the synthesized `relations` string.
 private func validateStoryRelationTypes(
     enumName: String,
     in cases: [CaseInfo],
@@ -477,7 +317,7 @@ private func validateStoryRelationTypes(
                 context.diagnose(Diagnostic(
                     node: param.type,
                     message: BlockLibraryMacroDiagnostic(
-                        message: "Story<T> relation field type '\(typeArg)' must be the enclosing enum type or a nested struct type declared within the enum",
+                        message: "Story<T> relation field type '\(typeArg)' must be the enclosing enum type or a nested struct declared within the enum; the macro can only discover nested Story fields for types defined in the enum body",
                         id: MessageID(domain: "ContentDeliveryClientMacros", id: "invalidRelationType"),
                         severity: .error
                     )
@@ -567,7 +407,7 @@ private func validateNestedStructsHaveCases(
             context.diagnose(Diagnostic(
                 node: structDecl.name,
                 message: BlockLibraryMacroDiagnostic(
-                    message: "nested struct '\(structName)' must have a corresponding enum case with it as an unlabeled associated value",
+                    message: "nested struct '\(structName)' must have a corresponding enum case with it as an unlabeled associated value; the case name must match the block type's technical name",
                     id: MessageID(domain: "ContentDeliveryClientMacros", id: "nestedStructMissingCase"),
                     severity: .error
                 )

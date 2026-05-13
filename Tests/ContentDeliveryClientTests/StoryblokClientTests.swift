@@ -27,7 +27,7 @@ indirect enum Block : Decodable {
         let url: Field.Link
         let image: Field.Asset
         let thumbnailImage: Field.Asset
-        let body: RichText
+        let body: RichText<Block>
         let date: Date
         let author: Story<Author>
         let readTimeMinutes: Int
