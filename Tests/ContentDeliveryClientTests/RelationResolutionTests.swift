@@ -8,7 +8,7 @@ import Testing
         case author(Author)
         case article(Article)
         case popular(articles: [Story<Article>])
-        
+
         struct Author : Decodable {
             let name: String
         }
@@ -16,24 +16,10 @@ import Testing
         struct Article : Decodable {
             let headline: String
             let author: Story<Author>
-                        
-            init(from decoder: any Decoder) throws {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                self.headline = try container.decode(String.self, forKey: .headline)
-                let author = try container.decode(Story<MyBlock>.self, forKey: .author)
-                if case .author(let content) = author.content {
-                    self.author = Story(author, content: content)
-                } else {
-                    throw DecodingError.dataCorruptedError(forKey: .author, in: container, debugDescription: "Expected Story<Author> but got: \(author.content)")
-                }
-            }
-            
-            enum CodingKeys: String, CodingKey {
-                case headline
-                case author
-            }
         }
-        
+
+        static let relations: String = "article.author,popular.articles"
+
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             let component = try container.decode(String.self, forKey: .component)
@@ -43,13 +29,7 @@ import Testing
             case "article":
                 self = .article(try Article(from: decoder))
             case "popular":
-                let articles = try container.decode([Story<MyBlock>].self, forKey: .articles)
-                self = .popular(articles: try articles.map {
-                    if case .article(let content) = $0.content {
-                        return Story($0, content: content)
-                    }
-                    throw DecodingError.dataCorruptedError(forKey: .author, in: container, debugDescription: "Expected Story<Article> but got: \($0.content)")
-                })
+                self = .popular(articles: try container.decode([Story<Article>].self, forKey: .articles))
             default:
                 throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
             }
@@ -57,10 +37,7 @@ import Testing
 
         enum CodingKeys: String, CodingKey {
             case component
-            case author
-            case article
             case articles
-            case popular
         }
     }
 
