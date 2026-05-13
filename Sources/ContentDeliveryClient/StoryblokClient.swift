@@ -160,7 +160,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .tryMap { data in
                 let store = RelationStore()
                 let decoder = Self.makeDecoder(relStore: store)
-                return try decoder.decode(StoryResponse<Content, Library>.self, from: data).story
+                return try decoder.decode(StoryResponse<Content>.self, from: data).story
             }
             .mapError { error in
                 if let error = error as? Error { return error }
