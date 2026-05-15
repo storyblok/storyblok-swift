@@ -585,6 +585,70 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
     }
 }
 
+extension RichText: Hashable where BlockLibrary: Hashable {}
+extension RichText: Equatable where BlockLibrary: Equatable {}
+extension RichText: Sendable where BlockLibrary: Sendable {}
+extension RichText.Image: Hashable where BlockLibrary: Hashable {}
+extension RichText.Image: Equatable where BlockLibrary: Equatable {}
+extension RichText.Image: Sendable where BlockLibrary: Sendable {}
+extension RichText.Document: Hashable where BlockLibrary: Hashable {}
+extension RichText.Document: Equatable where BlockLibrary: Equatable {}
+extension RichText.Document: Sendable where BlockLibrary: Sendable {}
+extension RichText.Heading: Hashable where BlockLibrary: Hashable {}
+extension RichText.Heading: Equatable where BlockLibrary: Equatable {}
+extension RichText.Heading: Sendable where BlockLibrary: Sendable {}
+extension RichText.Paragraph: Hashable where BlockLibrary: Hashable {}
+extension RichText.Paragraph: Equatable where BlockLibrary: Equatable {}
+extension RichText.Paragraph: Sendable where BlockLibrary: Sendable {}
+extension RichText.Text: Hashable where BlockLibrary: Hashable {}
+extension RichText.Text: Equatable where BlockLibrary: Equatable {}
+extension RichText.Text: Sendable where BlockLibrary: Sendable {}
+extension RichText.TextAlign: Hashable where BlockLibrary: Hashable {}
+extension RichText.TextAlign: Equatable where BlockLibrary: Equatable {}
+extension RichText.TextAlign: Sendable where BlockLibrary: Sendable {}
+extension RichText.Mark: Hashable where BlockLibrary: Hashable {}
+extension RichText.Mark: Equatable where BlockLibrary: Equatable {}
+extension RichText.Mark: Sendable where BlockLibrary: Sendable {}
+extension RichText.Mark.Link: Hashable where BlockLibrary: Hashable {}
+extension RichText.Mark.Link: Equatable where BlockLibrary: Equatable {}
+extension RichText.Mark.Link: Sendable where BlockLibrary: Sendable {}
+extension RichText.Emoji: Hashable where BlockLibrary: Hashable {}
+extension RichText.Emoji: Equatable where BlockLibrary: Equatable {}
+extension RichText.Emoji: Sendable where BlockLibrary: Sendable {}
+extension RichText.HardBreak: Hashable where BlockLibrary: Hashable {}
+extension RichText.HardBreak: Equatable where BlockLibrary: Equatable {}
+extension RichText.HardBreak: Sendable where BlockLibrary: Sendable {}
+extension RichText.BulletList: Hashable where BlockLibrary: Hashable {}
+extension RichText.BulletList: Equatable where BlockLibrary: Equatable {}
+extension RichText.BulletList: Sendable where BlockLibrary: Sendable {}
+extension RichText.OrderedList: Hashable where BlockLibrary: Hashable {}
+extension RichText.OrderedList: Equatable where BlockLibrary: Equatable {}
+extension RichText.OrderedList: Sendable where BlockLibrary: Sendable {}
+extension RichText.ListItem: Hashable where BlockLibrary: Hashable {}
+extension RichText.ListItem: Equatable where BlockLibrary: Equatable {}
+extension RichText.ListItem: Sendable where BlockLibrary: Sendable {}
+extension RichText.CodeBlock: Hashable where BlockLibrary: Hashable {}
+extension RichText.CodeBlock: Equatable where BlockLibrary: Equatable {}
+extension RichText.CodeBlock: Sendable where BlockLibrary: Sendable {}
+extension RichText.Blockquote: Hashable where BlockLibrary: Hashable {}
+extension RichText.Blockquote: Equatable where BlockLibrary: Equatable {}
+extension RichText.Blockquote: Sendable where BlockLibrary: Sendable {}
+extension RichText.Table: Hashable where BlockLibrary: Hashable {}
+extension RichText.Table: Equatable where BlockLibrary: Equatable {}
+extension RichText.Table: Sendable where BlockLibrary: Sendable {}
+extension RichText.TableHeader: Hashable where BlockLibrary: Hashable {}
+extension RichText.TableHeader: Equatable where BlockLibrary: Equatable {}
+extension RichText.TableHeader: Sendable where BlockLibrary: Sendable {}
+extension RichText.TableRow: Hashable where BlockLibrary: Hashable {}
+extension RichText.TableRow: Equatable where BlockLibrary: Equatable {}
+extension RichText.TableRow: Sendable where BlockLibrary: Sendable {}
+extension RichText.TableCell: Hashable where BlockLibrary: Hashable {}
+extension RichText.TableCell: Equatable where BlockLibrary: Equatable {}
+extension RichText.TableCell: Sendable where BlockLibrary: Sendable {}
+extension RichText.Blok: Hashable where BlockLibrary: Hashable {}
+extension RichText.Blok: Equatable where BlockLibrary: Equatable {}
+extension RichText.Blok: Sendable where BlockLibrary: Sendable {}
+
 public extension RichTextComposite {
     /// Recursively flattens all descendant nodes into a sequence, yielding leaf nodes for
     /// composite nodes and the node itself otherwise.

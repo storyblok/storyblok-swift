@@ -4,16 +4,16 @@ import Testing
 
 @Suite struct RelationResolutionTests {
 
-    indirect enum MyBlock : Decodable, ContentDeliveryClient.BlockLibrary {
+    indirect enum MyBlock : Decodable, Hashable, ContentDeliveryClient.BlockLibrary {
         case author(Author)
         case article(Article)
         case popular(articles: [Story<Article>])
 
-        struct Author : Decodable {
+        struct Author : Decodable, Hashable {
             let name: String
         }
 
-        struct Article : Decodable {
+        struct Article : Decodable, Hashable {
             let headline: String
             let author: Story<Author>
         }
