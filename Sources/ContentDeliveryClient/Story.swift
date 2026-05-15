@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a single story retrieved from the [Storyblok Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
-public struct Story<T : Decodable> {
+public struct Story<Content : Decodable> {
 
     /// Story ID.
     public let id: Int64
@@ -14,7 +14,7 @@ public struct Story<T : Decodable> {
 
     /// An object containing the field data associated with the content type's specific structure.
     /// Also includes a `component` property with the content type's technical name.
-    public let content: T
+    public let content: Content
 
     /// Story slug.
     public let slug: String
@@ -74,7 +74,7 @@ public struct Story<T : Decodable> {
     /// Array of translated slug objects (if the Translatable Slugs app is installed).
     public let translatedSlugs: [TranslatedSlug]?
 
-    public init<R : Decodable>(_ story: Story<R>, content: T) {
+    public init<T : Decodable>(_ story: Story<T>, content: Content) {
         self.id = story.id
         self.uuid = story.uuid
         self.name = story.name
@@ -104,7 +104,7 @@ public struct Story<T : Decodable> {
 /// Translated slug information for localized story variants.
 ///
 /// Available when the [Translatable Slugs](https://www.storyblok.com/docs/apps/translatable-slugs) app is installed.
-public struct TranslatedSlug: Decodable, Sendable {
+public struct TranslatedSlug: Decodable, Hashable, Sendable {
 
     /// Translated slug.
     public let path: String
@@ -129,7 +129,7 @@ public struct TranslatedSlug: Decodable, Sendable {
 /// Basic data for a story defined as an alternate of the current story.
 ///
 /// Alternates are different language versions or variants of the same content.
-public struct Alternate: Decodable, Sendable {
+public struct Alternate: Decodable, Hashable, Sendable {
 
     /// Story ID.
     public let id: Int64
@@ -162,8 +162,6 @@ public struct Alternate: Decodable, Sendable {
         case parentId = "parent_id"
     }
 }
-
-extension Story: Sendable where T: Sendable {}
 
 extension Story : Decodable {
     
@@ -218,7 +216,7 @@ extension Story : Decodable {
                 )
             }
             defer { store.decoding.remove(key) }
-            self = try Story<T>(from: subdecoder)
+            self = try Story<Content>(from: subdecoder)
             return
         }
 
@@ -226,7 +224,7 @@ extension Story : Decodable {
         id = try container.decode(Int64.self, forKey: .id)
         uuid = try container.decode(UUID.self, forKey: .uuid)
         name = try container.decode(String.self, forKey: .name)
-        content = try container.decode(T.self, forKey: .content)
+        content = try container.decode(Content.self, forKey: .content)
         slug = try container.decode(String.self, forKey: .slug)
         fullSlug = try container.decode(String.self, forKey: .fullSlug)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -248,3 +246,7 @@ extension Story : Decodable {
         translatedSlugs = try container.decodeIfPresent([TranslatedSlug].self, forKey: .translatedSlugs)
     }
 }
+
+extension Story: Hashable where Content: Hashable {}
+extension Story: Equatable where Content: Equatable {}
+extension Story: Sendable where Content: Sendable {}
