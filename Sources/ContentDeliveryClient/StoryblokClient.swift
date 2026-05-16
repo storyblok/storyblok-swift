@@ -120,8 +120,8 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
-    public func story<Content>(_ slug: String) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(slug)")
+    public func story<Content>(_ slug: String, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel)
     }
 
     /// Retrieves a story by its UUID.
@@ -131,14 +131,14 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
-    public func story<Content>(_ uuid: UUID) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true)
+    public func story<Content>(_ uuid: UUID, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel)
     }
 
     // MARK: -
 
-    private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false) -> AnyPublisher<Story<Content>, Error> {
-        let request = buildRequest(path: path, findByUuid: findByUuid)
+    private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
+        let request = buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel)
 
         var cachedRequest = request
         cachedRequest.cachePolicy = .returnCacheDataDontLoad
@@ -158,8 +158,14 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .append(fresh)
             .removeDuplicates()
             .tryMap { data in
-                let store = RelationStore()
-                let decoder = Self.makeDecoder(relStore: store)
+                let decoder: JSONDecoder
+                if resolveLevel > 0 {
+                    let store = RelationStore()
+                    store.resolveLevel = resolveLevel
+                    decoder = Self.makeDecoder(relStore: store)
+                } else {
+                    decoder = Self.makeDecoder()
+                }
                 return try decoder.decode(StoryResponse<Content>.self, from: data).story
             }
             .mapError { error in
@@ -176,11 +182,14 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .eraseToAnyPublisher()
     }
 
-    private func buildRequest(path: String, findByUuid: Bool) -> URLRequest {
+    private func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
         var queryItems: [URLQueryItem] = []
-        if !relations.isEmpty {
+        if resolveLevel > 0 && !relations.isEmpty {
             queryItems.append(URLQueryItem(name: "resolve_relations", value: relations))
+        }
+        if resolveLevel >= 2 {
+            queryItems.append(URLQueryItem(name: "resolve_level", value: String(resolveLevel)))
         }
         if findByUuid {
             queryItems.append(URLQueryItem(name: "find_by", value: "uuid"))
