@@ -207,15 +207,23 @@ extension Story : Decodable {
                     )
                 )
             }
-            guard store.decoding.insert(key).inserted else {
+            let currentCount = store.decoding[key, default: 0]
+            guard currentCount < store.resolveLevel else {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: decoder.codingPath,
-                        debugDescription: "Circular story relation: \(uuidString) (Circular back-references must be modeled as String (UUID) rather than Story<T>)"
+                        debugDescription: "Circular story relation: \(uuidString) (model as optional (Story<T>?) or String (UUID) rather than Story<T>)"
                     )
                 )
             }
-            defer { store.decoding.remove(key) }
+            store.decoding[key] = currentCount + 1
+            defer {
+                if let count = store.decoding[key], count > 1 {
+                    store.decoding[key] = count - 1
+                } else {
+                    store.decoding.removeValue(forKey: key)
+                }
+            }
             self = try Story<Content>(from: subdecoder)
             return
         }
@@ -250,3 +258,31 @@ extension Story : Decodable {
 extension Story: Hashable where Content: Hashable {}
 extension Story: Equatable where Content: Equatable {}
 extension Story: Sendable where Content: Sendable {}
+
+extension KeyedDecodingContainer {
+    /// Specialised overloads for optional story-relation fields. When a UUID placeholder cannot
+    /// be resolved (no store, missing rels) or a circular reference hits the depth limit, the
+    /// field decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does
+    /// not go through these overloads, so unresolved/circular errors still propagate for them.
+    public func decodeIfPresent<T: Decodable>(_ type: Story<T>.Type, forKey key: Key) throws -> Story<T>? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        do {
+            return try decode(Story<T>.self, forKey: key)
+        } catch DecodingError.dataCorrupted(let context)
+            where context.debugDescription.hasPrefix("Unresolved story relation:")
+               || context.debugDescription.hasPrefix("Circular story relation:") {
+            return nil
+        }
+    }
+
+    public func decodeIfPresent<T: Decodable>(_ type: [Story<T>].Type, forKey key: Key) throws -> [Story<T>]? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        do {
+            return try decode([Story<T>].self, forKey: key)
+        } catch DecodingError.dataCorrupted(let context)
+            where context.debugDescription.hasPrefix("Unresolved story relation:")
+               || context.debugDescription.hasPrefix("Circular story relation:") {
+            return nil
+        }
+    }
+}
