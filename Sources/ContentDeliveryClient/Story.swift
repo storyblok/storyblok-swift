@@ -163,6 +163,8 @@ public struct Alternate: Decodable, Hashable, Sendable {
     }
 }
 
+private enum StoryRelationError: Error { case unresolved, circular }
+
 extension Story : Decodable {
     
     private enum CodingKeys: String, CodingKey {
@@ -203,7 +205,8 @@ extension Story : Decodable {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: decoder.codingPath,
-                        debugDescription: "Unresolved story relation: \(uuidString)"
+                        debugDescription: "Unresolved story relation: \(uuidString)",
+                        underlyingError: StoryRelationError.unresolved
                     )
                 )
             }
@@ -212,7 +215,8 @@ extension Story : Decodable {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: decoder.codingPath,
-                        debugDescription: "Circular story relation: \(uuidString) (model as optional (Story<T>?) or String (UUID) rather than Story<T>)"
+                        debugDescription: "Circular story relation: \(uuidString) (model as optional (Story<T>?) or String (UUID) rather than Story<T>)",
+                        underlyingError: StoryRelationError.circular
                     )
                 )
             }
@@ -268,9 +272,7 @@ extension KeyedDecodingContainer {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
-        } catch DecodingError.dataCorrupted(let context)
-            where context.debugDescription.hasPrefix("Unresolved story relation:")
-               || context.debugDescription.hasPrefix("Circular story relation:") {
+        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
             return nil
         }
     }
@@ -279,9 +281,7 @@ extension KeyedDecodingContainer {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
         do {
             return try decode([Story<T>].self, forKey: key)
-        } catch DecodingError.dataCorrupted(let context)
-            where context.debugDescription.hasPrefix("Unresolved story relation:")
-               || context.debugDescription.hasPrefix("Circular story relation:") {
+        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
             return nil
         }
     }
