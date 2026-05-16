@@ -38,14 +38,12 @@ indirect enum Block : Decodable {
         let url: Field.Link?
     }
 
-}
-
-extension Block {
     enum HeaderCodingKeys: String, CodingKey {
         case altTitle = "alternativeTitle"
         case altSubtitle = "alternativeSubtitle"
         case altImage = "alternativeImage"
     }
+
 }
 
 @Suite struct StoryblokClientTests: TestTrait {

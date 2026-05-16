@@ -30,18 +30,13 @@ extension BlockLibraryMacro: MemberMacro {
 
         let relations = computeRelations(cases: cases)
 
-        let hasCodingKeys = declaration.memberBlock.members.contains { member in
-            guard let enumDecl = member.decl.as(EnumDeclSyntax.self) else { return false }
-            return enumDecl.name.text == "CodingKeys"
-        }
-
         validateCaseAssociatedValues(in: declaration, nestedStructs: nestedStructs, context: context)
         validateNestedStructsHaveCases(nestedStructs: nestedStructs, cases: cases, in: declaration, context: context)
         validateStoryRelationTypes(enumName: enumName, in: cases, nestedStructs: nestedStructs, context: context)
 
         return [
             "static let relations: String = \(literal: relations)",
-        ] + generateDecoding(cases: cases, generateCodingKeys: !hasCodingKeys)
+        ] + generateDecoding(cases: cases, enumName: enumName)
     }
 }
 
@@ -146,8 +141,9 @@ private func collectCases(
 
 private func generateDecoding(
     cases: [CaseInfo],
-    generateCodingKeys: Bool
+    enumName: String
 ) -> [DeclSyntax] {
+    let containerTypeName = "\(enumName)CodingKeys"
     var switchCases = ""
     for c in cases {
         switchCases += "    case \"\(c.componentName)\":\n"
@@ -160,7 +156,7 @@ private func generateDecoding(
 
     let initDecl: DeclSyntax = """
     init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: \(raw: containerTypeName).self)
         let component = try container.decode(String.self, forKey: .component)
         switch component {
     \(raw: switchCases)    default:
@@ -169,22 +165,32 @@ private func generateDecoding(
     }
     """
 
-    guard generateCodingKeys else { return [initDecl] }
-
-    let allLabels = Array(
-        Set(["component"] + cases.flatMap { c in
-            c.params.filter { !$0.unlabeled && c.perCaseCodingKeyMap.isEmpty }.map { $0.label }
-        })
-    ).sorted()
-    let keyCases = allLabels.map { "    case \($0)" }.joined(separator: "\n")
+    let autoPerCaseDecls = generatePerCaseCodingKeyDecls(cases: cases)
 
     let codingKeysDecl: DeclSyntax = """
-    enum CodingKeys: String, CodingKey {
-    \(raw: keyCases)
+    enum \(raw: containerTypeName): String, CodingKey {
+        case component
     }
     """
 
-    return [initDecl, codingKeysDecl]
+    return [initDecl, codingKeysDecl] + autoPerCaseDecls
+}
+
+private func generatePerCaseCodingKeyDecls(cases: [CaseInfo]) -> [DeclSyntax] {
+    var decls: [DeclSyntax] = []
+    for c in cases {
+        let labeledParams = c.params.filter { !$0.unlabeled }
+        guard !labeledParams.isEmpty, c.perCaseCodingKeyMap.isEmpty else { continue }
+        let enumName = c.caseName.prefix(1).uppercased() + c.caseName.dropFirst() + "CodingKeys"
+        let keyCases = labeledParams.map { $0.label }.sorted().map { "    case \($0)" }.joined(separator: "\n")
+        let decl: DeclSyntax = """
+        enum \(raw: enumName): String, CodingKey {
+        \(raw: keyCases)
+        }
+        """
+        decls.append(decl)
+    }
+    return decls
 }
 
 /// Returns the body lines for one switch case (indented 8 spaces, ending with newline).
@@ -193,10 +199,7 @@ private func generateCaseBody(_ c: CaseInfo) -> String {
     if c.params.count == 1, c.params[0].unlabeled {
         return "\(indent)self = .\(c.caseName)(try \(c.params[0].type.trimmedDescription)(from: decoder))\n"
     }
-    if !c.perCaseCodingKeyMap.isEmpty {
-        return generatePerCaseCodingKeyBody(c, indent: indent)
-    }
-    return generateStandardCaseBody(c, indent: indent)
+    return generatePerCaseCodingKeyBody(c, indent: indent)
 }
 
 private func generatePerCaseCodingKeyBody(_ c: CaseInfo, indent: String) -> String {
@@ -216,30 +219,6 @@ private func generatePerCaseCodingKeyBody(_ c: CaseInfo, indent: String) -> Stri
         lines += "\(indent)self = .\(c.caseName)(\n\(joined)\n\(indent))\n"
     }
     return lines
-}
-
-/// Standard multi-arg case body where no nested-struct Story unwrapping is needed.
-private func generateStandardCaseBody(_ c: CaseInfo, indent: String) -> String {
-    let args = c.params.map { param -> String in
-        if param.unlabeled {
-            return "try \(param.type.trimmedDescription)(from: decoder)"
-        }
-        return simpleDecodeExpr(param)
-    }
-    if args.count == 1 {
-        return "\(indent)self = .\(c.caseName)(\(args[0]))\n"
-    }
-    let joined = args.map { "            \($0)" }.joined(separator: ",\n")
-    return "\(indent)self = .\(c.caseName)(\n\(joined)\n\(indent))\n"
-}
-
-/// Returns a `label: try container.decode(...)` expression string (no trailing comma/newline).
-private func simpleDecodeExpr(_ param: (label: String, type: TypeSyntax, unlabeled: Bool)) -> String {
-    let baseType = "\(unwrapOptional(param.type).trimmed)"
-    if isOptionalType(param.type) {
-        return "\(param.label): try container.decodeIfPresent(\(baseType).self, forKey: .\(param.label))"
-    }
-    return "\(param.label): try container.decode(\(baseType).self, forKey: .\(param.label))"
 }
 
 // MARK: - Helpers

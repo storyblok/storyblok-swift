@@ -24,19 +24,23 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
-                        self = .article(author: try container.decode(Story<Content>.self, forKey: .author))
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
+                        self = .article(author: try caseContainer.decode(Story<Content>.self, forKey: .author))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case author
+                enum ContentCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
                 }
             }
             """,
@@ -65,27 +69,43 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular.articles,promo.feature"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FeedCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
-                        self = .article(author: try container.decode(Story<Feed>.self, forKey: .author))
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
+                        self = .article(author: try caseContainer.decode(Story<Feed>.self, forKey: .author))
                     case "popular":
-                        self = .popular(articles: try container.decode([Story<Feed>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularCodingKeys.self)
+                        self = .popular(articles: try caseContainer.decode([Story<Feed>].self, forKey: .articles))
                     case "promo":
-                        self = .promo(feature: try container.decodeIfPresent(Story<Feed>.self, forKey: .feature))
+                        let caseContainer = try decoder.container(keyedBy: PromoCodingKeys.self)
+                        self = .promo(feature: try caseContainer.decodeIfPresent(Story<Feed>.self, forKey: .feature))
                     case "text":
-                        self = .text(value: try container.decode(String.self, forKey: .value))
+                        let caseContainer = try decoder.container(keyedBy: TextCodingKeys.self)
+                        self = .text(value: try caseContainer.decode(String.self, forKey: .value))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case articles
-                    case author
+                enum FeedCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
+                    case articles
+                }
+
+                enum PromoCodingKeys: String, CodingKey {
                     case feature
+                }
+
+                enum TextCodingKeys: String, CodingKey {
                     case value
                 }
             }
@@ -117,7 +137,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: WrapperCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "author":
@@ -127,7 +147,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum WrapperCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -153,7 +173,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: StatusCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "active":
@@ -165,7 +185,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum StatusCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -191,20 +211,29 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "alpha.story,zebra.story"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: MixCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "zebra":
-                        self = .zebra(story: try container.decode(Story<Mix>.self, forKey: .story))
+                        let caseContainer = try decoder.container(keyedBy: ZebraCodingKeys.self)
+                        self = .zebra(story: try caseContainer.decode(Story<Mix>.self, forKey: .story))
                     case "alpha":
-                        self = .alpha(story: try container.decode(Story<Mix>.self, forKey: .story))
+                        let caseContainer = try decoder.container(keyedBy: AlphaCodingKeys.self)
+                        self = .alpha(story: try caseContainer.decode(Story<Mix>.self, forKey: .story))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum MixCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ZebraCodingKeys: String, CodingKey {
+                    case story
+                }
+
+                enum AlphaCodingKeys: String, CodingKey {
                     case story
                 }
             }
@@ -228,18 +257,22 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "feature.item"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: PromoCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "feature":
-                        self = .feature(item: try container.decodeIfPresent(Story<Promo>.self, forKey: .item))
+                        let caseContainer = try decoder.container(keyedBy: FeatureCodingKeys.self)
+                        self = .feature(item: try caseContainer.decodeIfPresent(Story<Promo>.self, forKey: .item))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum PromoCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum FeatureCodingKeys: String, CodingKey {
                     case item
                 }
             }
@@ -263,19 +296,23 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "list.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: PopularCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "list":
-                        self = .list(articles: try container.decode([Story<Popular>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: ListCodingKeys.self)
+                        self = .list(articles: try caseContainer.decode([Story<Popular>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case articles
+                enum PopularCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ListCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
@@ -300,22 +337,26 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
                         self = .article(
-                            author: try container.decode(Story<Content>.self, forKey: .author),
-                            headline: try container.decode(String.self, forKey: .headline)
+                            author: try caseContainer.decode(Story<Content>.self, forKey: .author),
+                            headline: try caseContainer.decode(String.self, forKey: .headline)
                         )
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case author
+                enum ContentCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
                     case headline
                 }
             }
@@ -353,14 +394,23 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "popular_articles.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "popular_articles":
-                        self = .popularArticles(articles: try container.decode([Story<Content>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularArticlesCodingKeys.self)
+                        self = .popularArticles(articles: try caseContainer.decode([Story<Content>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum PopularArticlesCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
@@ -401,16 +451,30 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular_articles.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
-                        self = .article(author: try container.decode(Story<Content>.self, forKey: .author))
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
+                        self = .article(author: try caseContainer.decode(Story<Content>.self, forKey: .author))
                     case "popular_articles":
-                        self = .popularArticles(articles: try container.decode([Story<Content>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularArticlesCodingKeys.self)
+                        self = .popularArticles(articles: try caseContainer.decode([Story<Content>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
+                }
+
+                enum PopularArticlesCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
@@ -443,7 +507,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "header":
@@ -457,7 +521,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum BlockCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -491,7 +555,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "header":
@@ -501,14 +565,18 @@ final class BlockLibraryMacroTests: XCTestCase {
                             altSubtitle: try caseContainer.decode(String.self, forKey: .altSubtitle)
                         )
                     case "text":
-                        self = .text(value: try container.decode(String.self, forKey: .value))
+                        let caseContainer = try decoder.container(keyedBy: TextCodingKeys.self)
+                        self = .text(value: try caseContainer.decode(String.self, forKey: .value))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum BlockCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum TextCodingKeys: String, CodingKey {
                     case value
                 }
             }
@@ -538,7 +606,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "header.alt_article"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "header":
@@ -549,7 +617,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum BlockCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -579,7 +647,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "header":
@@ -590,7 +658,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum BlockCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -618,21 +686,29 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular.items"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
-                        self = .article(author: try container.decode(Story<Author>.self, forKey: .author))
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
+                        self = .article(author: try caseContainer.decode(Story<Author>.self, forKey: .author))
                     case "popular":
-                        self = .popular(items: try container.decode(Story<Item>.self, forKey: .items))
+                        let caseContainer = try decoder.container(keyedBy: PopularCodingKeys.self)
+                        self = .popular(items: try caseContainer.decode(Story<Item>.self, forKey: .items))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case author
+                enum ContentCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
                     case items
                 }
             }
@@ -692,7 +768,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "author":
@@ -700,15 +776,19 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "article":
                         self = .article(try Article(from: decoder))
                     case "popular":
-                        self = .popular(articles: try container.decode([Story<Article>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularCodingKeys.self)
+                        self = .popular(articles: try caseContainer.decode([Story<Article>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case articles
+                enum BlockCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
@@ -731,7 +811,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "bar":
@@ -741,7 +821,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -778,18 +858,22 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "baz":
-                        self = .baz(value: try container.decode(String.self, forKey: .value))
+                        let caseContainer = try decoder.container(keyedBy: BazCodingKeys.self)
+                        self = .baz(value: try caseContainer.decode(String.self, forKey: .value))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum BazCodingKeys: String, CodingKey {
                     case value
                 }
             }
@@ -830,24 +914,28 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "author":
                         self = .author(try Author(from: decoder))
                     case "article":
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
                         self = .article(
-                            headline: try container.decode(String.self, forKey: .headline),
-                            author: try container.decode([Story<Author>].self, forKey: .author)
+                            headline: try caseContainer.decode(String.self, forKey: .headline),
+                            author: try caseContainer.decode([Story<Author>].self, forKey: .author)
                         )
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case author
+                enum BlockCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
                     case headline
                 }
             }
@@ -893,7 +981,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: MyBlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "author":
@@ -901,15 +989,19 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case "article":
                         self = .article(try Article(from: decoder))
                     case "popular":
-                        self = .popular(articles: try container.decode([Story<Article>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularCodingKeys.self)
+                        self = .popular(articles: try caseContainer.decode([Story<Article>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case articles
+                enum MyBlockCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
@@ -942,23 +1034,27 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "highlighted.post"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: MyBlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "page":
                         self = .page(try Page(from: decoder))
                     case "highlighted":
+                        let caseContainer = try decoder.container(keyedBy: HighlightedCodingKeys.self)
                         self = .highlighted(
-                            title: try container.decode(String.self, forKey: .title),
-                            post: try container.decode(Story<Page>.self, forKey: .post)
+                            title: try caseContainer.decode(String.self, forKey: .title),
+                            post: try caseContainer.decode(Story<Page>.self, forKey: .post)
                         )
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum MyBlockCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum HighlightedCodingKeys: String, CodingKey {
                     case post
                     case title
                 }
@@ -985,7 +1081,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "bar":
@@ -995,7 +1091,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -1031,18 +1127,22 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "bar":
-                        self = .bar(name: try container.decode(String.self, forKey: .name))
+                        let caseContainer = try decoder.container(keyedBy: BarCodingKeys.self)
+                        self = .bar(name: try caseContainer.decode(String.self, forKey: .name))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum BarCodingKeys: String, CodingKey {
                     case name
                 }
             }
@@ -1073,7 +1173,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "bar":
@@ -1083,7 +1183,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -1114,7 +1214,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = ""
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "bar":
@@ -1124,7 +1224,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
+                enum FooCodingKeys: String, CodingKey {
                     case component
                 }
             }
@@ -1209,22 +1309,30 @@ final class BlockLibraryMacroTests: XCTestCase {
                 static let relations: String = "article.author,popular.articles"
 
                 init(from decoder: any Decoder) throws {
-                    let container = try decoder.container(keyedBy: CodingKeys.self)
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
                     case "article":
-                        self = .article(author: try container.decode(Story<Content>.self, forKey: .author))
+                        let caseContainer = try decoder.container(keyedBy: ArticleCodingKeys.self)
+                        self = .article(author: try caseContainer.decode(Story<Content>.self, forKey: .author))
                     case "popular":
-                        self = .popular(articles: try container.decode([Story<Content>].self, forKey: .articles))
+                        let caseContainer = try decoder.container(keyedBy: PopularCodingKeys.self)
+                        self = .popular(articles: try caseContainer.decode([Story<Content>].self, forKey: .articles))
                     default:
                         throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
                     }
                 }
 
-                enum CodingKeys: String, CodingKey {
-                    case articles
-                    case author
+                enum ContentCodingKeys: String, CodingKey {
                     case component
+                }
+
+                enum ArticleCodingKeys: String, CodingKey {
+                    case author
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
+                    case articles
                 }
             }
             """,
