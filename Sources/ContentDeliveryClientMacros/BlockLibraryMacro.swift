@@ -35,7 +35,7 @@ extension BlockLibraryMacro: MemberMacro {
         validateStoryRelationTypes(enumName: enumName, in: cases, nestedStructs: nestedStructs, context: context)
 
         return [
-            "static let relations: String = \(literal: relations)",
+            "nonisolated static let relations: String = \(literal: relations)",
         ] + generateDecoding(cases: cases, enumName: enumName)
     }
 }
@@ -54,7 +54,7 @@ extension BlockLibraryMacro: ExtensionMacro {
         var extensions: [ExtensionDeclSyntax] = []
 
         if !protocols.isEmpty {
-            let ext = try ExtensionDeclSyntax("extension \(type.trimmed): ContentDeliveryClient.BlockLibrary {}")
+            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): ContentDeliveryClient.BlockLibrary {}")
             extensions.append(ext)
         }
 
@@ -155,7 +155,7 @@ private func generateDecoding(
     }
 
     let initDecl: DeclSyntax = """
-    init(from decoder: any Decoder) throws {
+    nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: \(raw: containerTypeName).self)
         let component = try container.decode(String.self, forKey: .component)
         switch component {
