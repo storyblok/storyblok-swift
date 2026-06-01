@@ -47,12 +47,14 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// The underlying URL session configured for the Storyblok Content Delivery API.
     public let session: URLSession
-    
+
     internal let relations: String
 
-    /// A pre-configured `JSONDecoder` without a relation store, used for direct story decoding
-    /// (e.g., in tests). For relation-aware decoding use `storyPublisher` which injects a fresh store.
-    internal let decoder: JSONDecoder
+    /// Custom values merged into every decoder's `userInfo`, for use by
+    /// `Decodable` implementations. The relation store key is added on top
+    /// during relation-aware decoding.
+    public let userInfo: [CodingUserInfoKey: any Sendable]
+
 
     /// Creates a client with minimal configuration.
     ///
@@ -64,6 +66,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - fallbackLanguage: Optional fallback language for untranslated fields.
     ///   - cv: Optional cache version timestamp.
     ///   - requestsPerSecond: Optional maximum number of API requests per second. Defaults to `1000`.
+    ///   - userInfo: Custom values merged into every decoder's `userInfo`, for use by `Decodable` implementations. Defaults to empty.
     ///   - configuration: The [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) to use for the underlying session. Defaults to `.default`.
     public convenience init(
         library: Library.Type,
@@ -74,6 +77,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         fallbackLanguage: String? = nil,
         cv: String? = nil,
         requestsPerSecond: Int = 1000,
+        userInfo: [CodingUserInfoKey: any Sendable] = [:],
         configuration: URLSessionConfiguration = .default,
     ) {
         let session = URLSession(
@@ -88,7 +92,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             ),
             configuration: configuration
         )
-        self.init(library: library, session: session)
+        self.init(library: library, session: session, userInfo: userInfo)
     }
 
     /// Creates a client wrapping a pre-configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -100,10 +104,15 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - session: The [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to use for API requests. It must have been created
     ///     with the [`URLSession.init(storyblok:configuration:)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/foundation/urlsession/init(storyblok:configuration:))
     ///     initializer with [`Api.cdn(...)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/api/cdn(accesstoken:language:fallbacklanguage:version:cv:region:requestspersecond:)).
-    public init(library: Library.Type, session: URLSession) {
+    ///   - userInfo: Custom values merged into every decoder's `userInfo`, for use by `Decodable` implementations. Defaults to empty.
+    public init(
+        library: Library.Type,
+        session: URLSession,
+        userInfo: [CodingUserInfoKey: any Sendable] = [:]
+    ) {
         self.relations = library.relations
         self.session = session
-        self.decoder = Self.makeDecoder()
+        self.userInfo = userInfo
     }
 
     /// Releases the resources held by the underlying [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -162,9 +171,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 if resolveLevel > 0 {
                     let store = RelationStore()
                     store.resolveLevel = resolveLevel
-                    decoder = Self.makeDecoder(relStore: store)
+                    decoder = Self.makeDecoder(userInfo: self.userInfo, relStore: store)
                 } else {
-                    decoder = Self.makeDecoder()
+                    decoder = Self.makeDecoder(userInfo: self.userInfo)
                 }
                 return try decoder.decode(StoryResponse<Content>.self, from: data).story
             }
@@ -200,8 +209,11 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         return request
     }
 
-    /// Returns a `JSONDecoder` configured with Storyblok's date formats and an optional relation store.
-    private static func makeDecoder(relStore: RelationStore? = nil) -> JSONDecoder {
+    /// Returns a `JSONDecoder` configured with Storyblok's date formats, custom `userInfo`, and an optional relation store.
+    internal static func makeDecoder(
+        userInfo: [CodingUserInfoKey: any Sendable] = [:],
+        relStore: RelationStore? = nil
+    ) -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let string = try decoder.singleValueContainer().decode(String.self)
@@ -214,6 +226,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 debugDescription: "Cannot decode date from string: \(string)"
             )
         }
+        decoder.userInfo = userInfo
         if let relStore {
             decoder.userInfo[.storyblokRelations] = relStore
         }

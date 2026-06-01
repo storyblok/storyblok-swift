@@ -10,7 +10,7 @@ import Testing
     }
 
     private func makeDecoder() -> JSONDecoder {
-        StoryblokClient(library: PageContent.self, accessToken: "mock").decoder
+        StoryblokClient<PageContent>.makeDecoder()
     }
 
     @Test
