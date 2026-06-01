@@ -21,9 +21,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Content {
                 case article(author: Story<Content>)
 
-                static let relations: String = "article.author"
+                nonisolated static let relations: String = "article.author"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -66,9 +66,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case promo(feature: Story<Feed>?)
                 case text(value: String)
 
-                static let relations: String = "article.author,popular.articles,promo.feature"
+                nonisolated static let relations: String = "article.author,popular.articles,promo.feature"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FeedCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -134,9 +134,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let name: String
                 }
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: WrapperCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -170,9 +170,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case active
                 case inactive
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: StatusCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -208,9 +208,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case zebra(story: Story<Mix>)
                 case alpha(story: Story<Mix>)
 
-                static let relations: String = "alpha.story,zebra.story"
+                nonisolated static let relations: String = "alpha.story,zebra.story"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: MixCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -254,9 +254,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Promo {
                 case feature(item: Story<Promo>?)
 
-                static let relations: String = "feature.item"
+                nonisolated static let relations: String = "feature.item"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: PromoCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -293,9 +293,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Popular {
                 case list(articles: [Story<Popular>])
 
-                static let relations: String = "list.articles"
+                nonisolated static let relations: String = "list.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: PopularCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -334,9 +334,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Content {
                 case article(author: Story<Content>, headline: String)
 
-                static let relations: String = "article.author"
+                nonisolated static let relations: String = "article.author"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -391,9 +391,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case component
                 }
 
-                static let relations: String = "popular_articles.articles"
+                nonisolated static let relations: String = "popular_articles.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -448,9 +448,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case component
                 }
 
-                static let relations: String = "article.author,popular_articles.articles"
+                nonisolated static let relations: String = "article.author,popular_articles.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -504,9 +504,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case altSubtitle = "alternative_subtitle"
                 }
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -552,9 +552,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case altSubtitle = "alternative_subtitle"
                 }
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -603,9 +603,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case altArticle = "alt_article"
                 }
 
-                static let relations: String = "header.alt_article"
+                nonisolated static let relations: String = "header.alt_article"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -644,9 +644,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     case altTitle = "alternative_title"
                 }
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -683,9 +683,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(author: Story<Author>)
                 case popular(items: Story<Item>)
 
-                static let relations: String = "article.author,popular.items"
+                nonisolated static let relations: String = "article.author,popular.items"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -765,9 +765,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let author: Story<Author>
                 }
 
-                static let relations: String = "article.author,popular.articles"
+                nonisolated static let relations: String = "article.author,popular.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -808,9 +808,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Foo {
                 case bar(Bar)
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -855,9 +855,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let value: String
                 }
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -911,9 +911,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let name: String
                 }
 
-                static let relations: String = "article.author"
+                nonisolated static let relations: String = "article.author"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: BlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -978,9 +978,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let author: Story<Author>
                 }
 
-                static let relations: String = "article.author,popular.articles"
+                nonisolated static let relations: String = "article.author,popular.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: MyBlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1031,9 +1031,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                     let title: String
                 }
 
-                static let relations: String = "highlighted.post"
+                nonisolated static let relations: String = "highlighted.post"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: MyBlockCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1078,9 +1078,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Foo {
                 case bar(Int, String)
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1124,9 +1124,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Foo {
                 case bar(name: String, Int)
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1170,9 +1170,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Foo {
                 case bar(Story<Article>)
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1211,9 +1211,9 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Foo {
                 case bar([Article])
 
-                static let relations: String = ""
+                nonisolated static let relations: String = ""
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: FooCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
@@ -1306,9 +1306,9 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case article(author: Story<Content>)
                 case popular(articles: [Story<Content>])
 
-                static let relations: String = "article.author,popular.articles"
+                nonisolated static let relations: String = "article.author,popular.articles"
 
-                init(from decoder: any Decoder) throws {
+                nonisolated init(from decoder: any Decoder) throws {
                     let container = try decoder.container(keyedBy: ContentCodingKeys.self)
                     let component = try container.decode(String.self, forKey: .component)
                     switch component {
