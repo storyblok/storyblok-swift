@@ -46,9 +46,7 @@ import Testing
     private let otherUuid = "55555555-5555-5555-5555-555555555555"
 
     private func makeDecoder(relStore: RelationStore) -> JSONDecoder {
-        let decoder = StoryblokClient<MyBlock>(library: MyBlock.self, accessToken: "mock").decoder
-        decoder.userInfo[.storyblokRelations] = relStore
-        return decoder
+        StoryblokClient<MyBlock>.makeDecoder(relStore: relStore)
     }
 
     private func wrapStory(content: String, extraStories: String = "", uuid: String? = nil) -> Data {
@@ -325,7 +323,7 @@ import Testing
     }
 
     private func makePlainDecoder() -> JSONDecoder {
-        StoryblokClient<MyBlock>(library: MyBlock.self, accessToken: "mock").decoder
+        StoryblokClient<MyBlock>.makeDecoder()
     }
 
     @Test
