@@ -305,13 +305,15 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
     }
 
     /// Table header cell.
-    public struct TableHeader: Decodable {
+    public struct TableHeader: Decodable, RichTextComposite {
         /// Number of columns this cell spans.
         public let columnSpan: Int?
         /// Number of rows this cell spans.
         public let rowSpan: Int?
         /// Column width values in pixels.
         public let columnWidth: [Int]?
+        /// Child nodes contained within this cell.
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let colspan: Int?
@@ -321,6 +323,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
 
         private enum CodingKeys: String, CodingKey {
             case attrs
+            case content
         }
 
         public init(from decoder: any Decoder) throws {
@@ -329,11 +332,12 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             self.columnSpan = attributes?.colspan
             self.rowSpan = attributes?.rowspan
             self.columnWidth = attributes?.colwidth
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
     /// Table data cell.
-    public struct TableCell: Decodable {
+    public struct TableCell: Decodable, RichTextComposite {
         /// Number of columns this cell spans.
         public let columnSpan: Int?
         /// Number of rows this cell spans.
@@ -342,6 +346,8 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
         public let columnWidth: [Int]?
         /// Background color of the cell.
         public let backgroundColor: String?
+        /// Child nodes contained within this cell.
+        public let content: [RichText<BlockLibrary>]
 
         private struct Attributes: Decodable {
             let colspan: Int?
@@ -352,6 +358,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
 
         private enum CodingKeys: String, CodingKey {
             case attrs
+            case content
         }
 
         public init(from decoder: any Decoder) throws {
@@ -361,6 +368,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             self.rowSpan = attributes?.rowspan
             self.columnWidth = attributes?.colwidth
             self.backgroundColor = attributes?.backgroundColor
+            self.content = try container.decodeIfPresent([RichText<BlockLibrary>].self, forKey: .content) ?? []
         }
     }
 
