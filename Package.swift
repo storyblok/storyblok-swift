@@ -22,6 +22,10 @@ let package = Package(
             name: "StoryblokClient",
             targets: ["StoryblokClient"]
         ),
+        .library(
+            name: "RichTextView",
+            targets: ["RichTextView"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
@@ -52,6 +56,10 @@ let package = Package(
                 "StoryblokClientMacros",
                 .product(name: "Logging", package: "swift-log")
             ],
+        ),
+        .target(
+            name: "RichTextView",
+            dependencies: ["StoryblokClient"]
         ),
         .testTarget(
             name: "URLSessionExtensionTests",
