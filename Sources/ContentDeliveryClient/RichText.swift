@@ -85,7 +85,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             case .blockquote: return "blockquote"
             case .horizontalRule: return "horizontal_rule"
             case .table: return "table"
-            case .tableRow: return "table_row"
+            case .tableRow: return "tableRow"
             case .tableHeader: return "tableHeader"
             case .tableCell: return "tableCell"
             case .paragraph: return "paragraph"
@@ -112,7 +112,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             case "blockquote": self = .blockquote(try Blockquote(from: decoder))
             case "horizontal_rule": self = .horizontalRule
             case "table": self = .table(try Table(from: decoder))
-            case "table_row": self = .tableRow(try TableRow(from: decoder))
+            case "tableRow": self = .tableRow(try TableRow(from: decoder))
             case "tableHeader": self = .tableHeader(try TableHeader(from: decoder))
             case "tableCell": self = .tableCell(try TableCell(from: decoder))
             case "paragraph": self = .paragraph(try Paragraph(from: decoder))
