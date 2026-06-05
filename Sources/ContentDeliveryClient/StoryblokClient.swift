@@ -50,12 +50,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     internal let relations: String
 
-    /// Custom values merged into every decoder's `userInfo`, for use by
-    /// `Decodable` implementations. The relation store key is added on top
-    /// during relation-aware decoding.
-    public let userInfo: [CodingUserInfoKey: any Sendable]
-
-
     /// Creates a client with minimal configuration.
     ///
     /// - Parameters:
@@ -66,7 +60,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - fallbackLanguage: Optional fallback language for untranslated fields.
     ///   - cv: Optional cache version timestamp.
     ///   - requestsPerSecond: Optional maximum number of API requests per second. Defaults to `1000`.
-    ///   - userInfo: Custom values merged into every decoder's `userInfo`, for use by `Decodable` implementations. Defaults to empty.
     ///   - configuration: The [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) to use for the underlying session. Defaults to `.default`.
     public convenience init(
         library: Library.Type,
@@ -77,7 +70,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         fallbackLanguage: String? = nil,
         cv: String? = nil,
         requestsPerSecond: Int = 1000,
-        userInfo: [CodingUserInfoKey: any Sendable] = [:],
         configuration: URLSessionConfiguration = .default,
     ) {
         let session = URLSession(
@@ -92,7 +84,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             ),
             configuration: configuration
         )
-        self.init(library: library, session: session, userInfo: userInfo)
+        self.init(library: library, session: session)
     }
 
     /// Creates a client wrapping a pre-configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -108,11 +100,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     public init(
         library: Library.Type,
         session: URLSession,
-        userInfo: [CodingUserInfoKey: any Sendable] = [:]
     ) {
         self.relations = library.relations
         self.session = session
-        self.userInfo = userInfo
     }
 
     /// Releases the resources held by the underlying [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -171,9 +161,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 if resolveLevel > 0 {
                     let store = RelationStore()
                     store.resolveLevel = resolveLevel
-                    decoder = Self.makeDecoder(userInfo: self.userInfo, relStore: store)
+                    decoder = Self.makeDecoder(relStore: store)
                 } else {
-                    decoder = Self.makeDecoder(userInfo: self.userInfo)
+                    decoder = Self.makeDecoder()
                 }
                 return try decoder.decode(StoryResponse<Content>.self, from: data).story
             }
@@ -209,11 +199,8 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         return request
     }
 
-    /// Returns a `JSONDecoder` configured with Storyblok's date formats, custom `userInfo`, and an optional relation store.
-    internal static func makeDecoder(
-        userInfo: [CodingUserInfoKey: any Sendable] = [:],
-        relStore: RelationStore? = nil
-    ) -> JSONDecoder {
+    /// Returns a `JSONDecoder` configured with Storyblok's date formats and an optional relation store.
+    internal static func makeDecoder(relStore: RelationStore? = nil) -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let string = try decoder.singleValueContainer().decode(String.self)
@@ -226,7 +213,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 debugDescription: "Cannot decode date from string: \(string)"
             )
         }
-        decoder.userInfo = userInfo
         if let relStore {
             decoder.userInfo[.storyblokRelations] = relStore
         }
