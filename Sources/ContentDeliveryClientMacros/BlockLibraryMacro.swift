@@ -144,8 +144,16 @@ private func generateDecoding(
     enumName: String
 ) -> [DeclSyntax] {
     let containerTypeName = "\(enumName)CodingKeys"
+
+    // A `case unknown` (no associated values) acts as a catch-all for unrecognised
+    // component names. When present the default branch silently assigns it instead
+    // of throwing, which prevents decoding failures when the API returns components
+    // the client doesn't know about yet.
+    let unknownCase = cases.first { $0.caseName == "unknown" && $0.params.isEmpty }
+    let knownCases  = cases.filter { $0.caseName != "unknown" }
+
     var switchCases = ""
-    for c in cases {
+    for c in knownCases {
         switchCases += "    case \"\(c.componentName)\":\n"
         if c.params.isEmpty {
             switchCases += "        self = .\(c.caseName)\n"
@@ -154,14 +162,16 @@ private func generateDecoding(
         }
     }
 
+    let defaultClause = unknownCase != nil
+        ? "    default:\n        self = .unknown\n"
+        : "    default:\n        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: \"Unknown component: \\(component)\")\n"
+
     let initDecl: DeclSyntax = """
     nonisolated init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: \(raw: containerTypeName).self)
         let component = try container.decode(String.self, forKey: .component)
         switch component {
-    \(raw: switchCases)    default:
-            throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
-        }
+    \(raw: switchCases)\(raw: defaultClause)}
     }
     """
 
