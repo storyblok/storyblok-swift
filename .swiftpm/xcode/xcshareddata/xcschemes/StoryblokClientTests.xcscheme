@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ContentDeliveryClient"
-               BuildableName = "ContentDeliveryClient"
-               BlueprintName = "ContentDeliveryClient"
+               BlueprintIdentifier = "StoryblokClient"
+               BuildableName = "StoryblokClient"
+               BlueprintName = "StoryblokClient"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,9 +33,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "ContentDeliveryClientTests"
-               BuildableName = "ContentDeliveryClientTests"
-               BlueprintName = "ContentDeliveryClientTests"
+               BlueprintIdentifier = "StoryblokClientTests"
+               BuildableName = "StoryblokClientTests"
+               BlueprintName = "StoryblokClientTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

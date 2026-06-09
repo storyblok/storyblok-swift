@@ -1,4 +1,4 @@
-# ``ContentDeliveryClient``
+# ``StoryblokClient``
 
 A Swift client for Storyblok's [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) built on top of [`URLSessionExtension`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension).
 
