@@ -320,6 +320,134 @@ final class BlockLibraryMacroTests: XCTestCase {
         )
     }
     
+    // MARK: - Backtick-escaped case names
+
+    /// Storyblok component technical names can collide with Swift keywords (e.g. `default`),
+    /// forcing the case to be backtick-escaped. The backticks must be stripped when deriving
+    /// the JSON component name and the per-case CodingKeys type, but preserved when emitting
+    /// the `.case` reference so the generated code stays valid Swift.
+    func test_backtickEscapedCaseName() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case `default`(label: String)
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case `default`(label: String)
+
+                nonisolated static let relations: String = ""
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "default":
+                        let caseContainer = try decoder.container(keyedBy: DefaultCodingKeys.self)
+                        self = .`default`(label: try caseContainer.decode(String.self, forKey: .label))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum DefaultCodingKeys: String, CodingKey {
+                    case label
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    /// A backtick-escaped case carrying a `Story<T>` relation must report the relation under
+    /// the stripped component name (`default.author`, not `` `default`.author ``).
+    func test_backtickEscapedCaseNameWithRelation() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case `default`(author: Story<Content>)
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case `default`(author: Story<Content>)
+
+                nonisolated static let relations: String = "default.author"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "default":
+                        let caseContainer = try decoder.container(keyedBy: DefaultCodingKeys.self)
+                        self = .`default`(author: try caseContainer.decode(Story<Content>.self, forKey: .author))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum DefaultCodingKeys: String, CodingKey {
+                    case author
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
+    /// Storyblok component technical names frequently contain hyphens (e.g. `emoji-randomizer`),
+    /// which require Swift raw identifiers. The backticks and hyphen must survive into the
+    /// `.case` reference while the JSON component name keeps the hyphen but drops the backticks.
+    func test_rawIdentifierCaseNameWithHyphen() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case `emoji-randomizer`(label: String)
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case `emoji-randomizer`(label: String)
+
+                nonisolated static let relations: String = ""
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "emoji-randomizer":
+                        let caseContainer = try decoder.container(keyedBy: EmojiRandomizerCodingKeys.self)
+                        self = .`emoji-randomizer`(label: try caseContainer.decode(String.self, forKey: .label))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum EmojiRandomizerCodingKeys: String, CodingKey {
+                    case label
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     // MARK: - Multiple params
 
     func test_multipleParamsAreDecodedOnSeparateLines() {
