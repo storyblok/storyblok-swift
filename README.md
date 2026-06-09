@@ -28,10 +28,10 @@
 
 This package consists of the following libraries:
 
-| Library                                                                                                    | Description                                                                           |
-|------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| [URLSessionExtension](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension)       | An extension to simplify calling Storyblok's APIs with URLSession                     |
-| [ContentDeliveryClient](https://storyblok.github.io/storyblok-swift/documentation/contentdeliveryclient)   | A typed client for Storyblok's Content Delivery API with automatic relation resolution |
+| Library                                                                                              | Description                                                                           |
+|------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [URLSessionExtension](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension) | An extension to simplify calling Storyblok's APIs with URLSession                     |
+| [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient)         | A typed client for Storyblok's Content Delivery API with automatic relation resolution |
 
 ## 📚 Examples
 

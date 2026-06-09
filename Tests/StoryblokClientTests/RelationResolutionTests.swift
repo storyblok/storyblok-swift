@@ -1,10 +1,10 @@
 import Foundation
 import Testing
-@testable import ContentDeliveryClient
+@testable import StoryblokClient
 
 @Suite struct RelationResolutionTests {
 
-    indirect enum MyBlock : Decodable, Hashable, ContentDeliveryClient.BlockLibrary {
+    indirect enum MyBlock : Decodable, Hashable, BlockLibrary {
         case author(Author)
         case article(Article)
         case popular(articles: [Story<Article>])

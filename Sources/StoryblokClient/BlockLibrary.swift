@@ -56,7 +56,7 @@ extension BlockLibrary {
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
 @attached(extension, conformances: BlockLibrary)
 public macro BlockLibrary() = #externalMacro(
-    module: "ContentDeliveryClientMacros",
+    module: "StoryblokClientMacros",
     type: "BlockLibraryMacro"
 )
 

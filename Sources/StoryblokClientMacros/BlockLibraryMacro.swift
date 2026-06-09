@@ -17,7 +17,7 @@ extension BlockLibraryMacro: MemberMacro {
                 node: node,
                 message: BlockLibraryMacroDiagnostic(
                     message: "@BlockLibrary can only be applied to an enum",
-                    id: MessageID(domain: "ContentDeliveryClientMacros", id: "notAnEnum"),
+                    id: MessageID(domain: "StoryblokClientMacros", id: "notAnEnum"),
                     severity: .error
                 )
             ))
@@ -54,7 +54,7 @@ extension BlockLibraryMacro: ExtensionMacro {
         var extensions: [ExtensionDeclSyntax] = []
 
         if !protocols.isEmpty {
-            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): ContentDeliveryClient.BlockLibrary {}")
+            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): BlockLibrary {}")
             extensions.append(ext)
         }
 
@@ -394,7 +394,7 @@ private func validateStoryRelationTypes(
                     node: param.type,
                     message: BlockLibraryMacroDiagnostic(
                         message: "Story<T> relation field type '\(typeArg)' must be the enclosing enum type or a nested struct declared within the enum; the macro can only discover nested Story fields for types defined in the enum body",
-                        id: MessageID(domain: "ContentDeliveryClientMacros", id: "invalidRelationType"),
+                        id: MessageID(domain: "StoryblokClientMacros", id: "invalidRelationType"),
                         severity: .error
                     )
                 ))
@@ -427,7 +427,7 @@ private func validateCaseAssociatedValues(
                         node: param.type,
                         message: BlockLibraryMacroDiagnostic(
                             message: "associated values with multiple parameters must all have labels",
-                            id: MessageID(domain: "ContentDeliveryClientMacros", id: "unlabeledMultiParam"),
+                            id: MessageID(domain: "StoryblokClientMacros", id: "unlabeledMultiParam"),
                             severity: .error
                         )
                     ))
@@ -441,7 +441,7 @@ private func validateCaseAssociatedValues(
                     node: type,
                     message: BlockLibraryMacroDiagnostic(
                         message: "a single unlabeled associated value must be a plain struct type",
-                        id: MessageID(domain: "ContentDeliveryClientMacros", id: "unlabeledNonStruct"),
+                        id: MessageID(domain: "StoryblokClientMacros", id: "unlabeledNonStruct"),
                         severity: .error
                     )
                 ))
@@ -454,7 +454,7 @@ private func validateCaseAssociatedValues(
                     node: type,
                     message: BlockLibraryMacroDiagnostic(
                         message: "'\(typeName)' must be declared as a nested struct within the enum",
-                        id: MessageID(domain: "ContentDeliveryClientMacros", id: "unlabeledNotNestedStruct"),
+                        id: MessageID(domain: "StoryblokClientMacros", id: "unlabeledNotNestedStruct"),
                         severity: .error
                     )
                 ))
@@ -484,7 +484,7 @@ private func validateNestedStructsHaveCases(
                 node: structDecl.name,
                 message: BlockLibraryMacroDiagnostic(
                     message: "nested struct '\(structName)' must have a corresponding enum case with it as an unlabeled associated value; the case name must match the block type's technical name",
-                    id: MessageID(domain: "ContentDeliveryClientMacros", id: "nestedStructMissingCase"),
+                    id: MessageID(domain: "StoryblokClientMacros", id: "nestedStructMissingCase"),
                     severity: .error
                 )
             ))
@@ -510,6 +510,6 @@ struct BlockLibraryMacroDiagnostic: DiagnosticMessage {
 }
 
 @main
-struct ContentDeliveryClientPlugin: CompilerPlugin {
+struct StoryblokClientPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [BlockLibraryMacro.self]
 }

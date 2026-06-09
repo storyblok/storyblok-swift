@@ -1,4 +1,4 @@
-# Fetching Storyblok content with ContentDeliveryClient
+# Fetching Storyblok content with StoryblokClient
 
 How to use ``StoryblokClient`` to fetch typed stories from the Storyblok [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2), with automatic relation resolution and polymorphic component decoding.
 
@@ -6,7 +6,7 @@ How to use ``StoryblokClient`` to fetch typed stories from the Storyblok [Conten
 
 ### Add package dependency
 
-Add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `ContentDeliveryClient` as a dependency of the target in which you wish to use it:
+Add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `StoryblokClient` as a dependency of the target in which you wish to use it:
 
 ```swift
 dependencies: [
@@ -17,13 +17,13 @@ targets: [
     .target(
         …
         dependencies: [
-            .product(name: "ContentDeliveryClient", package: "storyblok-swift")
+            .product(name: "StoryblokClient", package: "storyblok-swift")
         ]
     )
 ]
 ```
 
-> Note: The `ContentDeliveryClient` library is built on top of [`URLSessionExtension`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension). You can learn more about the underlying session in the [URLSessionExtension User Guide](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/userguide).
+> Note: The `StoryblokClient` library is built on top of [`URLSessionExtension`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension). You can learn more about the underlying session in the [URLSessionExtension User Guide](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/userguide).
 
 ### Create a client
 

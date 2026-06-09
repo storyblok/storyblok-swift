@@ -19,8 +19,8 @@ let package = Package(
             targets: ["URLSessionExtension"]
         ),
         .library(
-            name: "ContentDeliveryClient",
-            targets: ["ContentDeliveryClient"]
+            name: "StoryblokClient",
+            targets: ["StoryblokClient"]
         ),
     ],
     dependencies: [
@@ -37,7 +37,7 @@ let package = Package(
             ],
         ),
         .macro(
-            name: "ContentDeliveryClientMacros",
+            name: "StoryblokClientMacros",
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
@@ -46,10 +46,10 @@ let package = Package(
             ]
         ),
         .target(
-            name: "ContentDeliveryClient",
+            name: "StoryblokClient",
             dependencies: [
                 "URLSessionExtension",
-                "ContentDeliveryClientMacros",
+                "StoryblokClientMacros",
                 .product(name: "Logging", package: "swift-log")
             ],
         ),
@@ -61,22 +61,22 @@ let package = Package(
             ],
         ),
         .testTarget(
-            name: "ContentDeliveryClientMacroTests",
+            name: "StoryblokClientMacroTests",
             dependencies: [
-                "ContentDeliveryClientMacros",
+                "StoryblokClientMacros",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ],
-            path: "Tests/ContentDeliveryClientTests",
+            path: "Tests/StoryblokClientTests",
             sources: ["BlockLibraryMacroTests.swift"]
         ),
         .testTarget(
-            name: "ContentDeliveryClientTests",
+            name: "StoryblokClientTests",
             dependencies: [
-                "ContentDeliveryClient",
+                "StoryblokClient",
                 .product(name: "Mocker", package: "Mocker")
             ],
-            path: "Tests/ContentDeliveryClientTests",
+            path: "Tests/StoryblokClientTests",
             sources: ["RelationResolutionTests.swift", "StoryTests.swift", "StoryblokClientTests.swift"]
         ),
         .testTarget(

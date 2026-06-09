@@ -1,10 +1,10 @@
 import Foundation
 import Testing
-@testable import ContentDeliveryClient
+@testable import StoryblokClient
 
 @Suite struct StoryTests {
 
-    struct PageContent: ContentDeliveryClient.BlockLibrary, Decodable, Equatable {
+    struct PageContent: BlockLibrary, Decodable, Equatable {
         let component: String
         let title: String?
     }

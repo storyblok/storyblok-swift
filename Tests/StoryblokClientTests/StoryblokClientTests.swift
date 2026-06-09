@@ -2,7 +2,7 @@ import Foundation
 import Logging
 import Testing
 import Mocker
-@testable import ContentDeliveryClient
+@testable import StoryblokClient
 
 @BlockLibrary
 indirect enum Block : Decodable {

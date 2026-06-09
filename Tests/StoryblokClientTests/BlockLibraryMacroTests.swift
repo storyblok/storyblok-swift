@@ -1,7 +1,7 @@
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
-@testable import ContentDeliveryClientMacros
+@testable import StoryblokClientMacros
 
 private let macros: [String: Macro.Type] = ["BlockLibrary": BlockLibraryMacro.self]
 

@@ -3,7 +3,7 @@ import Combine
 import Logging
 import URLSessionExtension
 
-private let log = Logger(label: "com.storyblok.ContentDeliveryClient")
+private let log = Logger(label: "com.storyblok.StoryblokClient")
 
 /// A client for the Storyblok [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
 ///
