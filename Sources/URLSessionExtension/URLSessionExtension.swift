@@ -180,7 +180,6 @@ public extension URLRequest {
                     case .custom(url: let url): url
                 }
                 url.append(path: path)
-                url.append(queryItems: [URLQueryItem(name: "token", value: accessToken), URLQueryItem(name: "version", value: version.rawValue)])
                 if let cv = cv {
                     url.append(queryItems: [URLQueryItem(name: "cv", value: cv)])
                     //override default cache policy to serve subsequent requests for the same resource from the cache
@@ -188,6 +187,7 @@ public extension URLRequest {
                         cachePolicy = .returnCacheDataElseLoad
                     }
                 }
+                url.append(queryItems: [URLQueryItem(name: "token", value: accessToken), URLQueryItem(name: "version", value: version.rawValue)])
                 if let language = language {
                     url.append(queryItems: [URLQueryItem(name: "language", value: language)])
                 }
