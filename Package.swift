@@ -1,4 +1,4 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -27,7 +27,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
         .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
         .package(url: "https://github.com/apple/swift-docc-plugin.git", from: "1.0.0"),
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0"),
     ],
     targets: [
         .target(

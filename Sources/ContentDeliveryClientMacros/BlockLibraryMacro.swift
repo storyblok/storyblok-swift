@@ -65,11 +65,41 @@ extension BlockLibraryMacro: ExtensionMacro {
 // MARK: - Case collection
 
 private struct CaseInfo {
+    /// The Swift case identifier as written, including any backticks (e.g. `` `default` ``).
+    /// Used when emitting `.caseName` references so escaped keywords stay valid Swift.
     let caseName: String
     let componentName: String
     let params: [(label: String, type: TypeSyntax, unlabeled: Bool)]
     let nestedStructFields: [(label: String, type: TypeSyntax)]
     let perCaseCodingKeyMap: [String: String]  // Swift label → JSON key; empty = no override
+    /// Name of the per-case CodingKeys type, derived from the backtick-stripped case name.
+    let codingKeysTypeName: String
+}
+
+/// Removes the enclosing backticks from an escaped Swift identifier (e.g. `` `default` `` → `default`).
+private func strippingBackticks(_ name: String) -> String {
+    guard name.count >= 2, name.hasPrefix("`"), name.hasSuffix("`") else { return name }
+    return String(name.dropFirst().dropLast())
+}
+
+/// Derives the per-case CodingKeys type name from a case name. Backtick escaping is removed and
+/// any characters that aren't valid in a Swift identifier (e.g. the hyphens in a raw identifier
+/// like `` `emoji-randomizer` ``) are treated as word separators, yielding a PascalCase identifier
+/// (`EmojiRandomizerCodingKeys`). Plain and camelCase names keep their existing shape
+/// (`article` → `ArticleCodingKeys`, `popularArticles` → `PopularArticlesCodingKeys`).
+private func codingKeysTypeName(forCase caseName: String) -> String {
+    let bare = strippingBackticks(caseName)
+    var result = ""
+    var capitalizeNext = true
+    for ch in bare {
+        if ch == "_" || ch.isLetter || ch.isNumber {
+            result.append(capitalizeNext && ch.isLetter ? Character(ch.uppercased()) : ch)
+            capitalizeNext = false
+        } else {
+            capitalizeNext = true
+        }
+    }
+    return result + "CodingKeys"
 }
 
 private func collectNestedStructs(
@@ -104,7 +134,8 @@ private func collectCases(
         guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else { continue }
         for element in caseDecl.elements {
             let caseName = element.name.text
-            let componentName = codingKeyMap[caseName] ?? caseName
+            let logicalName = strippingBackticks(caseName)
+            let componentName = codingKeyMap[logicalName] ?? logicalName
             var params: [(label: String, type: TypeSyntax, unlabeled: Bool)] = []
             var nestedStructFields: [(label: String, type: TypeSyntax)] = []
             if let parameters = element.parameterClause?.parameters {
@@ -124,13 +155,14 @@ private func collectCases(
                     }
                 }
             }
-            let perCaseCodingKeyMap = findPerCaseCodingKeys(caseName: caseName, in: declaration)
+            let perCaseCodingKeyMap = findPerCaseCodingKeys(caseName: logicalName, in: declaration)
             cases.append(CaseInfo(
                 caseName: caseName,
                 componentName: componentName,
                 params: params,
                 nestedStructFields: nestedStructFields,
-                perCaseCodingKeyMap: perCaseCodingKeyMap
+                perCaseCodingKeyMap: perCaseCodingKeyMap,
+                codingKeysTypeName: codingKeysTypeName(forCase: caseName)
             ))
         }
     }
@@ -191,7 +223,7 @@ private func generatePerCaseCodingKeyDecls(cases: [CaseInfo]) -> [DeclSyntax] {
     for c in cases {
         let labeledParams = c.params.filter { !$0.unlabeled }
         guard !labeledParams.isEmpty, c.perCaseCodingKeyMap.isEmpty else { continue }
-        let enumName = c.caseName.prefix(1).uppercased() + c.caseName.dropFirst() + "CodingKeys"
+        let enumName = c.codingKeysTypeName
         let keyCases = labeledParams.map { $0.label }.sorted().map { "    case \($0)" }.joined(separator: "\n")
         let decl: DeclSyntax = """
         enum \(raw: enumName): String, CodingKey {
@@ -213,7 +245,7 @@ private func generateCaseBody(_ c: CaseInfo) -> String {
 }
 
 private func generatePerCaseCodingKeyBody(_ c: CaseInfo, indent: String) -> String {
-    let containerTypeName = c.caseName.prefix(1).uppercased() + c.caseName.dropFirst() + "CodingKeys"
+    let containerTypeName = c.codingKeysTypeName
     var lines = "\(indent)let caseContainer = try decoder.container(keyedBy: \(containerTypeName).self)\n"
     let args = c.params.map { param -> String in
         let baseType = "\(unwrapOptional(param.type).trimmed)"
@@ -256,7 +288,7 @@ private func findCodingKeys(in declaration: some DeclGroupSyntax) -> [String: St
         for caseMember in enumDecl.memberBlock.members {
             guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
             for element in caseDecl.elements {
-                let name = element.name.text
+                let name = strippingBackticks(element.name.text)
                 if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
                    literal.segments.count == 1,
                    let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
@@ -275,7 +307,7 @@ private func findPerCaseCodingKeys(
     caseName: String,
     in declaration: some DeclGroupSyntax
 ) -> [String: String] {
-    let targetName = caseName.prefix(1).uppercased() + caseName.dropFirst() + "CodingKeys"
+    let targetName = codingKeysTypeName(forCase: caseName)
     var result: [String: String] = [:]
     for member in declaration.memberBlock.members {
         guard let enumDecl = member.decl.as(EnumDeclSyntax.self),
@@ -284,7 +316,7 @@ private func findPerCaseCodingKeys(
         for caseMember in enumDecl.memberBlock.members {
             guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
             for element in caseDecl.elements {
-                let name = element.name.text
+                let name = strippingBackticks(element.name.text)
                 if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
                    literal.segments.count == 1,
                    let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
@@ -329,13 +361,13 @@ private func unwrapOptional(_ type: TypeSyntax) -> TypeSyntax {
 private func storyTypeArgument(_ type: TypeSyntax) -> String? {
     if let id = type.as(IdentifierTypeSyntax.self), id.name.text == "Story",
        let arg = id.genericArgumentClause?.arguments.first {
-        return arg.argument.trimmedDescription
+        return arg.argument.as(TypeSyntax.self)?.trimmedDescription
     }
     if let array = type.as(ArrayTypeSyntax.self),
        let element = array.element.as(IdentifierTypeSyntax.self),
        element.name.text == "Story",
        let arg = element.genericArgumentClause?.arguments.first {
-        return arg.argument.trimmedDescription
+        return arg.argument.as(TypeSyntax.self)?.trimmedDescription
     }
     if let optional = type.as(OptionalTypeSyntax.self) {
         return storyTypeArgument(optional.wrappedType)
