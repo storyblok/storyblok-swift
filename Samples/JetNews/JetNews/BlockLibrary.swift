@@ -1,6 +1,5 @@
 import Foundation
 import StoryblokClient
-import SwiftUI
 
 @BlockLibrary
 enum Block : Decodable, Hashable {

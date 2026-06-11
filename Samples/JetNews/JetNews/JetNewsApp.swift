@@ -13,7 +13,7 @@ import StoryblokClient
 import RichTextView
 internal import URLSessionExtension
 
-private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "main")
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "JetNews", category: "main")
 
 @main
 struct JetNewsApp: App {
