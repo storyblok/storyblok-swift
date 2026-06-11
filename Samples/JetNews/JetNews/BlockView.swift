@@ -9,7 +9,7 @@ extension Block: View {
 
         // MARK: Content Types
                 
-        case .post(let post): post //Post comforms to View (below)
+        case .post(let post): post // Post conforms to View (below)
                 
         case .page(let blocks):
             LazyVStack(alignment: .leading, spacing: 0) {
