@@ -5,8 +5,14 @@ import StoryblokClient
 
 /// A delegate that provides custom SwiftUI views for individual rich-text node types.
 ///
-/// Conform to this protocol and pass your delegate to `.richTextViewDelegate(_:)` to
-/// override the rendering of specific node types while leaving all others at their defaults.
+/// Conform to this protocol and install your delegate with
+/// ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)`` to override the rendering of specific node types
+/// while leaving all others at their built-in defaults.
+///
+/// Every requirement has a default implementation that matches the corresponding built-in
+/// renderer, so you only implement the node types you want to change. Each method returns an
+/// opaque `any View` and runs on the main actor. The delegate's `BlockLibrary` associated type
+/// must match the ``StoryblokClient/RichText`` you are rendering.
 ///
 /// ```swift
 /// struct MyDelegate: RichTextViewDelegate {
@@ -21,6 +27,10 @@ import StoryblokClient
 /// ScrollView { richText }
 ///     .richTextViewDelegate(MyDelegate())
 /// ```
+///
+/// > Note: ``viewForHorizontalRule()`` takes no node value because a horizontal rule carries no
+/// > data; every other requirement receives the decoded node to render. Marks and unknown nodes
+/// > have no delegate hook — marks are rendered inline as part of their containing text run.
 public protocol RichTextViewDelegate<BlockLibrary> {
     associatedtype BlockLibrary: View & Decodable
 
@@ -179,8 +189,19 @@ extension EnvironmentValues {
 }
 
 extension View {
-    /// Installs a delegate that can override the SwiftUI view used to render
-    /// individual rich-text node types.
+    /// Installs a ``RichTextViewDelegate`` that overrides the SwiftUI views used to render
+    /// individual rich-text node types within this view hierarchy.
+    ///
+    /// The delegate applies to every ``StoryblokClient/RichText`` rendered by descendants. Node
+    /// types the delegate does not implement keep their built-in default rendering.
+    ///
+    /// ```swift
+    /// ScrollView { article.content }
+    ///     .richTextViewDelegate(MyDelegate())
+    /// ```
+    ///
+    /// - Parameter delegate: The delegate supplying custom node views. Its `BlockLibrary` must
+    ///   match the rich text being rendered.
     public func richTextViewDelegate<D: RichTextViewDelegate>(_ delegate: D) -> some View {
         environment(\.richTextDelegate, RichTextDelegateStorage(delegate))
     }
