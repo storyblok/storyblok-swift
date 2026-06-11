@@ -1,19 +1,22 @@
 import Foundation
 
-/// Base protocol for all Storyblok blocks.
+/// The set of Storyblok components a ``StoryblokClient`` can decode.
 ///
-/// Conform to this protocol to define a content type that maps to one or more Storyblok
-/// component types. Use the ``BlockLibrary()`` macro on an `enum` to automatically synthesize
-/// the ``relations`` property from the enum's case names and associated value labels.
+/// A block library enumerates your space's components and determines which ``Story`` relations
+/// the client resolves. Conform an `enum` by applying the ``BlockLibrary()`` macro, which
+/// synthesizes ``relations`` and the `Decodable` conformance from the enum's cases:
 ///
 /// ```swift
 /// @BlockLibrary
 /// enum Content {
-///     case article(author: Story<Author>)
-///     case popular(articles: [Story<Article>])
+///     case article(author: Story<Content>)
+///     case popular(articles: [Story<Content>])
 /// }
 /// // Content.relations == "article.author,popular.articles"
 /// ```
+///
+/// You can also conform a type manually (for example a single `struct` representing one
+/// component) by implementing `Decodable` and, when relations need resolving, ``relations``.
 public protocol BlockLibrary : Decodable {
 
     /// Comma-separated `component.field` pairs for the `resolve_relations` API parameter.
@@ -27,31 +30,42 @@ extension BlockLibrary {
     public static var relations: String { "" }
 }
 
-/// Conforms an `enum` to ``Block`` and synthesizes a `relations` property from its cases.
+/// Conforms an `enum` to ``BlockLibrary`` and synthesizes its decoding from the enum's cases.
+///
+/// Each case maps to a Storyblok component: the case name is matched against the component's
+/// technical name (override the mapping with a top-level `CodingKeys` enum). A case may carry
+/// either a single unlabeled nested-struct associated value (which decodes the whole content
+/// object) or labeled associated values (which decode individual fields). A parameterless
+/// `case unknown` acts as a catch-all so unrecognised components decode without throwing.
 ///
 /// Applied to an `enum`, this macro:
 ///
-/// - Adds a `relations` static property built from the enum's case names and the labels of
-///   any `Story`-typed associated values. The format is `caseName.fieldLabel` pairs joined by
-///   commas, sorted alphabetically, ready for use as the `resolve_relations` API parameter.
-/// - Adds a conformance to ``Block`` if the type does not already declare it.
+/// - Adds a `relations` static property built from the enum's case names and the labels of any
+///   ``Story``-typed associated values (including ``Story`` fields of nested structs). The format
+///   is `componentName.fieldName` pairs joined by commas, sorted alphabetically, ready for use as
+///   the `resolve_relations` API parameter.
+/// - Synthesizes an `init(from:)` decoder that dispatches on the `component` field, plus the
+///   `CodingKeys` enums it needs.
+/// - Adds a conformance to ``BlockLibrary`` if the type does not already declare it.
 ///
 /// ```swift
 /// @BlockLibrary
 /// enum Content {
-///     case article(author: Story<Author>)
-///     case popular(articles: [Story<Article>])
-///     case text(String)
+///     case article(author: Story<Content>)
+///     case popular(articles: [Story<Content>])
+///     case text(value: String)
+///     case unknown
 /// }
 /// ```
 ///
-/// Expands to:
+/// Expands to add, among other members:
 /// ```swift
 /// enum Content {
 ///     // ... existing members ...
-///     static let relations: String = "article.author,popular.articles"
+///     nonisolated static let relations: String = "article.author,popular.articles"
+///     nonisolated init(from decoder: any Decoder) throws { /* dispatches on `component` */ }
 /// }
-/// extension Content: Block {}
+/// nonisolated extension Content: BlockLibrary {}
 /// ```
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
 @attached(extension, conformances: BlockLibrary)

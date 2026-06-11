@@ -10,18 +10,29 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 /// Provides type-safe access to stories with automatic JSON decoding and [relation
 /// resolution](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations).
 ///
-/// Create a client by providing your API access token and a content version:
+/// The client is generic over a ``BlockLibrary`` — a type (typically an `enum` annotated with
+/// the ``BlockLibrary()`` macro) that enumerates the Storyblok components your space uses. The
+/// library drives both content decoding and which relations are resolved.
+///
+/// Create a client by providing your block library, API access token, and a content version:
 /// ```swift
-/// let client = StoryblokClient(accessToken: "YOUR_ACCESS_TOKEN", version: .draft)
+/// let client = StoryblokClient(library: Content.self, accessToken: "YOUR_ACCESS_TOKEN", version: .draft)
 /// ```
 ///
-/// Fetch stories by slug or UUID:
+/// Fetch stories by slug or UUID. The decoded content type is inferred from the value you bind,
+/// and may be the library itself or any `Decodable` type matching the story's content:
 /// ```swift
-/// let cancellable = client.story("articles/hello-world", as: Article.self)
+/// // Combine
+/// let cancellable = client.story("articles/hello-world")
 ///     .sink(
 ///         receiveCompletion: { _ in },
-///         receiveValue: { story in print(story.name) }
+///         receiveValue: { (story: Story<Content>) in print(story.name) }
 ///     )
+///
+/// // async/await, via the publisher's `values` sequence
+/// let story: Story<Content>? = try await client.story("articles/hello-world")
+///     .values
+///     .first { _ in true }
 /// ```
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public final class StoryblokClient<Library: BlockLibrary>: Sendable {
@@ -53,9 +64,11 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     /// Creates a client with minimal configuration.
     ///
     /// - Parameters:
+    ///   - library: The ``BlockLibrary`` type describing the components this client decodes and
+    ///     the relations it resolves.
     ///   - accessToken: The API access token for authentication.
-    ///   - version: The [content version](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/api/version) to retrieve. Defaults to `.published`.
-    ///   - region: Optional [region](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/api/region) depending on the server location of your space. Defaults to `.eu`.
+    ///   - version: The [content version](doc:/URLSessionExtension/Api/Version) to retrieve. Defaults to `.published`.
+    ///   - region: Optional [region](doc:/URLSessionExtension/Api/Region) depending on the server location of your space. Defaults to `.eu`.
     ///   - language: Optional language code for localized content.
     ///   - fallbackLanguage: Optional fallback language for untranslated fields.
     ///   - cv: Optional cache version timestamp.
@@ -90,13 +103,14 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     /// Creates a client wrapping a pre-configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
     ///
     /// The session must be configured for the Content Delivery API, see
-    /// [`URLSession.init(storyblok:configuration:)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/foundation/urlsession/init(storyblok:configuration:)).
+    /// [`URLSession.init(storyblok:configuration:)`](doc:/URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)).
     ///
     /// - Parameters:
+    ///   - library: The ``BlockLibrary`` type describing the components this client decodes and
+    ///     the relations it resolves.
     ///   - session: The [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to use for API requests. It must have been created
-    ///     with the [`URLSession.init(storyblok:configuration:)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/foundation/urlsession/init(storyblok:configuration:))
-    ///     initializer with [`Api.cdn(...)`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/api/cdn(accesstoken:language:fallbacklanguage:version:cv:region:requestspersecond:)).
-    ///   - userInfo: Custom values merged into every decoder's `userInfo`, for use by `Decodable` implementations. Defaults to empty.
+    ///     with the [`URLSession.init(storyblok:configuration:)`](doc:/URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:))
+    ///     initializer with [`Api.cdn(...)`](doc:/URLSessionExtension/Api/cdn(accessToken:language:fallbackLanguage:version:cv:region:requestsPerSecond:)).
     public init(
         library: Library.Type,
         session: URLSession,
@@ -114,8 +128,16 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// Retrieves a story by its slug.
     ///
+    /// The decoded `Content` type is inferred from the context in which the result is used. It is
+    /// commonly the ``BlockLibrary`` itself, but may be any `Decodable` type that matches the
+    /// shape of the story's `content` object (for example a single nested block struct).
+    ///
     /// - Parameters:
     ///   - slug: The URL path segment identifying the story.
+    ///   - resolveLevel: How deeply nested ``Story`` relations are resolved. `1` (the default)
+    ///     resolves direct relations; higher values resolve relations of relations; `0` disables
+    ///     relation resolution entirely, leaving relation fields as raw UUID strings. See
+    ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
@@ -125,8 +147,16 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// Retrieves a story by its UUID.
     ///
+    /// The decoded `Content` type is inferred from the context in which the result is used. It is
+    /// commonly the ``BlockLibrary`` itself, but may be any `Decodable` type that matches the
+    /// shape of the story's `content` object (for example a single nested block struct).
+    ///
     /// - Parameters:
     ///   - uuid: The unique identifier of the story.
+    ///   - resolveLevel: How deeply nested ``Story`` relations are resolved. `1` (the default)
+    ///     resolves direct relations; higher values resolve relations of relations; `0` disables
+    ///     relation resolution entirely, leaving relation fields as raw UUID strings. See
+    ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value.
