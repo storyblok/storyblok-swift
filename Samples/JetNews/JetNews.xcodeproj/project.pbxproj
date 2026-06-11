@@ -31,9 +31,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB8E776A2FADFDA10095FA7E /* StoryblokClient in Frameworks */,
 				AB71D1FF2FDAA75700252801 /* RichTextView in Frameworks */,
-				AB8E776C2FADFDA10095FA7E /* URLSessionExtension in Frameworks */,
 				AB71D2032FDAA75700252801 /* URLSessionExtension in Frameworks */,
 				AB71D2012FDAA75700252801 /* StoryblokClient in Frameworks */,
 			);
@@ -86,8 +84,6 @@
 			);
 			name = JetNews;
 			packageProductDependencies = (
-				AB8E77692FADFDA10095FA7E /* StoryblokClient */,
-				AB8E776B2FADFDA10095FA7E /* URLSessionExtension */,
 				AB71D1FE2FDAA75700252801 /* RichTextView */,
 				AB71D2002FDAA75700252801 /* StoryblokClient */,
 				AB71D2022FDAA75700252801 /* URLSessionExtension */,
@@ -121,7 +117,7 @@
 			mainGroup = ABBCBD182FA33CE700AFEFE2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				AB71D1FD2FDAA75700252801 /* XCLocalSwiftPackageReference "../../../storyblok-swift" */,
+				AB71D1FD2FDAA75700252801 /* XCLocalSwiftPackageReference "../.." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ABBCBD222FA33CE800AFEFE2 /* Products */;
@@ -358,10 +354,9 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		AB71D1FD2FDAA75700252801 /* XCLocalSwiftPackageReference "../../../storyblok-swift" */ = {
+		AB71D1FD2FDAA75700252801 /* XCLocalSwiftPackageReference "../.." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = "../../../storyblok-swift";
+			relativePath = "../..";
 		};
 /* End XCLocalSwiftPackageReference section */
 
