@@ -1,29 +1,73 @@
 # ``StoryblokClient``
 
-A Swift client for Storyblok's [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) built on top of [`URLSessionExtension`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension).
+A Swift client for Storyblok's [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) built on top of ``/URLSessionExtension``.
 
-With out-of-the-box support for reactive story fetching, automatic relation resolution, rich text parsing, and custom component decoding.
+With out-of-the-box support for reactive and `async` story fetching, automatic relation resolution, rich text parsing, and macro-driven component decoding.
+
+## Overview
+
+You describe your space's components once as a ``BlockLibrary`` — typically an `enum` annotated with the ``BlockLibrary()`` macro — and create a ``StoryblokClient`` generic over it. The library drives both how story content is decoded and which relations the client resolves.
+
+```swift
+@BlockLibrary
+enum Content {
+    case page(Page)
+    case article(Article)
+    case unknown
+
+    struct Page: Decodable {
+        let title: String
+    }
+
+    struct Article: Decodable {
+        let headline: String
+        let body: RichText<Content>
+    }
+}
+
+let client = StoryblokClient(
+    library: Content.self,
+    accessToken: "YOUR_ACCESS_TOKEN",
+    version: .draft
+)
+
+let story: Story<Content>? = try await client.story("articles/hello-world")
+    .values
+    .first { _ in true }
+```
 
 Read <doc:UserGuide> to get started.
 
 ## Topics
 
+### Essentials
+
+- <doc:UserGuide>
+
 ### Creating a client
 
 - ``StoryblokClient``
-- ``StoryblokClient/init(accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:components:configuration:lenientJsonDecoding:)``
-- ``StoryblokClient/init(session:components:lenientJsonDecoding:)``
+- ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:)``
+- ``StoryblokClient/init(library:session:)``
+- ``StoryblokClient/close()``
+
+### Defining a block library
+
+- ``BlockLibrary``
+- ``BlockLibrary()``
+- ``BlockLibrary/relations``
 
 ### Fetching stories
 
-- ``StoryblokClient/story(_:as:)-(String,_)``
-- ``StoryblokClient/story(_:as:)-(UUID,_)``
-- ``Story``
+- ``StoryblokClient/story(_:resolveLevel:)-(String,_)``
+- ``StoryblokClient/story(_:resolveLevel:)-(UUID,_)``
 - ``StoryblokClient/Error``
 
-### Defining blocks
+### Stories
 
-- ``Block``
+- ``Story``
+- ``Alternate``
+- ``TranslatedSlug``
 
 ### Field types
 
@@ -34,6 +78,6 @@ Read <doc:UserGuide> to get started.
 ### Rich text
 
 - ``RichText``
+- ``RichTextComposite``
 - ``RichText/Mark``
-- ``RichText/Composite``
 - ``RichText/TextAlign``
