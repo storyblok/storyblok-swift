@@ -11,15 +11,22 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Generate documentation
-        uses: fwcd/swift-docc-action@v1
-        with:
-          target: URLSessionExtension
-          output: ./docs
-          hosting-base-path: storyblok-swift
-          disable-indexing: 'true'
-          transform-for-static-hosting: 'true'
+        run: |
+          swift package --allow-writing-to-directory ./docs \
+            generate-documentation \
+            --enable-experimental-combined-documentation \
+            --target StoryblokClient \
+            --target RichTextView \
+            --target URLSessionExtension \
+            --disable-indexing \
+            --transform-for-static-hosting \
+            --hosting-base-path storyblok-swift \
+            --output-path ./docs
 
       - name: Update favicon
         run: |
