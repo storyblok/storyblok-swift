@@ -76,7 +76,7 @@ enum CssColorParser {
             let b = UInt8(match.3),
             let aRaw = Double(match.4)
         else { return nil }
-        let alpha = aRaw > 1.0 ? aRaw / 255.0 : aRaw
+        let alpha = min(aRaw > 1.0 ? aRaw / 255.0 : aRaw, 1.0)
         return Color(red: Double(r) / 255, green: Double(g) / 255, blue: Double(b) / 255, opacity: alpha)
     }
 }
