@@ -20,7 +20,7 @@ public extension URLSession {
 /**
  * It is necessary to specify a case of `Api` when [initializing](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) `URLSession` to configure it for either the [Content Delivery API](doc:Api/cdn(accessToken:language:fallbackLanguage:version:cv:region:requestsPerSecond:)) or the [Management API](doc:Api/mapi(accessToken:region:requestsPerSecond:))
  */
-public enum Api {
+public enum Api : Sendable {
 
     /// Configure the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) for the [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2)
     /// - Parameters:
@@ -67,7 +67,7 @@ public enum Api {
     ///
     /// Learn more in the [Content Delivery API Reference](https://www.storyblok.com/docs/api/content-delivery/v2)
     /// or [Management API Reference](https://www.storyblok.com/docs/api/management).
-    public enum Region {
+    public enum Region : Sendable {
         /// European Union API server location.
         case eu
         /// United States API server location.
@@ -91,7 +91,7 @@ public enum Api {
     /// Resources have two potential versions: draft (unpublished) or published.
     ///
     /// Defaults to [published](doc:Api/Version/published).
-    public enum Version: String {
+    public enum Version: String, Sendable {
         /// The draft (unpublished) version of your resource.
         case draft = "draft"
         /// This published (live) version of your resource.
@@ -102,7 +102,7 @@ public enum Api {
     ///
     /// It is necessary to specify a case of `AccessToken` when configuring a [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to
     /// [authenticate requests](https://www.storyblok.com/docs/api/management/getting-started/authentication) to the [Management API](doc:Api/mapi(accessToken:region:requestsPerSecond:)).
-    public enum AccessToken {
+    public enum AccessToken : Sendable {
         /// An OAuth Access Token is obtained via the OAuth2 authentication flow and is tied to a single space.
         case oauth(_ token: String)
         /// A Personal Access Token is obtained from the Storyblok UI and grants access to all spaces associated with your account

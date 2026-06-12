@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Represents special field types like ``Link`` and ``Asset``. The value of the `fieldtype`
 /// JSON field is used to dispatch to the corresponding case.
-public enum Field: Decodable, Hashable {
+public enum Field: Decodable, Hashable, Sendable {
 
     /// A Storyblok multi-link field.
     case link(Link)
@@ -41,7 +41,7 @@ public enum Field: Decodable, Hashable {
     /// A Storyblok multi-link field.
     ///
     /// Supports various link types including URLs, stories, emails, and assets.
-    public struct Link: Decodable, Hashable {
+    public struct Link: Decodable, Hashable, Sendable {
 
         /// Optional field identifier.
         public let id: String?
@@ -89,7 +89,7 @@ public enum Field: Decodable, Hashable {
     /// A Storyblok asset field.
     ///
     /// Contains metadata and URLs for images, documents, and other uploaded files.
-    public struct Asset: Decodable, Hashable {
+    public struct Asset: Decodable, Hashable, Sendable {
 
         /// Optional field identifier.
         public let id: Int64?
