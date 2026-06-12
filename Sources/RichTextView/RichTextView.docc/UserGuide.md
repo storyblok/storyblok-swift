@@ -1,6 +1,6 @@
 # Rendering Storyblok rich text with RichTextView
 
-How to render ``/StoryblokClient/RichText`` content as native SwiftUI views, customize individual node types, and handle internal story links.
+How to render `RichText` content as native SwiftUI views, customize individual node types, and handle internal story links.
 
 ## Getting Started
 
