@@ -924,6 +924,60 @@ final class BlockLibraryMacroTests: XCTestCase {
         )
     }
 
+    func test_nestedStructRelationsUseCodingKeysJsonKey() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            indirect enum Block {
+                case article(Article)
+
+                struct Article: Decodable {
+                    let headline: String
+                    let author: Story<Article>
+
+                    enum CodingKeys: String, CodingKey {
+                        case headline
+                        case author = "author_ref"
+                    }
+                }
+            }
+            """,
+            expandedSource: """
+            indirect enum Block {
+                case article(Article)
+
+                struct Article: Decodable {
+                    let headline: String
+                    let author: Story<Article>
+
+                    enum CodingKeys: String, CodingKey {
+                        case headline
+                        case author = "author_ref"
+                    }
+                }
+
+                nonisolated static let relations: String = "article.author_ref"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "article":
+                        self = .article(try Article(from: decoder))
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum BlockCodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     func test_errorWhenUnlabeledTypeIsNotNestedStruct() {
         assertMacroExpansion(
             """
