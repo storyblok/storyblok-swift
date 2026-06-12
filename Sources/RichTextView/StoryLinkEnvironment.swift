@@ -7,17 +7,6 @@ import SwiftUI
 ///   - anchor: The optional anchor fragment within the target story, if the link specified one.
 public typealias StoryLinkHandler = @Sendable (UUID, _ anchor: String?) -> Void
 
-private struct StoryLinkHandlerKey: EnvironmentKey {
-    static let defaultValue: StoryLinkHandler? = nil
-}
-
-extension EnvironmentValues {
-    var storyLinkHandler: StoryLinkHandler? {
-        get { self[StoryLinkHandlerKey.self] }
-        set { self[StoryLinkHandlerKey.self] = newValue }
-    }
-}
-
 extension View {
     /// Registers a callback invoked when an internal Storyblok story link is tapped within this
     /// view hierarchy.
@@ -36,8 +25,7 @@ extension View {
     ///
     /// - Parameter handler: The callback invoked with the linked story's UUID and optional anchor.
     public func onStoryLink(_ handler: @escaping StoryLinkHandler) -> some View {
-        environment(\.storyLinkHandler, handler)
-            .environment(\.openURL, OpenURLAction { url in
+        environment(\.openURL, OpenURLAction { url in
                 guard
                     url.scheme == "storyblok-story",
                     let host = url.host,
