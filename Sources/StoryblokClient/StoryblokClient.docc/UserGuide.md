@@ -301,7 +301,7 @@ The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:)-(String
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
-- `0` disables relation resolution; relation fields then carry the raw UUID strings.
+- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `String` to receive the raw UUIDs instead.
 
 ```swift
 client.story("home", resolveLevel: 2)

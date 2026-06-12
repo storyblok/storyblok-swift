@@ -136,7 +136,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - slug: The URL path segment identifying the story.
     ///   - resolveLevel: How deeply nested ``Story`` relations are resolved. `1` (the default)
     ///     resolves direct relations; higher values resolve relations of relations; `0` disables
-    ///     relation resolution entirely, leaving relation fields as raw UUID strings. See
+    ///     relation resolution entirely. With resolution disabled, optional ``Story`` fields
+    ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
+    ///     fields as `String` to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
@@ -155,7 +157,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - uuid: The unique identifier of the story.
     ///   - resolveLevel: How deeply nested ``Story`` relations are resolved. `1` (the default)
     ///     resolves direct relations; higher values resolve relations of relations; `0` disables
-    ///     relation resolution entirely, leaving relation fields as raw UUID strings. See
+    ///     relation resolution entirely. With resolution disabled, optional ``Story`` fields
+    ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
+    ///     fields as `String` to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
