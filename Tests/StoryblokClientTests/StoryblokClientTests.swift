@@ -101,7 +101,7 @@ indirect enum Block : Decodable {
         """.data(using: .utf8)!
 
         @Test
-        func `story request typed to root block library enum suceeds`() async throws {
+        func `story request typed to root block library enum succeeds`() async throws {
             let mock = Mock(
                 url: URL.init(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!,
                 ignoreQuery: true,
@@ -131,7 +131,7 @@ indirect enum Block : Decodable {
         }
         
         @Test
-        func `story request typed to expected block library nested type suceeds`() async throws {
+        func `story request typed to expected block library nested type succeeds`() async throws {
             let mock = Mock(
                 url: URL.init(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!,
                 ignoreQuery: true,
@@ -147,11 +147,12 @@ indirect enum Block : Decodable {
                 session: URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
             )
 
-            let story: Story<Block.Page>? = try await client.story("mock-slug")
+            let optionalStory: Story<Block.Page>? = try await client.story("mock-slug")
                 .values
                 .first { _ in true }
 
-            #expect(story!.content.title == "Home")
+            let story = try #require(optionalStory)
+            #expect(story.content.title == "Home")
 
         }
     }
