@@ -26,8 +26,14 @@ extension BlockLibraryMacro: MemberMacro {
         }
         let enumName = enumDecl.name.text
         let nestedStructs = collectNestedStructs(in: declaration)
+        let nestedStructCodingKeys = collectNestedStructCodingKeys(in: declaration)
         let codingKeyMap = findCodingKeys(in: declaration)
-        let cases = collectCases(in: declaration, codingKeyMap: codingKeyMap, nestedStructs: nestedStructs)
+        let cases = collectCases(
+            in: declaration,
+            codingKeyMap: codingKeyMap,
+            nestedStructs: nestedStructs,
+            nestedStructCodingKeys: nestedStructCodingKeys
+        )
 
         let relations = computeRelations(cases: cases)
 
@@ -72,6 +78,7 @@ private struct CaseInfo {
     let componentName: String
     let params: [(label: String, type: TypeSyntax, unlabeled: Bool)]
     let nestedStructFields: [(label: String, type: TypeSyntax)]
+    let nestedStructCodingKeyMap: [String: String]  // Swift label → JSON key from the nested struct's CodingKeys
     let perCaseCodingKeyMap: [String: String]  // Swift label → JSON key; empty = no override
     /// Name of the per-case CodingKeys type, derived from the backtick-stripped case name.
     let codingKeysTypeName: String
@@ -125,10 +132,30 @@ private func collectNestedStructs(
     return result
 }
 
+/// Collects the `CodingKeys` mapping (Swift name → JSON key) declared inside each nested struct,
+/// so relation paths can use the JSON key when a struct remaps a relation field.
+private func collectNestedStructCodingKeys(
+    in declaration: some DeclGroupSyntax
+) -> [String: [String: String]] {
+    var result: [String: [String: String]] = [:]
+    for member in declaration.memberBlock.members {
+        guard let structDecl = member.decl.as(StructDeclSyntax.self) else { continue }
+        for structMember in structDecl.memberBlock.members {
+            guard let enumDecl = structMember.decl.as(EnumDeclSyntax.self),
+                  enumDecl.name.text == "CodingKeys"
+            else { continue }
+            result[structDecl.name.text] = parseCodingKeys(from: enumDecl)
+            break
+        }
+    }
+    return result
+}
+
 private func collectCases(
     in declaration: some DeclGroupSyntax,
     codingKeyMap: [String: String],
-    nestedStructs: [String: [(label: String, type: TypeSyntax)]]
+    nestedStructs: [String: [(label: String, type: TypeSyntax)]],
+    nestedStructCodingKeys: [String: [String: String]]
 ) -> [CaseInfo] {
     var cases: [CaseInfo] = []
     for member in declaration.memberBlock.members {
@@ -139,6 +166,7 @@ private func collectCases(
             let componentName = codingKeyMap[logicalName] ?? logicalName
             var params: [(label: String, type: TypeSyntax, unlabeled: Bool)] = []
             var nestedStructFields: [(label: String, type: TypeSyntax)] = []
+            var nestedStructCodingKeyMap: [String: String] = [:]
             if let parameters = element.parameterClause?.parameters {
                 let paramList = Array(parameters)
                 // A single unlabeled param decodes the whole content as that type.
@@ -148,6 +176,7 @@ private func collectCases(
                     params.append((label: "", type: param.type, unlabeled: true))
                     if let typeName = param.type.as(IdentifierTypeSyntax.self)?.name.text {
                         nestedStructFields = nestedStructs[typeName] ?? []
+                        nestedStructCodingKeyMap = nestedStructCodingKeys[typeName] ?? [:]
                     }
                 } else {
                     for parameter in paramList {
@@ -162,6 +191,7 @@ private func collectCases(
                 componentName: componentName,
                 params: params,
                 nestedStructFields: nestedStructFields,
+                nestedStructCodingKeyMap: nestedStructCodingKeyMap,
                 perCaseCodingKeyMap: perCaseCodingKeyMap,
                 codingKeysTypeName: codingKeysTypeName(forCase: caseName)
             ))
@@ -274,62 +304,54 @@ private func computeRelations(cases: [CaseInfo]) -> String {
                 .map { "\(c.componentName).\(c.perCaseCodingKeyMap[$0.label] ?? $0.label)" }
             let fromNested = c.nestedStructFields
                 .filter { isStoryType($0.type) }
-                .map { "\(c.componentName).\($0.label)" }
+                .map { "\(c.componentName).\(c.nestedStructCodingKeyMap[$0.label] ?? $0.label)" }
             return fromParams + fromNested
         }
     ).sorted().joined(separator: ",")
 }
 
-private func findCodingKeys(in declaration: some DeclGroupSyntax) -> [String: String] {
+/// Parses a `CodingKeys`-style enum into a Swift-name → JSON-key map. Cases without a string
+/// raw value map to themselves.
+private func parseCodingKeys(from enumDecl: EnumDeclSyntax) -> [String: String] {
     var result: [String: String] = [:]
-    for member in declaration.memberBlock.members {
-        guard let enumDecl = member.decl.as(EnumDeclSyntax.self),
-              enumDecl.name.text == "CodingKeys"
-        else { continue }
-        for caseMember in enumDecl.memberBlock.members {
-            guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
-            for element in caseDecl.elements {
-                let name = strippingBackticks(element.name.text)
-                if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
-                   literal.segments.count == 1,
-                   let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
-                    result[name] = segment.content.text
-                } else {
-                    result[name] = name
-                }
+    for caseMember in enumDecl.memberBlock.members {
+        guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
+        for element in caseDecl.elements {
+            let name = strippingBackticks(element.name.text)
+            if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
+               literal.segments.count == 1,
+               let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
+                result[name] = segment.content.text
+            } else {
+                result[name] = name
             }
         }
-        break
     }
     return result
+}
+
+private func findCodingKeys(in declaration: some DeclGroupSyntax) -> [String: String] {
+    findCodingKeysEnum(named: "CodingKeys", in: declaration)
 }
 
 private func findPerCaseCodingKeys(
     caseName: String,
     in declaration: some DeclGroupSyntax
 ) -> [String: String] {
-    let targetName = codingKeysTypeName(forCase: caseName)
-    var result: [String: String] = [:]
+    findCodingKeysEnum(named: codingKeysTypeName(forCase: caseName), in: declaration)
+}
+
+private func findCodingKeysEnum(
+    named targetName: String,
+    in declaration: some DeclGroupSyntax
+) -> [String: String] {
     for member in declaration.memberBlock.members {
         guard let enumDecl = member.decl.as(EnumDeclSyntax.self),
               enumDecl.name.text == targetName
         else { continue }
-        for caseMember in enumDecl.memberBlock.members {
-            guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
-            for element in caseDecl.elements {
-                let name = strippingBackticks(element.name.text)
-                if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
-                   literal.segments.count == 1,
-                   let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
-                    result[name] = segment.content.text
-                } else {
-                    result[name] = name
-                }
-            }
-        }
-        break
+        return parseCodingKeys(from: enumDecl)
     }
-    return result
+    return [:]
 }
 
 private func isStoryType(_ type: TypeSyntax) -> Bool {
