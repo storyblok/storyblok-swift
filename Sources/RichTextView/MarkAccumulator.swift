@@ -5,7 +5,7 @@ import StoryblokClient
 
 extension RichTextComposite {
     func attributedString(baseFont: Font = .body) -> AttributedString {
-        content.reduce(AttributedString()) { $0 + $1.inlineAttributedString(baseFont: baseFont) }
+        content.reduce(into: AttributedString()) { $0.append($1.inlineAttributedString(baseFont: baseFont)) }
     }
 }
 
