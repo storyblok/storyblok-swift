@@ -74,31 +74,6 @@ public struct Story<Content : Decodable> {
     /// Array of translated slug objects (if the Translatable Slugs app is installed).
     public let translatedSlugs: [TranslatedSlug]?
 
-    public init<T : Decodable>(_ story: Story<T>, content: Content) {
-        self.id = story.id
-        self.uuid = story.uuid
-        self.name = story.name
-        self.content = content
-        self.slug = story.slug
-        self.fullSlug = story.fullSlug
-        self.createdAt = story.createdAt
-        self.publishedAt = story.publishedAt
-        self.firstPublishedAt = story.firstPublishedAt
-        self.updatedAt = story.updatedAt
-        self.sortByDate = story.sortByDate
-        self.position = story.position
-        self.tagList = story.tagList
-        self.isStartPage = story.isStartPage
-        self.parentId = story.parentId
-        self.metadata = story.metadata
-        self.groupId = story.groupId
-        self.releaseId = story.releaseId
-        self.language = story.language
-        self.path = story.path
-        self.alternates = story.alternates
-        self.defaultFullSlug = story.defaultFullSlug
-        self.translatedSlugs = story.translatedSlugs
-    }
 }
 
 /// Translated slug information for localized story variants.
