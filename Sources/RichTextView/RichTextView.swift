@@ -4,7 +4,7 @@ import StoryblokClient
 /// Makes any ``StoryblokClient/RichText`` value renderable as a SwiftUI `View`.
 ///
 /// The conformance is available whenever the rich text's `BlockLibrary` is itself a `View`, so
-/// that embedded component bloks render alongside the standard rich-text nodes. Place a decoded
+/// that embedded component blocks render alongside the standard rich-text nodes. Place a decoded
 /// `RichText` value anywhere a `View` is expected:
 ///
 /// ```swift
@@ -79,9 +79,9 @@ private struct RichTextView<BL: View & Decodable>: View {
         case .tableCell(let c):
             if let custom = delegate?.viewForTableCell(c) { custom }
             else { TableCellView(cell: c) }
-        case .blok(let b):
-            if let custom = delegate?.viewForBlok(b) { custom }
-            else { BlokView(blok: b) }
+        case .block(let b):
+            if let custom = delegate?.viewForBlock(b) { custom }
+            else { BlockView(block: b) }
         case .image(let i):
             if let custom = delegate?.viewForImage(i) { custom }
             else { ImageView(image: i) }
@@ -117,15 +117,15 @@ struct DocumentView<BL: View & Decodable>: View {
 }
 
 
-// MARK: - Blok (embedded components)
+// MARK: - Block (embedded components)
 
-struct BlokView<BL: View & Decodable>: View {
-    let blok: RichText<BL>.Blok
+struct BlockView<BL: View & Decodable>: View {
+    let block: RichText<BL>.Block
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(blok.body.indices, id: \.self) { i in
-                blok.body[i]
+            ForEach(block.body.indices, id: \.self) { i in
+                block.body[i]
             }
         }
     }

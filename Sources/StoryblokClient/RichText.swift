@@ -62,7 +62,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
     case mark(Mark)
 
     /// Embedded component block within rich text.
-    case blok(Blok)
+    case block(Block)
 
     /// Emoji node with fallback image support.
     case emoji(Emoji)
@@ -92,7 +92,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             case .listItem: return "list_item"
             case .text: return "text"
             case .mark(let mark): return mark.type
-            case .blok: return "blok"
+            case .block: return "blok"
             case .emoji: return "emoji"
             case .hardBreak: return "hard_break"
             case .unknown(let type): return type
@@ -120,7 +120,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             case "text": self = .text(try Text(from: decoder))
             case "bold", "italic", "underline", "strike", "code", "subscript", "superscript", "link", "textStyle", "highlight":
                 self = .mark(try Mark(from: decoder))
-            case "blok": self = .blok(try Blok(from: decoder))
+            case "blok": self = .block(try Block(from: decoder))
             case "emoji": self = .emoji(try Emoji(from: decoder))
             case "hard_break": self = .hardBreak(try HardBreak(from: decoder))
             default: self = .unknown(type: type)
@@ -529,7 +529,7 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
     }
 
     /// Embedded component block within rich text.
-    public struct Blok: Decodable {
+    public struct Block: Decodable {
         /// List of embedded components.
         public let body: [BlockLibrary]
 
@@ -548,6 +548,10 @@ public indirect enum RichText<BlockLibrary : Decodable>: Decodable {
             self.body = attributes.body
         }
     }
+
+    /// Renamed to ``Block``.
+    @available(*, deprecated, renamed: "Block")
+    public typealias Blok = Block
 
     /// Emoji node with fallback image support.
     public struct Emoji: Decodable {
@@ -653,9 +657,18 @@ extension RichText.TableRow: Sendable where BlockLibrary: Sendable {}
 extension RichText.TableCell: Hashable where BlockLibrary: Hashable {}
 extension RichText.TableCell: Equatable where BlockLibrary: Equatable {}
 extension RichText.TableCell: Sendable where BlockLibrary: Sendable {}
-extension RichText.Blok: Hashable where BlockLibrary: Hashable {}
-extension RichText.Blok: Equatable where BlockLibrary: Equatable {}
-extension RichText.Blok: Sendable where BlockLibrary: Sendable {}
+extension RichText.Block: Hashable where BlockLibrary: Hashable {}
+extension RichText.Block: Equatable where BlockLibrary: Equatable {}
+extension RichText.Block: Sendable where BlockLibrary: Sendable {}
+
+extension RichText {
+    /// Renamed to ``block(_:)``.
+    ///
+    /// - Note: Provided for source compatibility with construction sites only. Pattern matching
+    ///   against the old `.blok` case must be migrated to `.block`.
+    @available(*, deprecated, renamed: "block(_:)")
+    public static func blok(_ block: Block) -> RichText { .block(block) }
+}
 
 public extension RichTextComposite {
     /// Recursively flattens all descendant nodes into a sequence, yielding leaf nodes for

@@ -47,7 +47,7 @@ public protocol RichTextViewDelegate<BlockLibrary> {
     @MainActor func view(for tableRow:    RichText<BlockLibrary>.TableRow)    -> any View
     @MainActor func view(for tableHeader: RichText<BlockLibrary>.TableHeader) -> any View
     @MainActor func view(for tableCell:   RichText<BlockLibrary>.TableCell)   -> any View
-    @MainActor func view(for blok:        RichText<BlockLibrary>.Blok)        -> any View
+    @MainActor func view(for block:       RichText<BlockLibrary>.Block)       -> any View
     @MainActor func view(for text:        RichText<BlockLibrary>.Text)        -> any View
     @MainActor func view(for emoji:       RichText<BlockLibrary>.Emoji)       -> any View
     /// Called for `horizontalRule` nodes. Has no associated value; override to replace `Divider`.
@@ -97,8 +97,8 @@ extension RichTextViewDelegate {
     @MainActor public func view(for tableCell: RichText<BlockLibrary>.TableCell) -> any View {
         TableCellView(cell: tableCell)
     }
-    @MainActor public func view(for blok: RichText<BlockLibrary>.Blok) -> any View {
-        BlokView(blok: blok)
+    @MainActor public func view(for block: RichText<BlockLibrary>.Block) -> any View {
+        BlockView(block: block)
     }
     @MainActor public func view(for text: RichText<BlockLibrary>.Text) -> any View {
         Text(text.attributedString())
@@ -147,7 +147,7 @@ struct RichTextDelegateStorage: @unchecked Sendable {
     let viewForTableRow:    @MainActor (Any) -> AnyView?
     let viewForTableHeader: @MainActor (Any) -> AnyView?
     let viewForTableCell:   @MainActor (Any) -> AnyView?
-    let viewForBlok:        @MainActor (Any) -> AnyView?
+    let viewForBlock:       @MainActor (Any) -> AnyView?
     let viewForText:        @MainActor (Any) -> AnyView?
     let viewForEmoji:            @MainActor (Any) -> AnyView?
     let viewForHorizontalRule:   @MainActor () -> AnyView      // no associated value → non-optional
@@ -167,7 +167,7 @@ struct RichTextDelegateStorage: @unchecked Sendable {
         viewForTableRow    = { @MainActor in ($0 as? RichText<D.BlockLibrary>.TableRow)    .map { d.view(for: $0).asAnyView() } }
         viewForTableHeader = { @MainActor in ($0 as? RichText<D.BlockLibrary>.TableHeader) .map { d.view(for: $0).asAnyView() } }
         viewForTableCell   = { @MainActor in ($0 as? RichText<D.BlockLibrary>.TableCell)   .map { d.view(for: $0).asAnyView() } }
-        viewForBlok        = { @MainActor in ($0 as? RichText<D.BlockLibrary>.Blok)        .map { d.view(for: $0).asAnyView() } }
+        viewForBlock       = { @MainActor in ($0 as? RichText<D.BlockLibrary>.Block)       .map { d.view(for: $0).asAnyView() } }
         viewForText        = { @MainActor in ($0 as? RichText<D.BlockLibrary>.Text)        .map { d.view(for: $0).asAnyView() } }
         viewForEmoji             = { @MainActor in ($0 as? RichText<D.BlockLibrary>.Emoji).map { d.view(for: $0).asAnyView() } }
         viewForHorizontalRule    = { @MainActor in d.viewForHorizontalRule().asAnyView() }
