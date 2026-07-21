@@ -74,18 +74,14 @@ let package = Package(
                 "StoryblokClientMacros",
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
-            ],
-            path: "Tests/StoryblokClientTests",
-            sources: ["BlockLibraryMacroTests.swift"]
+            ]
         ),
         .testTarget(
             name: "StoryblokClientTests",
             dependencies: [
                 "StoryblokClient",
                 .product(name: "Mocker", package: "Mocker")
-            ],
-            path: "Tests/StoryblokClientTests",
-            sources: ["RelationResolutionTests.swift", "StoryTests.swift", "StoryblokClientTests.swift"]
+            ]
         ),
         .testTarget(
             name: "Examples",

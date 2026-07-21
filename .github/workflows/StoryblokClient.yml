@@ -8,6 +8,7 @@ on:
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/StoryblokClientTests/**.swift'
+      - 'Tests/StoryblokClientMacroTests/**.swift'
       - '.github/workflows/StoryblokClient.yml'
       - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokClientTests.xcscheme'
   pull_request:
@@ -17,6 +18,7 @@ on:
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/StoryblokClientTests/**.swift'
+      - 'Tests/StoryblokClientMacroTests/**.swift'
       - '.github/workflows/StoryblokClient.yml'
       - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokClientTests.xcscheme'
   workflow_call:
