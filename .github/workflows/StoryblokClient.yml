@@ -70,6 +70,8 @@ jobs:
           xcode-version: latest-stable
       - name: List simulators
         run: xcrun simctl list
+      - name: Disable swift-syntax prebuilts
+        run: defaults write com.apple.dt.Xcode IDEPackageEnablePrebuilts -bool NO
       - name: Build
         run: ${{ matrix.build }}
       - name: Run tests on ${{ matrix.platform }}
