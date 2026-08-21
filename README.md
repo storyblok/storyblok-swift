@@ -43,7 +43,7 @@ The [Examples](https://github.com/storyblok/storyblok-swift/tree/main/Examples) 
 
 ## 📄 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](https://github.com/storyblok/storyblok-kotlin?tab=contributing-ov-file) for details on:
+We welcome contributions! Please see our [Contributing Guide](https://github.com/storyblok/storyblok-swift?tab=contributing-ov-file) for details on:
 - Code style and standards
 - Pull request process
 - Development workflow

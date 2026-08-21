@@ -6,7 +6,13 @@ How to render `RichText` content as native SwiftUI views, customize individual n
 
 ### Add package dependency
 
-Add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `RichTextView` as a dependency of the target in which you wish to use it:
+In an Xcode project, select **File** → **Add Package Dependencies…**, enter the following package URL into the search field, select **Add Package**, and add the `RichTextView` library to the target in which you wish to use it:
+
+```
+https://github.com/storyblok/storyblok-swift.git
+```
+
+Alternatively, in a Swift package, add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `RichTextView` as a dependency of the target:
 
 ```swift
 dependencies: [
@@ -27,7 +33,7 @@ targets: [
 
 ### Make your block library a `View`
 
-`RichText` becomes a SwiftUI `View` only when its block library is itself a `View`. Conform your [`BlockLibrary`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/blocklibrary) to `View` so that embedded component bloks render alongside the standard rich-text nodes:
+`RichText` becomes a SwiftUI `View` only when its block library is itself a `View`. Conform your [`BlockLibrary`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/blocklibrary) to `View` so that embedded component blocks render alongside the standard rich-text nodes:
 
 ```swift
 import SwiftUI
@@ -82,7 +88,7 @@ Each node type renders with a default view designed to look reasonable out of th
 | Code block      | Monospaced `Text` on a rounded, tinted background.                       |
 | Image           | `AsyncImage` with loading and failure placeholders.                      |
 | Table           | A `Grid` with header and cell styling, honoring column spans.            |
-| Embedded blok   | The component rendered through your block library's `View` conformance.  |
+| Embedded block  | The component rendered through your block library's `View` conformance.  |
 | Emoji           | The emoji character.                                                     |
 | Horizontal rule | A `Divider`.                                                             |
 | Hard break      | A line break.                                                            |

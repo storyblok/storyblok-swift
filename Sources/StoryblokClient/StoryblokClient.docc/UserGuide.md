@@ -6,7 +6,13 @@ How to use ``StoryblokClient`` to fetch typed stories from the Storyblok [Conten
 
 ### Add package dependency
 
-Add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `StoryblokClient` as a dependency of the target in which you wish to use it:
+In an Xcode project, select **File** → **Add Package Dependencies…**, enter the following package URL into the search field, select **Add Package**, and add the `StoryblokClient` library to the target in which you wish to use it:
+
+```
+https://github.com/storyblok/storyblok-swift.git
+```
+
+Alternatively, in a Swift package, add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `StoryblokClient` as a dependency of the target:
 
 ```swift
 dependencies: [
@@ -353,7 +359,7 @@ enum Content {
 | Table Row        | ``RichText/tableRow(_:)``     |
 | Table Header     | ``RichText/tableHeader(_:)``  |
 | Table Cell       | ``RichText/tableCell(_:)``    |
-| Embedded Blok    | ``RichText/blok(_:)``         |
+| Embedded Block   | ``RichText/block(_:)``        |
 | Emoji            | ``RichText/emoji(_:)``        |
 | Hard Break       | ``RichText/hardBreak(_:)``    |
 | Unknown          | ``RichText/unknown(type:)``   |

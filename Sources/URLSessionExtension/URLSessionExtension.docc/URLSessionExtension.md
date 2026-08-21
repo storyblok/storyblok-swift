@@ -1,6 +1,6 @@
 # ``URLSessionExtension``
 
-An [URLSession](https://developer.apple.com/documentation/foundation/urlsession) extension to simplify calling Storyblok's Content Delivery and Management APIs.
+A [URLSession](https://developer.apple.com/documentation/foundation/urlsession) extension to simplify calling Storyblok's Content Delivery and Management APIs.
 
 With out-of-the-box support for authentication, regions, cache invalidation, error and rate limit handling, and more.
 

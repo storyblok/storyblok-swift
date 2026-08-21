@@ -6,7 +6,13 @@ How to use the Storyblok [URLSession](https://developer.apple.com/documentation/
 
 ### Add package dependency
 
-Add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `URLSessionExtension` as a dependency of the Target in which you wish to use it:
+In an Xcode project, select **File** → **Add Package Dependencies…**, enter the following package URL into the search field, select **Add Package**, and add the `URLSessionExtension` library to the target in which you wish to use it:
+
+```
+https://github.com/storyblok/storyblok-swift.git
+```
+
+Alternatively, in a Swift package, add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `URLSessionExtension` as a dependency of the target:
 
 ```swift
 dependencies: [
@@ -70,7 +76,7 @@ let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN"))
 ```swift
 let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_ACCESS_TOKEN")))
 //...or...
-let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACESSS_TOKEN")))
+let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
 ```
 
 ### Specifying a region
@@ -78,14 +84,14 @@ let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONA
 By default, the session uses the [EU](doc:Api/Region/eu) region, if your space is located in a [different region](doc:Api/Region) you can set it:
 
 ```swift
-let storyblok = URLSession(storyblok: .cdn(region: .usa))
+let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN", region: .usa))
 ```
 **Custom region**
 
 You can also specify a [custom region](doc:Api/Region/custom(url:)) by providing a custom base URL:
 
 ```swift
-let storyblok = URLSession(storyblok: .cdn(region: .custom(url: URL(string: "https://app.storyblokchina.cn/cdn")!)))
+let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN", region: .custom(url: URL(string: "https://app.storyblokchina.cn/cdn")!)))
 ```
 
 ### Rate limit handling
@@ -95,7 +101,7 @@ The Content Delivery and Management APIs have different rate limits depending on
 The plugin implements *API throttling* to slow down the API requests by introducing intermediate delays. You can specify the maximum number of requests per second allowed:
 
 ```swift
-let storyblok = URLSession(storyblok: .mapi(requestsPerSecond: 3))
+let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_ACCESS_TOKEN"), requestsPerSecond: 3))
 ```
 
 > Note: The value of `requestsPerSecond` defaults to `1000` for the Content Delivery API and `6` for the Management API.
@@ -114,6 +120,7 @@ You can optionally set [default parameters](doc:Api/cdn(accessToken:language:fal
 
 ```swift
 let storyblok = URLSession(storyblok: .cdn(
+    accessToken: "YOUR_ACCESS_TOKEN",
     language: "en", // language to retrieve resources
     fallbackLanguage: "de", // language for untranslated fields
     version: .draft, // the version of resources to retrieve
@@ -160,26 +167,26 @@ storyblok.dataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "spaces/
 
 The pattern in the example above can be used as a robust way to handle failed requests:
 - The initial [`dataTaskPublisher(for:)`](https://developer.apple.com/documentation/foundation/urlsession/datataskpublisher(for:)-61v3e) returns a publisher that will publish a [URLError](https://developer.apple.com/documentation/foundation/urlerror/) on network failure.
-- While [`failOnErrorResponse(.recoverable)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on recieving a tranisent error response from the API.
+- While [`failOnErrorResponse(.recoverable)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving a transient error response from the API.
 - [`retry(5)`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
-- For unrecoverable error responses, [`failOnErrorResponse(.all)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on recieving any other error response from the API.
-- Finally, [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) will handle any errors published by the preceeding `failOnErrorResponse(.all)`, in addition to errors thrown by the preceeding `retry(5)` in the case the fifth and final retry also resulted in failure.
+- For unrecoverable error responses, [`failOnErrorResponse(.all)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving any other error response from the API.
+- Finally, [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) will handle any errors published by the preceding `failOnErrorResponse(.all)`, in addition to errors thrown by the preceding `retry(5)` in the case the fifth and final retry also resulted in failure.
 
 In the catch closure you would need to decide how to handle the error; the example above handles [common client errors](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/errors) (`4xx`) which would usually indicate programmer error (with the possible exception of `404`) by stopping execution.
 
 **Introducing delays between retries**
 
-Sessions created with the Storyblok `URLSession` [convenience initializer](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) introduce an exponential delay of up to 60 seconds before resuming requests when one fails due to a tranisent error. 
+Sessions created with the Storyblok `URLSession` [convenience initializer](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) introduce an exponential delay of up to 60 seconds before resuming requests when one fails due to a transient error. 
 
 The delay is automatically applied before retries and all other pending requests made with the same `URLSession` instance.
 
-> Tip: Depending on your scenerio it could also be benefial to enable  [waitsForConnectivity](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/waitsforconnectivity) on the [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) when [creating](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) your session.
+> Tip: Depending on your scenario it could also be beneficial to enable  [waitsForConnectivity](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/waitsforconnectivity) on the [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) when [creating](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) your session.
 
 ### Working with JSON 
 
 All Storyblok APIs responses, including errors, return JSON which you can convert to objects and values [using Foundation APIs](https://developer.apple.com/documentation/foundation/archives-and-serialization/#overview) or [with Combine operators](https://developer.apple.com/documentation/foundation/processing-url-session-data-task-results-with-combine#Convert-incoming-raw-data-to-your-types-with-Combine-operators). 
 
-Requests bodies should also be sent as JSON, and the content type of requests is automatically set to `application/json` by the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)).
+Requests bodies should also be sent as JSON, the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)) automatically sets the `Content-Type` header to `application/json`.
 
 **JSONSerialization example**
 
