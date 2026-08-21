@@ -307,7 +307,7 @@ The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:)-(String
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
-- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `String` to receive the raw UUIDs instead.
+- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID` (or `String`) to receive the raw UUIDs instead.
 
 ```swift
 client.story("home", resolveLevel: 2)
@@ -320,7 +320,7 @@ When relations form a cycle, resolution stops at the configured depth. How the b
 - An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully.
 - A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected.
 
-Model fields that may participate in cycles as optional, or as a plain `String` (the UUID), to avoid decoding failures.
+Model fields that may participate in cycles as optional, or as a `UUID` (or `String`), to avoid decoding failures.
 
 > Tip: The maximum number of relations that can be resolved is 50 stories per request. This is a Storyblok API limitation.
 

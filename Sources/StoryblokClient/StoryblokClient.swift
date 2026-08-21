@@ -138,7 +138,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     resolves direct relations; higher values resolve relations of relations; `0` disables
     ///     relation resolution entirely. With resolution disabled, optional ``Story`` fields
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
-    ///     fields as `String` to receive the raw UUIDs instead. See
+    ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
@@ -159,7 +159,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     resolves direct relations; higher values resolve relations of relations; `0` disables
     ///     relation resolution entirely. With resolution disabled, optional ``Story`` fields
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
-    ///     fields as `String` to receive the raw UUIDs instead. See
+    ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
