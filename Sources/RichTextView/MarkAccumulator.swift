@@ -4,7 +4,10 @@ import StoryblokClient
 // MARK: - Composite inline rendering
 
 extension RichTextComposite {
-    func attributedString(baseFont: Font = .body) -> AttributedString {
+    /// Renders this node's inline content — its text runs and their formatting marks — into a
+    /// single `AttributedString`, starting from `baseFont`. Useful when implementing a custom
+    /// ``RichTextViewDelegate`` that renders text nodes itself.
+    public func attributedString(baseFont: Font = .body) -> AttributedString {
         content.reduce(into: AttributedString()) { $0.append($1.inlineAttributedString(baseFont: baseFont)) }
     }
 }
@@ -25,7 +28,9 @@ extension RichText {
 // MARK: - Text node → AttributedString
 
 extension RichText.Text {
-    func attributedString(baseFont: Font = .body) -> AttributedString {
+    /// Renders this text run and its formatting marks into an `AttributedString`, starting from
+    /// `baseFont`.
+    public func attributedString(baseFont: Font = .body) -> AttributedString {
         var acc = MarkAccumulator()
         for mark in marks { acc.apply(mark) }
         return acc.build(text: text, baseFont: baseFont)

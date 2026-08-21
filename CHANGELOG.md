@@ -1,8 +1,12 @@
 ### Changelog
 
+**main**
+
+- Made `attributedString(baseFont:)` on `RichTextComposite` and `RichText.Text` public, so custom `RichTextViewDelegate` implementations can render inline rich text content themselves.
+
 **0.3.0**
 
-- Renamed `Blok` to `Block` throughout the Rich Text View for consistency. Deprecated `Blok` typealiases and delegate methods are provided for backward compatibility.
+- Renamed `Blok` to `Block` throughout the Rich Text View for consistency. A deprecated `Blok` typealias and `blok(_:)` factory are provided for backward compatibility.
 - Removed a redundant `Story` initializer.
 
 **0.2.0**

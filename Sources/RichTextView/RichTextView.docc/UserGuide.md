@@ -107,7 +107,7 @@ struct MyDelegate: RichTextViewDelegate {
 
     @MainActor
     func view(for heading: RichText<Content>.Heading) -> any View {
-        Text(heading.attributedString())
+        Text(heading.attributedString(baseFont: .title))
             .font(.system(.title, design: .serif))
     }
 
