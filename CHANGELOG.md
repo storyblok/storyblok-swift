@@ -2,6 +2,8 @@
 
 **main**
 
+- BREAKING CHANGE: `StoryblokClient.Error` is now an enum with `api(message:underlyingError:)` and
+  `decoding(_:)` cases, so that decoding failures distinguishable from failed requests.
 - Made `attributedString(baseFont:)` on `RichTextComposite` and `RichText.Text` public, so custom `RichTextViewDelegate` implementations can render inline rich text content themselves.
 
 **0.3.0**

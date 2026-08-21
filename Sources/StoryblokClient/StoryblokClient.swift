@@ -38,17 +38,36 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// An error thrown by ``StoryblokClient`` when a request fails.
-    public struct Error: Swift.Error, LocalizedError, Sendable {
+    ///
+    /// The cases separate failures that a retry may resolve from those it cannot: ``api(message:underlyingError:)``
+    /// reports a failed request, while ``decoding(_:)`` reports content that does not match your ``BlockLibrary``.
+    public enum Error: Swift.Error, LocalizedError, Sendable {
+
+        /// The request failed. Retrying may succeed.
+        ///
+        /// - Parameters:
+        ///   - message: A message describing the error, typically the body of the API response.
+        ///   - underlyingError: The underlying error, if any.
+        case api(message: String?, underlyingError: (any Swift.Error)?)
+
+        /// The response could not be decoded because the content does not match the types it was decoded into.
+        /// Retrying cannot resolve this — correct your ``BlockLibrary`` or the story's model instead.
+        case decoding(DecodingError)
 
         /// A message describing the error, typically the body of the API response.
-        public let message: String?
+        public var message: String? {
+            switch self {
+                case let .api(message, _): message
+                case let .decoding(error): error.localizedDescription
+            }
+        }
 
         /// The underlying error, if any.
-        public let underlyingError: (any Swift.Error)?
-
-        public init(message: String? = nil, underlyingError: (any Swift.Error)? = nil) {
-            self.message = message
-            self.underlyingError = underlyingError
+        public var underlyingError: (any Swift.Error)? {
+            switch self {
+                case let .api(_, underlyingError): underlyingError
+                case let .decoding(error): error
+            }
         }
 
         public var errorDescription: String? {
@@ -142,7 +161,8 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
-    ///   the fresh value when it matches the cached value.
+    ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
+    ///   whose case distinguishes a failed request from content that does not match your types.
     public func story<Content>(_ slug: String, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
         storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel)
     }
@@ -163,7 +183,8 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     <doc:UserGuide#Story-relations>.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
-    ///   the fresh value when it matches the cached value.
+    ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
+    ///   whose case distinguishes a failed request from content that does not match your types.
     public func story<Content>(_ uuid: UUID, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
         storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel)
     }
@@ -201,16 +222,17 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 }
                 return try decoder.decode(StoryResponse<Content>.self, from: data).story
             }
-            .mapError { error in
+            .mapError { error -> Error in
+                if let error = error as? DecodingError { return .decoding(error) }
                 if let error = error as? Error { return error }
                 if let error = error as? Api.ResponseError {
                     switch error {
                         case let .client(_, data, _), let .server(_, data, _):
                             let message = String(data: data, encoding: .utf8)
-                            return Error(message: message, underlyingError: error)
+                            return .api(message: message, underlyingError: error)
                     }
                 }
-                return Error(message: error.localizedDescription, underlyingError: error)
+                return .api(message: error.localizedDescription, underlyingError: error)
             }
             .eraseToAnyPublisher()
     }

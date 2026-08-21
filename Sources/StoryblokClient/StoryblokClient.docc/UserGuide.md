@@ -428,7 +428,7 @@ The client leverages ``/URLSessionExtension``'s caching for the configured [`URL
 
 ## Error handling
 
-API errors and decoding failures are wrapped in ``StoryblokClient/Error``. Use Combine's [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) operator to handle them:
+API errors and decoding failures are reported as ``StoryblokClient/Error``. Use Combine's [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) operator to handle them:
 
 ```swift
 client.story("non-existent")
@@ -441,6 +441,25 @@ client.story("non-existent")
 ```
 
 When consuming the publisher with `async`/`await`, the same error is thrown from the `values` sequence and can be caught with `do`/`catch`.
+
+The error's case suggests how to respond:
+
+- ``StoryblokClient/Error/api(message:underlyingError:)`` — the request failed. Transient failures (`5xx` and `429`) have already been retried up to three times, so rather than retrying again, consider alerting the user and offering a manual retry.
+- ``StoryblokClient/Error/decoding(_:)`` — the content does not match the types it was decoded into, which a retry cannot change. Consider failing loudly during development, and reporting to a crash reporting service in production.
+
+```swift
+.catch { error -> Empty<Story<Content>, Never> in
+    switch error {
+        case let .api(message, _):
+            // Already retried by the client — prompt the user to retry manually.
+            showRetryBanner(message: message)
+        case let .decoding(error):
+            // TODO: report to a crash reporting service in production
+            fatalError("Content does not match the block library: \(error)")
+    }
+    return Empty<Story<Content>, Never>()
+}
+```
 
 ## See Also
 
