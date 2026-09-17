@@ -133,6 +133,28 @@ import Mocker
             #expect(fourthRequestDuration < .seconds(2) - .milliseconds(15))
         }
         
+        @Test func `a cache-only request that misses does not trigger a backoff`() async throws {
+            let storyblok = URLSession(
+                storyblok: .cdn(accessToken: "mock-api-key"),
+                configuration: mockConfiguration
+            )
+
+            // No mock registered and nothing cached: the lookup completes without a response, like
+            // the cache probe `StoryblokClient.story()` issues ahead of every fetch.
+            let probe = URLRequest(storyblok: storyblok, path: "stories/never-cached", cachePolicy: .returnCacheDataDontLoad)
+            _ = try? await storyblok.data(for: probe)
+
+            let request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
+            let mock = Mock(request: request, statusCode: 200)
+            mock.register()
+
+            let duration = try await ContinuousClock.continuous.measure {
+                _ = try await storyblok.data(for: request)
+            }
+            //a server failure would have delayed this by at least 2s
+            #expect(duration < .seconds(1))
+        }
+
         @Test func `retried requests are also subject to an exponential backoff`() async throws {
             let storyblok = URLSession(
                 storyblok: .mapi(accessToken: .personal("mock-api-key")),

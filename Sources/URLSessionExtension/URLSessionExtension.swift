@@ -263,6 +263,9 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
                     observers.removeValue(forKey: task)
                 case .completed:
                     observers.removeValue(forKey: task)
+                    // A cache-only lookup never reaches the server: a miss completes with no response,
+                    // which is not a failure and must not back off the requests that follow it.
+                    guard task.currentRequest?.cachePolicy != .returnCacheDataDontLoad else { break }
                     switch (task.response as? HTTPURLResponse)?.statusCode ?? 0 {
                         case 0, 429, 500..<600:
                             failedRequestCount += 1
