@@ -46,7 +46,7 @@ indirect enum Block : Decodable {
 
 }
 
-@Suite struct StoryblokClientTests: TestTrait {
+@Suite(.serialized) struct StoryblokClientTests: TestTrait {
     
     static let ensureTraceLogging: () = {
         LoggingSystem.bootstrap { label in
@@ -101,6 +101,47 @@ indirect enum Block : Decodable {
         """.data(using: .utf8)!
 
         @Test
+        func `a delegate given to the client still receives the callbacks it handles`() async throws {
+            final class Spy: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+                var tasks = 0
+                func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) { tasks += 1 }
+            }
+            let spy = Spy()
+            let client = StoryblokClient(
+                library: Block.self,
+                accessToken: "mock-api-key",
+                configuration: mockConfiguration,
+                delegate: spy
+            )
+            Mock(url: URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!, ignoreQuery: true,
+                 contentType: .json, statusCode: 200, data: [.get: data]).register()
+
+            let _: Story<Block>? = try await client.story("mock-slug").values.first { _ in true }
+
+            //didCreateTask is implemented by neither the client's normalizer nor this spy's own wrapper chain
+            //above it, so arriving here means it was forwarded the whole way down
+            #expect(spy.tasks > 0)
+        }
+
+        @Test
+        func `the request that follows a redirect is spelled the way later requests ask for it`() async throws {
+            let client = StoryblokClient(library: Block.self, accessToken: "mock-api-key", configuration: mockConfiguration)
+            let first = client.buildRequest(path: "stories/mock-slug", findByUuid: false, resolveLevel: 1)
+            let location = first.url!.appending(queryItems: [URLQueryItem(name: "cv", value: "mock-cv")])
+
+            Mock(url: first.url!, statusCode: 301, data: [.get: "Location: \(location.absoluteString)".data(using: .utf8)!]).register()
+            //registered under the normalized spelling only: an unsorted redirect would not match it
+            Mock(url: location.sortingQueryItems(), contentType: .json, statusCode: 200, data: [.get: data]).register()
+
+            let story: Story<Block>? = try await client.story("mock-slug").values.first { _ in true }
+            #expect(story != nil)
+
+            //the request built once the cv is known asks for exactly what was just stored
+            #expect(client.buildRequest(path: "stories/mock-slug", findByUuid: false, resolveLevel: 1).url!.absoluteString
+                    == location.sortingQueryItems().absoluteString)
+        }
+
+        @Test
         func `story request typed to root block library enum succeeds`() async throws {
             let mock = Mock(
                 url: URL.init(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!,
@@ -114,7 +155,7 @@ indirect enum Block : Decodable {
             
             let client = StoryblokClient(
                 library: Block.self,
-                session: URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
+                accessToken: "mock-api-key", version: .draft, cv: "mock-cv", configuration: mockConfiguration
             )
 
             let story: Story<Block>? = try await client.story("mock-slug")
@@ -144,7 +185,7 @@ indirect enum Block : Decodable {
             
             let client = StoryblokClient(
                 library: Block.self,
-                session: URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: mockConfiguration)
+                accessToken: "mock-api-key", version: .draft, cv: "mock-cv", configuration: mockConfiguration
             )
 
             let optionalStory: Story<Block.Page>? = try await client.story("mock-slug")

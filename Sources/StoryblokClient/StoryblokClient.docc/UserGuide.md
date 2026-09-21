@@ -215,17 +215,19 @@ let client = StoryblokClient(
 
 ### Advanced configuration
 
-For more control, create the underlying [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) yourself and pass it to ``StoryblokClient/init(library:session:)``:
+The client creates the underlying [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession), you can customize the session's configuration, delegate, and delegate queue:
 
 ```swift
 let configuration = URLSessionConfiguration.default
 configuration.waitsForConnectivity = true
 
-let session = URLSession(
-    storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN", version: .draft),
-    configuration: configuration
+let client = StoryblokClient(
+    library: Content.self,
+    accessToken: "YOUR_ACCESS_TOKEN",
+    version: .draft,
+    configuration: configuration,
+    delegate: myDelegate
 )
-let client = StoryblokClient(library: Content.self, session: session)
 ```
 
 ### Closing the client

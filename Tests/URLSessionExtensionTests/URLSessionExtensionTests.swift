@@ -14,7 +14,7 @@ import Mocker
         }
     }()
 
-    @Suite
+    @Suite(.serialized)
     class Common {
         
         let mockConfiguration = URLSessionConfiguration.default
@@ -177,7 +177,7 @@ import Mocker
         }
     }
     
-    @Suite
+    @Suite(.serialized)
     class Capi {
         
         let mockConfiguration = URLSessionConfiguration.default
@@ -250,6 +250,45 @@ import Mocker
                 case .cdn(_, _, _, _, _, _, requestsPerSecond: let requestsPerSecond): #expect(requestsPerSecond == 1000)
                 default: Issue.record("api is not cdn")
             }
+        }
+
+        @Test
+        func `a session's own delegate still receives what the wrapper in front of it does not handle`() async throws {
+            let spy = SpyDelegate()
+            let counting = CountingWrapper(delegate: spy)
+            let session = URLSession(
+                storyblok: .cdn(accessToken: "mock-api-key", cv: "mock-cv"),
+                configuration: mockConfiguration,
+                delegate: counting,
+                delegateQueue: nil
+            )
+            let request = URLRequest(storyblok: session, path: "stories/mock-slug")
+            Mock(request: request, contentType: .json, statusCode: 200, data: "{}".data(using: .utf8)!).register()
+            _ = try await session.data(for: request)
+
+            #expect(counting.tasks == 1, "the wrapper sees callbacks")
+            #expect(spy.tasks == 1, "and passes them on to the delegate behind it")
+            #expect(session.delegate!.responds(to: #selector(URLSessionTaskDelegate.urlSession(_:task:didCompleteWithError:))))
+            #expect(!session.delegate!.responds(to: #selector(URLSessionDownloadDelegate.urlSession(_:downloadTask:didFinishDownloadingTo:))))
+        }
+
+        @Test
+        func `a callback no wrapper implements is forwarded by the runtime`() {
+            //neither Storyblok nor the wrapper implements didCompleteWithError, so arriving at the spy means the
+            //message was re-sent down the chain without either class naming it
+            let spy = SpyDelegate()
+            let session = URLSession(
+                storyblok: .cdn(accessToken: "mock-api-key"),
+                configuration: mockConfiguration,
+                delegate: CountingWrapper(delegate: spy),
+                delegateQueue: nil
+            )
+            let task = session.dataTask(with: URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!)
+            defer { session.invalidateAndCancel() }
+
+            (session.delegate as! any URLSessionTaskDelegate).urlSession?(session, task: task, didCompleteWithError: nil)
+
+            #expect(spy.completions == 1)
         }
 
         @Test
@@ -364,7 +403,7 @@ import Mocker
         }
     }
     
-    @Suite
+    @Suite(.serialized)
     class Mapi {
         
         let mockConfiguration = URLSessionConfiguration.default
@@ -432,4 +471,28 @@ import Mocker
         }
     }
 
+}
+
+final class SpyDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    var tasks = 0
+    var completions = 0
+    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) { tasks += 1 }
+    //implemented by nothing in the chain above it, so it can only arrive by forwarding
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) { completions += 1 }
+}
+
+final class CountingWrapper: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    let delegate: (any URLSessionDelegate)?
+    var tasks = 0
+    init(delegate: (any URLSessionDelegate)?) { self.delegate = delegate }
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || delegate?.responds(to: aSelector) == true
+    }
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        delegate?.responds(to: aSelector) == true ? delegate : nil
+    }
+    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+        tasks += 1
+        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, didCreateTask: task)
+    }
 }

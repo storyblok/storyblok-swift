@@ -221,7 +221,7 @@ public extension URLRequest {
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sendable {
     var api: Api
-    private let delegate: (any URLSessionDelegate)?
+    let delegate: (any URLSessionDelegate)?
     private let minDelayBetweenRequests: Duration
     private var failedRequestCount = 0
     private var backoffUntil = DispatchTime.now() // to share back off across all requests pre-flight
@@ -281,56 +281,6 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, didCreateTask: task)
     }
 
-    func urlSession(_ session: URLSession, didBecomeInvalidWithError error: (any Error)?) {
-        delegate?.urlSession?(session, didBecomeInvalidWithError: error)
-    }
-
-    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @Sendable @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        delegate?.urlSession?(session, didReceive: challenge, completionHandler: completionHandler) ?? completionHandler(.performDefaultHandling, nil)
-    }
-
-    func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
-        delegate?.urlSessionDidFinishEvents?(forBackgroundURLSession: session)
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didReceive challenge: URLAuthenticationChallenge, completionHandler: @Sendable @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didReceive: challenge, completionHandler: completionHandler) ?? completionHandler(.performDefaultHandling, nil)
-    }
-
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didFinishCollecting: metrics)
-
-    }
-
-    func urlSession(_ session: URLSession, taskIsWaitingForConnectivity task: URLSessionTask) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, taskIsWaitingForConnectivity: task)
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStream completionHandler: @Sendable @escaping (InputStream?) -> Void) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStream: completionHandler) ?? completionHandler(nil)
-    }
-
-    @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
-    func urlSession(_ session: URLSession, task: URLSessionTask, needNewBodyStreamFrom offset: Int64, completionHandler: @Sendable @escaping (InputStream?) -> Void) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, needNewBodyStreamFrom: offset, completionHandler: completionHandler) ?? completionHandler(nil)
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didCompleteWithError: error)
-
-    }
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, willBeginDelayedRequest request: URLRequest, completionHandler: @Sendable @escaping (URLSession.DelayedRequestDisposition, URLRequest?) -> Void) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willBeginDelayedRequest: request, completionHandler: completionHandler) ?? completionHandler(.continueLoading, nil)
-    }
-
-    @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
-    func urlSession(_ session: URLSession, task: URLSessionTask, didReceiveInformationalResponse response: HTTPURLResponse) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didReceiveInformationalResponse: response)
-
-    }
-
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @Sendable @escaping (URLRequest?) -> Void) {
         var request = request
         if case let .cdn(accessToken, language, fallbackLanguage, version, _, region, requestsPerSecond) = api {
@@ -347,29 +297,16 @@ internal final class Storyblok: NSObject, URLSessionDataDelegate, @unchecked Sen
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
     }
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
-        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, didSendBodyData: bytesSent, totalBytesSent: totalBytesSent, totalBytesExpectedToSend: totalBytesExpectedToSend)
+    //Forward all other calls to the delegate
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || delegate?.responds(to: aSelector) == true
     }
 
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didBecome downloadTask: URLSessionDownloadTask) {
-        (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didBecome: downloadTask)
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didBecome streamTask: URLSessionStreamTask) {
-        (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didBecome: streamTask)
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didReceive: data)
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @Sendable @escaping (URLSession.ResponseDisposition) -> Void) {
-        (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, didReceive: response, completionHandler: completionHandler) ?? completionHandler(.allow)
-    }
-
-    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, willCacheResponse proposedResponse: CachedURLResponse, completionHandler: @Sendable @escaping (CachedURLResponse?) -> Void) {
-        (delegate as? URLSessionDataDelegate)?.urlSession?(session, dataTask: dataTask, willCacheResponse: proposedResponse, completionHandler: completionHandler) ?? completionHandler(proposedResponse)
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        delegate?.responds(to: aSelector) == true ? delegate : nil
     }
 }
+
 
 

@@ -80,7 +80,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     internal let relations: String
 
-    /// Creates a client with minimal configuration.
+    /// Creates a client.
     ///
     /// - Parameters:
     ///   - library: The ``BlockLibrary`` type describing the components this client decodes and
@@ -93,7 +93,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - cv: Optional cache version timestamp.
     ///   - requestsPerSecond: Optional maximum number of API requests per second. Defaults to `1000`.
     ///   - configuration: The [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) to use for the underlying session. Defaults to `.default`.
-    public convenience init(
+    ///   - delegate: An optional delegate for the underlying session.
+    ///   - delegateQueue: An optional queue for scheduling `delegate` callbacks.
+    public init(
         library: Library.Type,
         accessToken: String,
         version: Api.Version = .published,
@@ -103,8 +105,11 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         cv: String? = nil,
         requestsPerSecond: Int = 1000,
         configuration: URLSessionConfiguration = .default,
+        delegate: (any URLSessionDelegate)? = nil,
+        delegateQueue: OperationQueue? = nil,
     ) {
-        let session = URLSession(
+        self.relations = library.relations
+        self.session = URLSession(
             storyblok: .cdn(
                 accessToken: accessToken,
                 language: language,
@@ -114,28 +119,18 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 region: region,
                 requestsPerSecond: requestsPerSecond
             ),
-            configuration: configuration
+            configuration: configuration,
+            delegate: RedirectNormalizer(delegate: delegate),
+            delegateQueue: delegateQueue
         )
-        self.init(library: library, session: session)
     }
 
-    /// Creates a client wrapping a pre-configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
-    ///
-    /// The session must be configured for the Content Delivery API, see
-    /// [`URLSession.init(storyblok:configuration:)`](doc:/URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)).
-    ///
-    /// - Parameters:
-    ///   - library: The ``BlockLibrary`` type describing the components this client decodes and
-    ///     the relations it resolves.
-    ///   - session: The [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) to use for API requests. It must have been created
-    ///     with the [`URLSession.init(storyblok:configuration:)`](doc:/URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:))
-    ///     initializer with [`Api.cdn(...)`](doc:/URLSessionExtension/Api/cdn(accessToken:language:fallbackLanguage:version:cv:region:requestsPerSecond:)).
+    @available(*, unavailable, message: "Pass the configuration, delegate and delegateQueue you gave the session to init(library:accessToken:...) and let the client build the session. Only a session it builds normalizes redirects, so a story is fetched once per cache version rather than twice.")
     public init(
         library: Library.Type,
         session: URLSession,
     ) {
-        self.relations = library.relations
-        self.session = session
+        fatalError("unavailable")
     }
 
     /// Releases the resources held by the underlying [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession).
@@ -237,7 +232,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .eraseToAnyPublisher()
     }
 
-    private func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
+    internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
         var queryItems: [URLQueryItem] = []
         if resolveLevel > 0 && !relations.isEmpty {
@@ -252,6 +247,8 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         if !queryItems.isEmpty {
             request.url!.append(queryItems: queryItems)
         }
+        //one spelling per request, so the cache probe finds what the previous fetch stored
+        request.url = request.url!.sortingQueryItems()
         return request
     }
 
@@ -273,6 +270,66 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             decoder.userInfo[.storyblokRelations] = relStore
         }
         return decoder
+    }
+}
+
+// MARK: - Stable cache keys
+
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+internal extension URL {
+    /// Returns the URL with its query items ordered by name, and their percent encoding normalized.
+    ///
+    /// `URLCache` keys an entry on the request URL exactly as written, so two spellings of one request are two
+    /// cache entries, and the cached value the story publisher looks for first is never found. They arise
+    /// readily: the Content Delivery API puts `cv` at the end of the `Location` it redirects a published request
+    /// to and percent encodes the comma in `resolve_relations`, where ``StoryblokClient`` puts `cv` first and
+    /// leaves the comma literal.
+    func sortingQueryItems() -> URL {
+        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false),
+              let items = components.queryItems, items.count > 1 else { return self }
+        // Sorted on (name, position) so repeated names keep the order their values were given in:
+        // `sorted(by:)` is not itself a stable sort.
+        components.queryItems = items.enumerated()
+            .sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }
+            .map(\.element)
+        return components.url ?? self
+    }
+}
+
+/// Spells the request a redirect sends us to the same way ``StoryblokClient`` spells the requests that follow it,
+/// so that the response is stored under the key they will look for.
+///
+/// `URLSessionExtension` hands its redirects to the delegate it was given, having already taken the new `cv` from
+/// them, so normalizing here leaves that untouched.
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+
+    private let delegate: (any URLSessionDelegate)?
+
+    init(delegate: (any URLSessionDelegate)? = nil) {
+        self.delegate = delegate
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @Sendable @escaping (URLRequest?) -> Void
+    ) {
+        var request = request
+        request.url = request.url?.sortingQueryItems()
+        (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
+    }
+
+    //Forward all other calls to the delegate
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        super.responds(to: aSelector) || delegate?.responds(to: aSelector) == true
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        delegate?.responds(to: aSelector) == true ? delegate : nil
     }
 }
 
