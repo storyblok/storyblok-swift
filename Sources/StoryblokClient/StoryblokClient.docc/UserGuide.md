@@ -58,7 +58,7 @@ The macro synthesizes the `Decodable` conformance, the ``BlockLibrary/relations`
 
 ### Create a client
 
-To create a client, pass your block library and access token to the ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:)`` convenience initializer:
+To create a client, pass your block library and access token to ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:delegate:delegateQueue:)``:
 
 ```swift
 let client = StoryblokClient(
@@ -193,7 +193,7 @@ struct PageContent: BlockLibrary {
 
 ## Creating a client
 
-The ``StoryblokClient`` type provides two initializers. The convenience initializer ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:)`` configures an internal [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) for you, while ``StoryblokClient/init(library:session:)`` lets you supply your own preconfigured session.
+The ``StoryblokClient`` type has a single initializer, ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:delegate:delegateQueue:)``, which builds the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) it uses. Pass it a `configuration`, a `delegate` and a `delegateQueue` to control that session.
 
 ### Simple configuration
 

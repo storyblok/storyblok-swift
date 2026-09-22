@@ -47,8 +47,7 @@ Read <doc:UserGuide> to get started.
 ### Creating a client
 
 - ``StoryblokClient``
-- ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:)``
-- ``StoryblokClient/init(library:session:)``
+- ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:delegate:delegateQueue:)``
 - ``StoryblokClient/close()``
 
 ### Defining a block library

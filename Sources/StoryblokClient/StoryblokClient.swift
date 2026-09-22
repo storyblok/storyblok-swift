@@ -298,6 +298,11 @@ internal extension URL {
         components.queryItems = items.enumerated()
             .sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }
             .map(\.element)
+        // Re-encoding writes a plus literally, which the API would read back as a space. Every `+` that meant a
+        // space became `%20` above, so whatever is left is a plus someone meant, and has to say so.
+        if let query = components.percentEncodedQuery {
+            components.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%2B")
+        }
         return components.url ?? self
     }
 }

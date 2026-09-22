@@ -55,11 +55,14 @@ struct StableCacheKeys {
     }
 
     @Test func `a plus the API meant literally survives`() {
-        // CGI.escape writes a literal plus as %2B, so it must not be read as a space.
+        // CGI.escape writes a literal plus as %2B, so it must neither be read as a space nor written back as a
+        // bare plus, which the API would then read as one.
         let url = URL(string: "https://api.storyblok.com/v2/cdn/stories?search_term=1%2B1&token=k")!
-        let value = URLComponents(url: url.sortingQueryItems(), resolvingAgainstBaseURL: false)!
-            .queryItems!.first { $0.name == "search_term" }!.value
+        let normalized = url.sortingQueryItems()
 
+        #expect(normalized.query() == "search_term=1%2B1&token=k")
+        let value = URLComponents(url: normalized, resolvingAgainstBaseURL: false)!
+            .queryItems!.first { $0.name == "search_term" }!.value
         #expect(value == "1+1")
     }
 
