@@ -32,17 +32,41 @@ struct StableCacheKeys {
     }
 
     @Test func `the cdn's spelling of a request and the library's own spelling agree`() {
-        // The API appends cv to the end of the Location it redirects a published request to and percent encodes
-        // the comma in resolve_relations; the client puts cv first and leaves the comma literal.
+        // The Location the API redirects a published request to carries its query items sorted by name, with the
+        // comma in resolve_relations percent encoded. The client sorts too, so the encoding is what differs.
         let ours = client(cv: "mock-cv").buildRequest(path: "stories/mock-slug", findByUuid: false, resolveLevel: 1)
-        let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug?token=mock-api-key&version=published&resolve_relations=\(Block.relations.replacingOccurrences(of: ",", with: "%2C"))&cv=mock-cv")!
+        let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug?cv=mock-cv&resolve_relations=\(Block.relations.replacingOccurrences(of: ",", with: "%2C"))&token=mock-api-key&version=published")!
 
         #expect(ours.url!.absoluteString == theirs.sortingQueryItems().absoluteString)
     }
 
+    @Test func `a space the API writes as a plus meets the one the client percent encodes`() {
+        // The API escapes with Ruby's CGI.escape, which writes a space as `+`; URLComponents writes `%20` and
+        // reads `+` back as a literal plus, so without help the two spellings never meet.
+        var mine = URLComponents(string: "https://api.storyblok.com/v2/cdn/stories")!
+        mine.queryItems = [
+            URLQueryItem(name: "search_term", value: "a b~c"),
+            URLQueryItem(name: "token", value: "mock-api-key"),
+        ]
+        let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories?search_term=a+b~c&token=mock-api-key")!
+
+        #expect(mine.url!.query() == "search_term=a%20b~c&token=mock-api-key", "URLComponents percent encodes it")
+        #expect(mine.url!.sortingQueryItems().absoluteString == theirs.sortingQueryItems().absoluteString)
+    }
+
+    @Test func `a plus the API meant literally survives`() {
+        // CGI.escape writes a literal plus as %2B, so it must not be read as a space.
+        let url = URL(string: "https://api.storyblok.com/v2/cdn/stories?search_term=1%2B1&token=k")!
+        let value = URLComponents(url: url.sortingQueryItems(), resolvingAgainstBaseURL: false)!
+            .queryItems!.first { $0.name == "search_term" }!.value
+
+        #expect(value == "1+1")
+    }
+
     @Test func `the redirect normalizer respells the new request the way later requests ask for it`() async {
-        // the API's spelling of a Location: token first, cv appended at the end
-        let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug?token=mock-api-key&version=published&cv=mock-cv")!
+        // The API returns a Location already sorted by name, so in practice it is the percent encoded comma that
+        // has to be respelled. Fed an unsorted one as well here, since the normalizer does not rely on that.
+        let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug?token=mock-api-key&resolve_relations=post.author%2Crecent.posts&cv=mock-cv")!
         let session = URLSession(configuration: .ephemeral)
         defer { session.invalidateAndCancel() }
 
@@ -55,6 +79,6 @@ struct StableCacheKeys {
             ) { continuation.resume(returning: $0) }
         }
 
-        #expect(result?.url?.query() == "cv=mock-cv&token=mock-api-key&version=published")
+        #expect(result?.url?.query() == "cv=mock-cv&resolve_relations=post.author,recent.posts&token=mock-api-key")
     }
 }
