@@ -84,6 +84,10 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "RichTextViewTests",
+            dependencies: ["RichTextView"]
+        ),
+        .testTarget(
             name: "Examples",
             dependencies: ["URLSessionExtension"],
             path: "Examples/URLSessionExtension",

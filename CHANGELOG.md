@@ -11,6 +11,9 @@
 - Fixed a redundant network fetch for every story each time the space's cache version changed.
 - Fixed a 2–3s delay on every `StoryblokClient.story()` fetch on iOS: the cache probe it issues first was counted as a  
   failed request by the rate limiter when it missed, backing off the real fetch.
+- The Rich Text View's default image renderer now falls back to an image's `title` when its `alt` is
+  empty or whitespace-only, hides images that have neither from VoiceOver as decorative, and marks
+  described images with the `isImage` accessibility trait.
 
 **0.3.0**
 

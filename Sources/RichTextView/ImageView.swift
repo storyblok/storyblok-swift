@@ -4,6 +4,15 @@ import StoryblokClient
 struct ImageView<BL: View & Decodable>: View {
     let image: RichText<BL>.Image
 
+    /// The first non-empty description from `alt`, then `title`, ignoring surrounding whitespace.
+    /// `nil` means the image carries no description and should be treated as decorative.
+    var description: String? {
+        [image.alt, image.title]
+            .lazy
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty }
+    }
+
     var body: some View {
         if let url = URL(string: image.src) {
             AsyncImage(url: url) { phase in
@@ -24,7 +33,9 @@ struct ImageView<BL: View & Decodable>: View {
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 44)
-            .accessibilityLabel(image.alt ?? image.title ?? "")
+            .accessibilityLabel(Text(verbatim: description ?? ""))
+            .accessibilityAddTraits(description == nil ? [] : .isImage)
+            .accessibilityHidden(description == nil)
         }
     }
 }
