@@ -31,7 +31,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
         .package(url: "https://github.com/WeTransfer/Mocker.git", .upToNextMajor(from: "3.0.0")),
         .package(url: "https://github.com/apple/swift-docc-plugin.git", from: "1.4.0"),
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "602.0.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", "602.0.0" ..< "605.0.0"),
     ],
     targets: [
         .target(
