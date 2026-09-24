@@ -40,6 +40,14 @@ This package consists of the following libraries:
 | [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient)         | A typed client for Storyblok's Content Delivery API with automatic relation resolution |
 | [RichTextView](https://storyblok.github.io/storyblok-swift/documentation/richtextview)               | A SwiftUI view for rendering Storyblok rich text content                              |
 
+## 📱 Samples
+
+A runnable app, reading the same content from the same Storyblok space as the [Kotlin samples](https://github.com/storyblok/storyblok-kotlin#-samples):
+
+| Sample                     | Description                                                                                                                    |
+|----------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [JetNews](Samples/JetNews) | Google's [JetNews](https://github.com/android/compose-samples/tree/main/JetNews) sample, rebuilt in SwiftUI to take its content from Storyblok |
+
 ## 📚 Examples
 
 The [Examples](https://github.com/storyblok/storyblok-swift/tree/main/Examples) folder contains example Swift code snippets from [Storyblok's docs site](https://www.storyblok.com/docs) as executable unit tests for both the [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) and the [Management API](https://www.storyblok.com/docs/api/management).
