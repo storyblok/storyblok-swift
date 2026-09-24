@@ -17,7 +17,7 @@ Alternatively, in a Swift package, add the *storyblok-swift* repository as a pac
 ```swift
 dependencies: [
     …
-    .package(url: "https://github.com/storyblok/storyblok-swift.git", .upToNextMajor(from: "0.3.0"))
+    .package(url: "https://github.com/storyblok/storyblok-swift.git", .upToNextMajor(from: "1.0.0"))
 ]
 targets: [
     .target(
