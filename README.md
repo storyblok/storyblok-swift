@@ -24,6 +24,12 @@
 
 [Storyblok](https://www.storyblok.com) is a headless content management system (CMS) that empowers developers and content creators. It provides a visual editor for content teams while giving developers the flexibility to build with their preferred tech stack and deliver content through APIs to any platform or device.
 
+### Getting started with Storyblok on Apple platforms
+
+Follow the guide to learn how to fetch and render content, use a custom content model, and more:
+
+https://www.storyblok.com/docs/guides/apple-platforms
+
 ## 📦 Products
 
 This package consists of the following libraries:
