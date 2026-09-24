@@ -2,6 +2,8 @@
 
 **main**
 
+- Widened the `swift-syntax` dependency to `"602.0.0" ..< "605.0.0"`. swift-syntax versions each `6xx` as a
+  major, so the previous `from: "602.0.0"` capped it below 603.
 - BREAKING CHANGE: `StoryblokClient.Error` is now an enum with `api(message:underlyingError:)` and
   `decoding(_:)` cases, so that decoding failures distinguishable from failed requests.
 - Made `attributedString(baseFont:)` on `RichTextComposite` and `RichText.Text` public, so custom `RichTextViewDelegate` 
