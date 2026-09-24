@@ -1,15 +1,15 @@
 ### Changelog
 
-**main**
+**1.0.0**
 
-- Widened the `swift-syntax` dependency to `"602.0.0" ..< "605.0.0"`. swift-syntax versions each `6xx` as a
-  major, so the previous `from: "602.0.0"` capped it below 603.
 - BREAKING CHANGE: `StoryblokClient.Error` is now an enum with `api(message:underlyingError:)` and
   `decoding(_:)` cases, so that decoding failures distinguishable from failed requests.
-- Made `attributedString(baseFont:)` on `RichTextComposite` and `RichText.Text` public, so custom `RichTextViewDelegate` 
-  implementations can render inline rich text content themselves.
 - BREAKING CHANGE: `StoryblokClient.init(library:session:)` has been removed, instead pass the `configuration`, 
   `delegate` and `delegateQueue` you gave the session to `init(library:accessToken:...)`.
+- Made `attributedString(baseFont:)` on `RichTextComposite` and `RichText.Text` public, so custom `RichTextViewDelegate` 
+  implementations can render inline rich text content themselves.
+- Widened the `swift-syntax` dependency to `"602.0.0" ..< "605.0.0"`. swift-syntax versions each `6xx` as a
+  major, so the previous `from: "602.0.0"` capped it below 603.
 - Fixed a redundant network fetch for every story each time the space's cache version changed.
 - Fixed a 2–3s delay on every `StoryblokClient.story()` fetch on iOS: the cache probe it issues first was counted as a  
   failed request by the rate limiter when it missed, backing off the real fetch.
