@@ -13,6 +13,12 @@
 
 set -euo pipefail
 
+# Under pipefail, a reader that exits early (grep -q, head) makes the writer die of SIGPIPE on large
+# input, and the whole pipeline then reports failure: a match reads as no match, or set -e aborts.
+# These helpers never close a pipe early.
+changed_has() { grep -qE "$1" <<< "$changed"; }   # does any changed path match the regex?
+first() { awk -v n="$1" 'NR <= n'; }              # like head -n, but reads all of its input
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 OUT_DIR="claude-output"
@@ -33,6 +39,16 @@ if [[ "$target" =~ ^#?([0-9]+)$ ]] || [[ "$target" =~ /pull/([0-9]+) ]]; then
   git fetch -q origin "pull/$pr/head" "$base_branch"
   head_ref="$(git rev-parse FETCH_HEAD)"
   base="$(git merge-base "origin/$base_branch" "$head_ref")"
+  if [[ "$base" == "$head_ref" ]]; then
+    # Merged with a merge commit, so the head is already in the base branch and the range is empty.
+    # Compare against the base branch as it was before the merge instead.
+    merge_oid="$(gh pr view "$pr" --json mergeCommit --jq '.mergeCommit.oid // empty')"
+    if [[ -n "$merge_oid" ]]; then
+      base="$(git merge-base "$merge_oid^1" "$head_ref")"
+    else
+      echo "warning: the PR head is already in $base_branch, so the diff is empty" >&2
+    fi
+  fi
 elif [[ -z "$target" ]]; then
   worktree_mode=true
   head_ref="HEAD"
@@ -148,44 +164,44 @@ fi
 targets="URLSessionExtension StoryblokClient StoryblokClientMacros RichTextView"
 touched=""
 for t in $targets; do
-  if echo "$changed" | grep -qE "^(Sources/$t/|Tests/${t}Tests/)" ||
-     { [[ "$t" == StoryblokClientMacros ]] && echo "$changed" | grep -q '^Tests/StoryblokClientMacroTests/'; }; then
+  if changed_has "^(Sources/$t/|Tests/${t}Tests/)" ||
+     { [[ "$t" == StoryblokClientMacros ]] && changed_has '^Tests/StoryblokClientMacroTests/'; }; then
     touched="$touched $t"
   fi
 done
-package_changed=$(echo "$changed" | grep -E '^Package\.(swift|resolved)$' || true)
+package_changed=$(grep -E '^Package\.(swift|resolved)$' <<< "$changed" || true)
 
 echo
 echo "## Affected areas"
 echo
 for t in $touched; do echo "- $t"; done
-echo "$changed" | grep -q '^Examples/' && echo "- Examples (live-API docs snippets)"
-echo "$changed" | grep -q '^Samples/JetNews/' && echo "- Samples/JetNews (builds against this working copy)"
+changed_has '^Examples/' && echo "- Examples (live-API docs snippets)"
+changed_has '^Samples/JetNews/' && echo "- Samples/JetNews (builds against this working copy)"
 [[ -n "$package_changed" ]] && echo "- package manifest:" && echo "$package_changed" | sed 's/^/  - /'
-echo "$changed" | grep -qE '^(\.github/|\.swiftpm/)' && echo "- CI workflows / shared schemes"
+changed_has '^(\.github/|\.swiftpm/)' && echo "- CI workflows / shared schemes"
 
 echo
 echo "## Flags"
 echo
 for t in $targets; do
-  if echo "$changed" | grep -qE "^Sources/$t/.*\.swift$"; then
+  if changed_has "^Sources/$t/.*\.swift$"; then
     test_dir="Tests/${t}Tests/"; [[ "$t" == StoryblokClientMacros ]] && test_dir="Tests/StoryblokClientMacroTests/"
-    echo "$changed" | grep -q "^$test_dir" || echo "- $t: sources changed without test changes."
+    changed_has "^$test_dir" || echo "- $t: sources changed without test changes."
   fi
 done
 public_lines=$(grep -cE '^[-+][^-+].*\b(public|open)\b' "$diff_file" || true)
 if [[ "$public_lines" -gt 0 ]]; then
   echo "- $public_lines added/removed lines mention \`public\`/\`open\`. There is no ABI checker, so review each one as an API change:"
-  grep -nE '^[-+][^-+].*\b(public|open)\b' "$diff_file" | head -12 | sed 's/^/  - /'
-  echo "$changed" | grep -q '\.docc/' || echo "- Public API lines changed but no DocC catalog (.docc) changed."
+  grep -nE '^[-+][^-+].*\b(public|open)\b' "$diff_file" | first 12 | sed 's/^/  - /'
+  changed_has '\.docc/' || echo "- Public API lines changed but no DocC catalog (.docc) changed."
 fi
-if [[ -n "$touched" ]] && ! echo "$changed" | grep -q '^CHANGELOG.md$'; then
+if [[ -n "$touched" ]] && ! changed_has '^CHANGELOG.md$'; then
   echo "- CHANGELOG.md not updated."
 fi
 [[ -n "$package_changed" ]] && echo "- Package.swift/Package.resolved changed. Check version ranges (swift-syntax spans majors 602..<605), platforms and the swift-tools-version."
-grep -nE '^\+.*(@unchecked Sendable|nonisolated\(unsafe\)|@preconcurrency)' "$diff_file" | head -5 | sed 's/^/- New concurrency escape hatch: /' || true
-grep -nE '^\+.*(try!|as!|fatalError\(|print\()' "$diff_file" | grep -v '^[0-9]*:+++ ' | head -5 | sed 's/^/- New try!\/as!\/fatalError\/print: /' || true
-grep -nE '^\+.*(TODO|FIXME)' "$diff_file" | head -5 | sed 's/^/- New TODO: /' || true
+grep -nE '^\+.*(@unchecked Sendable|nonisolated\(unsafe\)|@preconcurrency)' "$diff_file" | first 5 | sed 's/^/- New concurrency escape hatch: /' || true
+grep -nE '^\+.*(try!|as!|fatalError\(|print\()' "$diff_file" | grep -v '^[0-9]*:+++ ' | first 5 | sed 's/^/- New try!\/as!\/fatalError\/print: /' || true
+grep -nE '^\+.*(TODO|FIXME)' "$diff_file" | first 5 | sed 's/^/- New TODO: /' || true
 
 echo
 echo "## Suggested verification (host only; CI covers iOS, tvOS and watchOS)"

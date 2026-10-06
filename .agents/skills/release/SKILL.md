@@ -46,16 +46,22 @@ Branch from `origin/main` (`chore/release-X.Y.Z`), then:
 
    That's the `UserGuide.md` of each of `URLSessionExtension`, `StoryblokClient` and
    `RichTextView`.
-3. Verify, one test target per process:
+3. Verify, one test target per process. The subshell stops at the first failure and reports it,
+   without closing the terminal it's pasted into. (It uses explicit `|| exit 1` because bash ignores
+   `set -e` inside a subshell whose status is tested.)
 
    ```bash
-   swift build --build-tests
-   for t in URLSessionExtensionTests StoryblokClientTests StoryblokClientMacroTests RichTextViewTests; do
-     swift test --skip-build --filter $t || break
-   done
-   swift package generate-documentation --target StoryblokClient --target RichTextView \
-     --target URLSessionExtension --enable-experimental-combined-documentation
+   (
+     swift build --build-tests || exit 1
+     for t in URLSessionExtensionTests StoryblokClientTests StoryblokClientMacroTests RichTextViewTests; do
+       swift test --skip-build --filter "$t" || exit 1
+     done
+     swift package generate-documentation --target StoryblokClient --target RichTextView \
+       --target URLSessionExtension --enable-experimental-combined-documentation || exit 1
+   ) && echo "release checks passed" || echo "release checks FAILED"
    ```
+
+   Don't continue to the PR unless it prints `release checks passed`.
 
 Commit, push and open the PR against `main`. Stop there. The release waits for the PR to merge.
 
