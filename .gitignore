@@ -61,3 +61,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# JetNews sample build output (see the run-sample skill)
+/Samples/JetNews/build/
+
+# AI agent reports
+claude-output
+.env
