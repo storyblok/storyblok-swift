@@ -189,10 +189,10 @@ for t in $targets; do
     changed_has "^$test_dir" || echo "- $t: sources changed without test changes."
   fi
 done
-public_lines=$(grep -cE '^[-+][^-+].*\b(public|open)\b' "$diff_file" || true)
+public_lines=$(grep -cE '^[-+]([^-+].*)?\b(public|open)\b' "$diff_file" || true)
 if [[ "$public_lines" -gt 0 ]]; then
   echo "- $public_lines added/removed lines mention \`public\`/\`open\`. There is no ABI checker, so review each one as an API change:"
-  grep -nE '^[-+][^-+].*\b(public|open)\b' "$diff_file" | first 12 | sed 's/^/  - /'
+  grep -nE '^[-+]([^-+].*)?\b(public|open)\b' "$diff_file" | first 12 | sed 's/^/  - /'
   changed_has '\.docc/' || echo "- Public API lines changed but no DocC catalog (.docc) changed."
 fi
 if [[ -n "$touched" ]] && ! changed_has '^CHANGELOG.md$'; then

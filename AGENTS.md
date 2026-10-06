@@ -97,19 +97,3 @@ swift test --filter RichTextViewTests
 - On `main`, only commit when explicitly asked. Never `git push --force`. Use
   `--force-with-lease`.
 - PRs target `main`. Keep them to one logical change, and call out any change to `public` API.
-
-## Skills
-
-Skills live in `.agents/skills/` (symlinked into `.claude/skills/`). Generated reports go to
-`claude-output/` (gitignored).
-
-| Skill              | Use it to                                                      |
-| ------------------ | -------------------------------------------------------------- |
-| `review-and-qa`    | Review a PR, branch or commit and write a QA plan              |
-| `investigate`      | Root-cause a GitHub issue or bug report                        |
-| `triage`           | Classify and prioritise GitHub issues or Linear tickets        |
-| `plan`             | Write an implementation plan before coding                     |
-| `implement`        | Carry out an approved plan                                     |
-| `qa-engineer-unit` | Write or change unit tests                                     |
-| `run-sample`       | Build and run the JetNews sample in the iOS Simulator          |
-| `release`          | Close the changelog, bump the docs and cut a release           |
