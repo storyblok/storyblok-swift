@@ -24,8 +24,12 @@ description: Use when adding or changing unit tests for logic in a target
 
 ## Patterns
 
-- Group related tests in a `@Suite(.serialized)` type. Mocker's registry is global, so suites that
-  register mocks run serially and call `Mocker.removeAll()` in `deinit`.
+- **Nest every suite that registers mocks inside the target's serialized root suite**
+  (`URLSessionExtensionTests` or `StoryblokClientTests`). Mocker's registry is global, and
+  `.serialized` only orders the tests and suites *inside* the suite it's on: separate top-level suites
+  still run in parallel, so one suite's `Mocker.removeAll()` would clear another's mocks mid-test. From
+  another file, nest it through an `extension` of the root suite. Mock-using suites also call
+  `Mocker.removeAll()` in `deinit`.
 - Name tests with sentences as raw identifiers:
   `` @Test func `adds json content type header on put and post requests`() async throws ``.
 - HTTP goes through Mocker: set `configuration.protocolClasses = [MockingURLProtocol.self]`, pass
@@ -41,23 +45,27 @@ description: Use when adding or changing unit tests for logic in a target
 ## Shape
 
 ```swift
-@Suite(.serialized)
-class Requests {
-    let mockConfiguration = URLSessionConfiguration.default
+// Inside the serialized root suite, so it never runs alongside the target's other mock-using suites.
+extension URLSessionExtensionTests {
 
-    init() { mockConfiguration.protocolClasses = [MockingURLProtocol.self] }
-    deinit { Mocker.removeAll() }
+    @Suite(.serialized)
+    class Requests {
+        let mockConfiguration = URLSessionConfiguration.default
 
-    @Test func `adds json content type header on put and post requests`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("mock-api-key")), configuration: mockConfiguration)
-        var request = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
-        var mock = Mock(url: request.url!, statusCode: 200, data: [.post: Data(), .put: Data()])
-        mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
-            #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
-        })
-        mock.register()
-        request.httpMethod = "PUT"
-        _ = try await storyblok.data(for: request)
+        init() { mockConfiguration.protocolClasses = [MockingURLProtocol.self] }
+        deinit { Mocker.removeAll() }
+
+        @Test func `adds json content type header on put and post requests`() async throws {
+            let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("mock-api-key")), configuration: mockConfiguration)
+            var request = URLRequest(storyblok: storyblok, path: "spaces/123/stories/1234")
+            var mock = Mock(url: request.url!, statusCode: 200, data: [.post: Data(), .put: Data()])
+            mock.onRequestHandler = OnRequestHandler(requestCallback: { request in
+                #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+            })
+            mock.register()
+            request.httpMethod = "PUT"
+            _ = try await storyblok.data(for: request)
+        }
     }
 }
 ```

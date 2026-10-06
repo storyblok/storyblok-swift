@@ -16,10 +16,11 @@ with manual test cases. `AGENTS.md` has the package layout and conventions. Don'
 
 ## Step 0: Collect the context
 
-Run this first, with the arguments unchanged (empty means the current branch and working tree):
+Run this first, with the arguments unchanged and quoted, so a `#42` isn't read as a shell comment
+(empty means the current branch and working tree):
 
 ```bash
-bash .agents/skills/review-and-qa/scripts/review-context.sh $ARGUMENTS
+bash .agents/skills/review-and-qa/scripts/review-context.sh "$ARGUMENTS"
 ```
 
 It prints the PR description and CI status, commits with author emails, changed files, affected
@@ -81,9 +82,9 @@ each one.
 
 ### Storyblok API behaviour
 
-- [ ] `URLSessionExtension`: rate limits per API (CDN vs MAPI). Backoff only on 429/5xx, never on
-      cache-only probes. `cv` comes from 301 redirects. Cache policy: published content cached,
-      draft not.
+- [ ] `URLSessionExtension`: rate limits per API (CDN vs MAPI). Backoff on 429, 5xx and transport
+      failures (no response at all), never on cache-only probes. `cv` comes from 301 redirects.
+      Cache policy: published content cached, draft not.
 - [ ] Cache keys are stable: query parameters sorted, and `+`/space encoding normalised.
 - [ ] `StoryblokClient` decoding tolerates what the API and Visual Editor send (unknown keys,
       missing optional fields, `null`), and relation resolution handles cycles and `resolveLevel`.
