@@ -33,8 +33,8 @@ API needs DocC comments, and user-facing changes need a `CHANGELOG.md` entry und
 ## Commits and pull requests
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/) with the target as the scope,
-  e.g. `fix(URLSessionExtension): don't back off after a cache-only lookup misses`. Keep the
-  subject in the imperative and under 50 characters.
+  e.g. `fix(URLSessionExtension): skip cache-miss backoff`. Write the subject in the imperative
+  and aim for under 50 characters. With a long scope, keep the description short.
 - Keep each pull request to one logical change, with tests. A bug fix needs a regression test.
 - Storyblok employees: commit with your `@storyblok.com` email address. CI checks it.
 
