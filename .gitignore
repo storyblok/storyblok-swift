@@ -62,9 +62,8 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-# JetNews sample build output (see the run-sample skill)
+# JetNews sample build output (xcodebuild -derivedDataPath build)
 /Samples/JetNews/build/
 
 # AI agent reports
 claude-output
-.env

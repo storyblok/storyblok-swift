@@ -7,8 +7,7 @@ description: Example of a manual test plan for an SDK change, verified through t
 
 ## Environment setup
 
-The JetNews sample builds against this working copy, so no publishing is needed. See the
-`run-sample` skill for the full steps.
+The JetNews sample builds against this working copy, so no publishing is needed.
 
 ```bash
 cd Samples/JetNews

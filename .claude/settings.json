@@ -19,7 +19,6 @@
       "Bash(xcrun simctl list *)",
       "Bash(bash .agents/skills/review-and-qa/scripts/review-context.sh *)",
       "Bash(bash .agents/skills/review-and-qa/scripts/review-context.sh)",
-      "Bash(bash .agents/skills/triage/scripts/linear-fetch.sh *)",
       "Bash(git log *)",
       "Bash(git show *)",
       "Bash(git diff *)",
@@ -44,9 +43,7 @@
     "deny": [
       "Bash(git diff *--output*)",
       "Bash(git show *--output*)",
-      "Bash(git log *--output*)",
-      "Read(./.env)",
-      "Read(./.env.*)"
+      "Bash(git log *--output*)"
     ]
   }
 }

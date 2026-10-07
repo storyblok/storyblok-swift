@@ -158,8 +158,8 @@ Write manual test cases a person can run, covering:
 3. **Edge cases**: empty content, unknown blocks or fields, circular relations, special characters
    in slugs and queries.
 4. **Error recovery**: backoff and retry, cache fallback, and offline then online.
-5. **Platforms**: which platforms to spot-check by hand and why. Use the JetNews sample on iOS (the
-   `run-sample` skill), and macOS, tvOS or watchOS where the change is platform-specific.
+5. **Platforms**: which platforms to spot-check by hand and why. Use the JetNews sample on iOS (it
+   builds against the working copy), and macOS, tvOS or watchOS where the change is platform-specific.
 
 Skip cases automated tests already cover. Mention them in a line instead.
 
