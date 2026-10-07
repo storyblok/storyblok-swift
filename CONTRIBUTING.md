@@ -21,7 +21,7 @@ swift test --filter StoryblokClientTests   # one test target at a time
 
 Run test targets one at a time: two of them configure swift-log, which only works once per process.
 CI also runs every target on the iOS, tvOS and watchOS simulators, so macOS is enough locally.
-[AGENTS.md](AGENTS.md) lists every target and command, and how to run the JetNews sample app.
+[AGENTS.md](AGENTS.md) lists every target and command.
 
 ## Public API changes
 
@@ -46,21 +46,9 @@ everything you submit: review, run and understand the code as if you wrote it yo
 - **[AGENTS.md](AGENTS.md)**: the project guide for agents. It covers layout, platforms, commands,
   conventions and commit rules. Claude Code (v2.1.277 or later), Codex, Cursor, GitHub Copilot,
   Gemini CLI and most other tools read it automatically.
-- **Skills** in [`.agents/skills/`](.agents/skills) (symlinked into `.claude/skills/`) package
-  common workflows. In Claude Code, run them as slash commands:
-
-  | Command                       | What it does                                                 |
-  | ----------------------------- | ------------------------------------------------------------ |
-  | `/review-and-qa <PR\|branch>` | Reviews a change against this repo's checklist and writes a QA plan |
-  | `/investigate <issue>`        | Root-causes a GitHub issue or bug report                     |
-  | `/triage <issues>`            | Classifies and prioritises issues                            |
-  | `/plan <task>`, `/implement`  | Plans a change, then carries out the approved plan           |
-  | `/qa-engineer-unit`           | Writes unit tests the way this repo does                     |
-  | `/run-sample`                 | Builds and launches JetNews in the iOS Simulator             |
-  | `/release <version>`          | Maintainers: prepares a release                              |
-
-  Other agents can follow the same `SKILL.md` files as instructions.
-- Reports from these skills go to `claude-output/`, which is gitignored.
+- **`/review-and-qa <PR|branch>`**: a skill in [`.agents/skills/`](.agents/skills) (symlinked
+  into `.claude/skills/`) that reviews a change against this repo's checklist and writes a QA plan
+  to `claude-output/`, which is gitignored. Other agents can follow its `SKILL.md` as instructions.
 - Please run `/review-and-qa` on your branch before you open a pull request. It catches the
   things reviewers here look for first: `public` API changes, concurrency escape hatches and
   missing regression tests.
