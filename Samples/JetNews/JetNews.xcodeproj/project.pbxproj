@@ -10,6 +10,7 @@
 		AB71D1FF2FDAA75700252801 /* RichTextView in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D1FE2FDAA75700252801 /* RichTextView */; };
 		AB71D2012FDAA75700252801 /* StoryblokClient in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2002FDAA75700252801 /* StoryblokClient */; };
 		AB71D2032FDAA75700252801 /* URLSessionExtension in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2022FDAA75700252801 /* URLSessionExtension */; };
+		AB71D2052FDAA75700252801 /* StoryblokUI in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2042FDAA75700252801 /* StoryblokUI */; };
 		AB8E776A2FADFDA10095FA7E /* StoryblokClient in Frameworks */ = {isa = PBXBuildFile; productRef = AB8E77692FADFDA10095FA7E /* StoryblokClient */; };
 		AB8E776C2FADFDA10095FA7E /* URLSessionExtension in Frameworks */ = {isa = PBXBuildFile; productRef = AB8E776B2FADFDA10095FA7E /* URLSessionExtension */; };
 /* End PBXBuildFile section */
@@ -34,6 +35,7 @@
 				AB71D1FF2FDAA75700252801 /* RichTextView in Frameworks */,
 				AB71D2032FDAA75700252801 /* URLSessionExtension in Frameworks */,
 				AB71D2012FDAA75700252801 /* StoryblokClient in Frameworks */,
+				AB71D2052FDAA75700252801 /* StoryblokUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +89,7 @@
 				AB71D1FE2FDAA75700252801 /* RichTextView */,
 				AB71D2002FDAA75700252801 /* StoryblokClient */,
 				AB71D2022FDAA75700252801 /* URLSessionExtension */,
+				AB71D2042FDAA75700252801 /* StoryblokUI */,
 			);
 			productName = JetNews;
 			productReference = ABBCBD212FA33CE800AFEFE2 /* JetNews.app */;
@@ -361,6 +364,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		AB71D2042FDAA75700252801 /* StoryblokUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StoryblokUI;
+		};
 		AB71D1FE2FDAA75700252801 /* RichTextView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RichTextView;
