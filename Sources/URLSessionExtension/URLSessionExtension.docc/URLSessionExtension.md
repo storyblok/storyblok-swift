@@ -18,6 +18,12 @@ Read <doc:UserGuide> to get started.
 
 - ``URLSessionExtension/Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)``
 
+### Showing cached responses while revalidating
+
+- ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)``
+- ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URL)``
+- ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher``
+
 ### Retrying failed requests
 
 - ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)``

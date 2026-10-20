@@ -182,6 +182,29 @@ The delay is automatically applied before retries and all other pending requests
 
 > Tip: Depending on your scenario it could also be beneficial to enable  [waitsForConnectivity](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/waitsforconnectivity) on the [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) when [creating](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) your session.
 
+### Showing cached responses while revalidating
+
+To show what a request last returned straight away and then update it with the latest version, use ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)`` in place of `dataTaskPublisher(for:)`. Its ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher`` publishes up to two responses, following a *stale-while-revalidate* pattern:
+
+```swift
+storyblok.cachedDataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "stories/home"))
+    .receive(on: DispatchQueue.main)
+    .sink { completion in
+        if case let .failure(error) = completion { print(error.localizedDescription) }
+    } receiveValue: { data, response in
+        render(data)
+    }
+```
+
+1. The response the URL cache holds for the request, read with [`returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload) so that it never touches the network. When the cache holds none, the publisher moves straight on.
+2. The response the request loads with its own cache policy. Transient failures are retried up to three times, and any error response then fails the publisher with a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError), as in <doc:UserGuide#Retrying-failed-requests>. When this response has the same data as the cached one, it is not published again.
+
+A failure ends the publisher after the cached response, if there was one, so keep the last value received to go on showing it.
+
+> Note: The publisher retries the request itself, so don't follow it with your own `retry`: that would subscribe again from the start and publish the cached response a second time.
+
+For published content the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)) sets [`returnCacheDataElseLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedataelseload), so the request is also answered from the cache when it holds a response, and only one response is published. A new `cv` changes the URL of every request and so starts them on a fresh cache entry, as described in <doc:UserGuide#Configuring-default-parameters-for-all-requests>.
+
 ### Working with JSON 
 
 All Storyblok APIs responses, including errors, return JSON which you can convert to objects and values [using Foundation APIs](https://developer.apple.com/documentation/foundation/archives-and-serialization/#overview) or [with Combine operators](https://developer.apple.com/documentation/foundation/processing-url-session-data-task-results-with-combine#Convert-incoming-raw-data-to-your-types-with-Combine-operators). 
