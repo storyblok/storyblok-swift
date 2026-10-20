@@ -68,6 +68,7 @@ extension BlockLibrary {
 /// nonisolated extension Content: BlockLibrary {}
 /// ```
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
+@attached(memberAttribute)
 @attached(extension, conformances: BlockLibrary)
 public macro BlockLibrary() = #externalMacro(
     module: "StoryblokClientMacros",
@@ -84,4 +85,14 @@ internal extension CodingUserInfoKey {
     static let storyblokRelations = CodingUserInfoKey(rawValue: "com.storyblok.relations")!
 }
 
-
+/// Conforms one content `struct` to ``QueryableContent``, so a ``StoriesQuery`` can address its
+/// fields by key path.
+///
+/// Applied for you by ``BlockLibrary()`` to each nested content struct, carrying the technical
+/// name of the enum case that holds it. Apply it yourself only to a content type declared outside
+/// a block library.
+@attached(extension, conformances: QueryableContent, names: named(technicalName), named(fieldNames))
+public macro StoryblokContent(_ technicalName: String) = #externalMacro(
+    module: "StoryblokClientMacros",
+    type: "StoryblokContentMacro"
+)

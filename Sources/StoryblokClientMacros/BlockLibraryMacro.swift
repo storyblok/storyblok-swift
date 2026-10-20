@@ -532,7 +532,108 @@ struct BlockLibraryMacroDiagnostic: DiagnosticMessage {
     }
 }
 
+// MARK: - Queryable content
+
+extension BlockLibraryMacro: MemberAttributeMacro {
+
+    /// Marks each nested content struct with `@StoryblokContent("<case name>")`.
+    ///
+    /// An `ExtensionMacro` may only extend the type it is attached to, so the conformance that
+    /// lets a `StoriesQuery` address the struct's fields by key path cannot be emitted from here.
+    /// Attaching a macro to the struct itself puts that expansion in the one place allowed to
+    /// extend it.
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingAttributesFor member: some DeclSyntaxProtocol,
+        in context: some MacroExpansionContext
+    ) throws -> [AttributeSyntax] {
+        guard let structDecl = member.as(StructDeclSyntax.self) else { return [] }
+
+        let cases = collectCases(
+            in: declaration,
+            codingKeyMap: findCodingKeys(in: declaration),
+            nestedStructs: collectNestedStructs(in: declaration),
+            nestedStructCodingKeys: collectNestedStructCodingKeys(in: declaration)
+        )
+
+        // The component's technical name is the name of the case that carries this struct.
+        guard let info = cases.first(where: { info in
+            info.params.count == 1 && info.params[0].unlabeled
+                && info.params[0].type.trimmedDescription == structDecl.name.text
+        }) else { return [] }
+
+        return ["@StoryblokContent(\(raw: literalString(info.componentName)))"]
+    }
+}
+
+/// Conforms one content struct to `QueryableContent`, naming its fields as Storyblok knows them.
+public struct StoryblokContentMacro: ExtensionMacro {
+
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else { return [] }
+
+        let technicalName = node.arguments?
+            .as(LabeledExprListSyntax.self)?
+            .first?
+            .expression
+            .as(StringLiteralExprSyntax.self)?
+            .segments
+            .description ?? structDecl.name.text
+
+        // A field whose Storyblok name differs from the property is named by CodingKeys.
+        var codingKeys: [String: String] = [:]
+        for member in structDecl.memberBlock.members {
+            guard let enumDecl = member.decl.as(EnumDeclSyntax.self), enumDecl.name.text == "CodingKeys" else { continue }
+            codingKeys = parseCodingKeys(from: enumDecl)
+        }
+
+        var entries: [String] = []
+        for member in structDecl.memberBlock.members {
+            guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
+            for binding in varDecl.bindings {
+                guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                      binding.typeAnnotation?.type != nil,
+                      binding.accessorBlock == nil
+                else { continue }
+                entries.append("        \\\(type.trimmed).\(name): \(literalString(codingKeys[name] ?? name)),")
+            }
+        }
+
+        let table = entries.isEmpty ? "[:]" : "[\n" + entries.joined(separator: "\n") + "\n    ]"
+
+        return [try ExtensionDeclSyntax(
+            """
+            nonisolated extension \(type.trimmed): QueryableContent {
+                public static var technicalName: String? { \(raw: literalString(technicalName)) }
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = \(raw: table)
+            }
+            """
+        )]
+    }
+}
+
 @main
 struct StoryblokClientPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self]
+    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self, StoryblokContentMacro.self]
+}
+
+/// Renders a Swift string literal, escaping what must be escaped. Written without Foundation,
+/// which a macro plugin does not link.
+private func literalString(_ value: String) -> String {
+    var escaped = ""
+    for character in value {
+        switch character {
+            case "\\": escaped += "\\\\"
+            case "\"": escaped += "\\\""
+            default: escaped.append(character)
+        }
+    }
+    return "\"" + escaped + "\""
 }
