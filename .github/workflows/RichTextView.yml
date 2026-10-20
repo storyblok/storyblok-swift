@@ -6,6 +6,7 @@ on:
     paths:
       - 'Package.*'
       - 'Sources/RichTextView/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/RichTextViewTests/**.swift'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'Package.*'
       - 'Sources/RichTextView/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/RichTextViewTests/**.swift'
