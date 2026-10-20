@@ -2,6 +2,11 @@
 
 **main**
 
+- Added `StoriesQuery` for the endpoint's parameters, addressing your content's fields by key path for sorting and
+  filter queries, and created inline with `StoriesQuery { … }`. The `@BlockLibrary` macro conforms each nested
+  content struct to the new `QueryableContent` protocol that makes this possible, by attaching the new
+  `@StoryblokContent(_:)` macro to it. Apply `@StoryblokContent(_:)` yourself to a content struct declared outside a
+  block library.
 - Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
   response the URL cache holds for a request and then the response the request loads.
 

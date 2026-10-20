@@ -129,6 +129,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             expandedSource: """
             enum Wrapper {
                 case author(Author)
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
@@ -883,10 +884,12 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(Article)
                 case popular(articles: [Story<Article>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
                 }
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -945,6 +948,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             expandedSource: """
             indirect enum Block {
                 case article(Article)
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -1088,6 +1092,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Block {
                 case author(Author)
                 case article(headline: String, author: [Story<Author>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
@@ -1150,10 +1155,12 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(Article)
                 case popular(articles: [Story<Article>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
                 }
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -1208,6 +1215,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             indirect enum MyBlock {
                 case page(Page)
                 case highlighted(title: String, post: Story<Page>)
+                @StoryblokContent("page")
 
                 struct Page {
                     let title: String
