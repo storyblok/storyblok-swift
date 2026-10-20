@@ -2,13 +2,19 @@
 
 **main**
 
+- Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
+  page asked for as a `Page<Story<Content>>`, sending its cached copy first and then the fresh one, as `story()` does.
 - Added `StoriesQuery` for the endpoint's parameters, addressing your content's fields by key path for sorting and
   filter queries, and created inline with `StoriesQuery { … }`. The `@BlockLibrary` macro conforms each nested
   content struct to the new `QueryableContent` protocol that makes this possible, by attaching the new
   `@StoryblokContent(_:)` macro to it. Apply `@StoryblokContent(_:)` yourself to a content struct declared outside a
   block library.
+- Added `Page<Element>`, a page of a paginated endpoint's elements: a collection carrying the `total`, page `number`,
+  page `size` and `hasNextPage`. Join a later page onto earlier ones with `+`, which leaves out elements already
+  present.
 - Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
   response the URL cache holds for a request and then the response the request loads.
+- `Story` now conforms to `Identifiable` via its `id`, so stories can be passed directly to `List` and `ForEach`.
 
 **1.0.0**
 

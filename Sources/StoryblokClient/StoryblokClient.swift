@@ -209,6 +209,57 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .eraseToAnyPublisher()
     }
 
+    /// Page `page` of the stories matching `query`.
+    ///
+    /// As ``story(_:resolveLevel:)-(String,_)`` does, the publisher sends the copy of the page the
+    /// URL cache holds, if any, then the fresh one, and finishes. The ``Page`` says whether there
+    /// is a page after it; fetch that with `page + 1`, and join it onto the ones before with
+    /// ``Page/+(_:_:)``, which leaves out stories already on an earlier page:
+    ///
+    /// ```swift
+    /// var posts: Page<Story<Block.Post>> = []
+    /// var number = 1
+    /// repeat {
+    ///     let stories: AnyPublisher<Page<Story<Block.Post>>, _> = client.stories(page: number)
+    ///     var page: Page<Story<Block.Post>> = []
+    ///     for try await copy in stories.values { page = copy }  // the fresh copy arrives last
+    ///     posts = posts + page
+    ///     number += 1
+    /// } while posts.hasNextPage
+    /// ```
+    ///
+    /// `StoryblokUI`'s `Stories` view does this for a SwiftUI list, fetching each page as its
+    /// last row appears.
+    ///
+    /// `Content` fixes which component the query addresses: its
+    /// ``QueryableContent/technicalName`` becomes `content_type`, so a query typed to one of your
+    /// content structs asks only for that component's stories, and one typed to your whole
+    /// ``BlockLibrary`` asks for all of them.
+    ///
+    /// - Parameters:
+    ///   - page: The page to fetch, counting from 1.
+    ///   - pageSize: Stories per page, sent as `per_page`. The endpoint caps this at 100 and
+    ///     refuses a larger value rather than quietly reducing it.
+    ///   - resolveLevel: How deeply nested ``Story`` relations are resolved, as for
+    ///     ``story(_:resolveLevel:)-(String,_)``.
+    ///   - query: Configures the query parameters.
+    public func stories<Content : QueryableContent>(
+        page: Int = 1,
+        pageSize: Int = 25,
+        resolveLevel: Int = 1,
+        query: (inout StoriesQuery<Content>) -> Void = { _ in }
+    ) -> AnyPublisher<Page<Story<Content>>, Error> {
+        let queryItems = relationParameters(resolveLevel: resolveLevel) + StoriesQuery(query).queryItems
+
+        return session.page(page, of: "stories", size: pageSize, queryItems: queryItems) { body in
+            try Self.decoder(resolveLevel: resolveLevel)
+                .decode(ContentResponse<[Story<Content>]>.self, from: body)
+                .payload
+        }
+        .mapError { .from($0) }
+        .eraseToAnyPublisher()
+    }
+
     // MARK: -
 
     internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {

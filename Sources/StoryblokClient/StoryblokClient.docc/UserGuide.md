@@ -278,6 +278,64 @@ let story: Story<Content.Page>? = try await client.story("home").values.first { 
 print(story?.content.title ?? "")
 ```
 
+## Fetching multiple stories
+
+``StoryblokClient/stories(page:pageSize:resolveLevel:query:)`` retrieves the stories matching a query from the [stories endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories), one page at a time. Like `story`, it publishes the copy the URL cache holds, if any, then the latest one from the API:
+
+```swift
+client.stories(page: 1) { (query: inout StoriesQuery<Content.Article>) in
+    query.startsWith = "articles/"
+}
+.sink(
+    receiveCompletion: { _ in },
+    receiveValue: { (page: Page<Story<Content.Article>>) in
+        for story in page { print(story.content.headline) }
+    }
+)
+.store(in: &cancellables)
+```
+
+The query's type names the content type. A query typed to one of your content structs, `Content.Article` here, sends its component as `content_type` and so asks for those stories only. A query typed to the whole block library asks for stories of every type.
+
+### Building a query
+
+``StoriesQuery`` has a property or method for each of the endpoint's parameters. Fields of your own content are addressed by key path, so a misspelled field doesn't compile, and a filter offers only the operations the field's type supports:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.searchTerm = "space"
+    query.sort(by: \.headline)
+    query.sort(byAttribute: .publishedAt, .descending)
+    query.filter {
+        $0.headline.like("*Mars*")
+    }
+}
+```
+
+The ``BlockLibrary()`` macro makes this possible by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
+
+For a parameter that has no entry point, such as a filter on a nested field, add it as written with ``StoriesQuery/parameter(_:_:)``.
+
+### Paging through the results
+
+Each value is a ``Page``: a collection of that page's stories, along with the ``Page/total`` the API reports and whether there is a page after it. Fetch the next page with `page + 1` while ``Page/hasNextPage`` is `true`, and join each page onto the ones before it with `+`, which leaves out any story already on an earlier page:
+
+```swift
+var articles: Page<Story<Content.Article>> = []
+var number = 1
+repeat {
+    let stories: AnyPublisher<Page<Story<Content.Article>>, _> = client.stories(page: number)
+    var page: Page<Story<Content.Article>> = []
+    for try await copy in stories.values { page = copy }  // the latest copy arrives last
+    articles = articles + page
+    number += 1
+} while articles.hasNextPage
+```
+
+The page size defaults to 25 and can be raised to 100 with `pageSize`.
+
+> Tip: To show the stories in a SwiftUI list that fetches the next page as the user scrolls, use the `Stories` view from the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui) library.
+
 ## Story relations
 
 The client automatically resolves [story relations](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations) declared on your block library. Whenever a case (or one of its nested struct fields) has a ``Story``-typed associated value, the macro records it in ``BlockLibrary/relations``, and the client will:
@@ -427,6 +485,8 @@ The client leverages ``/URLSessionExtension``'s caching for the configured [`URL
 1. The client first attempts to retrieve the story from cache (using [`.returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload)).
 2. It then makes a network request to get the latest version, retrying transient failures.
 3. Duplicates are filtered so the cached and fresh responses are only emitted once when identical.
+
+Stories and pages of stories are both fetched this way, through ``/URLSessionExtension``'s ``/URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher``, which you can also use directly for requests the client does not cover.
 
 ## Error handling
 

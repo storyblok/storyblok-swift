@@ -237,6 +237,7 @@ extension Story : Decodable {
 extension Story: Hashable where Content: Hashable {}
 extension Story: Equatable where Content: Equatable {}
 extension Story: Sendable where Content: Sendable {}
+extension Story: Identifiable {}
 
 extension KeyedDecodingContainer {
     /// Specialised overloads for optional story-relation fields. When a UUID placeholder cannot
