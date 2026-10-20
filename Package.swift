@@ -26,6 +26,10 @@ let package = Package(
             name: "RichTextView",
             targets: ["RichTextView"]
         ),
+        .library(
+            name: "StoryblokUI",
+            targets: ["StoryblokUI"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log", from: "1.6.0"),
@@ -61,6 +65,10 @@ let package = Package(
             name: "RichTextView",
             dependencies: ["StoryblokClient"]
         ),
+        .target(
+            name: "StoryblokUI",
+            dependencies: ["StoryblokClient"]
+        ),
         .testTarget(
             name: "URLSessionExtensionTests",
             dependencies: [
@@ -86,6 +94,10 @@ let package = Package(
         .testTarget(
             name: "RichTextViewTests",
             dependencies: ["RichTextView"]
+        ),
+        .testTarget(
+            name: "StoryblokUITests",
+            dependencies: ["StoryblokUI", "StoryblokClient"]
         ),
         .testTarget(
             name: "Examples",

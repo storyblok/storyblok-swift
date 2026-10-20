@@ -12,6 +12,9 @@
 - Added `Page<Element>`, a page of a paginated endpoint's elements: a collection carrying the `total`, page `number`,
   page `size` and `hasNextPage`. Join a later page onto earlier ones with `+`, which leaves out elements already
   present.
+- Added the `StoryblokUI` library, whose `Stories` view produces rows for the stories matching a query, loads the
+  next page as its last row appears, starts again when the query changes, and shows replaceable loading, empty and
+  failure views.
 - Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
   response the URL cache holds for a request and then the response the request loads.
 - `Story` now conforms to `Identifiable` via its `id`, so stories can be passed directly to `List` and `ForEach`.

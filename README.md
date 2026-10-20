@@ -39,6 +39,7 @@ This package consists of the following libraries:
 | [URLSessionExtension](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension) | An extension to simplify calling Storyblok's APIs with URLSession                     |
 | [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient)         | A typed client for Storyblok's Content Delivery API with automatic relation resolution |
 | [RichTextView](https://storyblok.github.io/storyblok-swift/documentation/richtextview)               | A SwiftUI view for rendering Storyblok rich text content                              |
+| [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui)                 | SwiftUI lists of Storyblok stories that load the next page as the user scrolls        |
 
 ## 📱 Samples
 
