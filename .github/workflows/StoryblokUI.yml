@@ -1,0 +1,69 @@
+name: StoryblokUI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/StoryblokUI/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
+      - 'Sources/StoryblokClient/**.swift'
+      - 'Sources/StoryblokClientMacros/**.swift'
+      - 'Tests/StoryblokUITests/**.swift'
+      - '.github/workflows/StoryblokUI.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokUITests.xcscheme'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'Package.*'
+      - 'Sources/StoryblokUI/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
+      - 'Sources/StoryblokClient/**.swift'
+      - 'Sources/StoryblokClientMacros/**.swift'
+      - 'Tests/StoryblokUITests/**.swift'
+      - '.github/workflows/StoryblokUI.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokUITests.xcscheme'
+  workflow_call:
+  workflow_dispatch:
+concurrency:
+  # Limit concurrency to 1 for PRs. 'main' concurrency isn't limited.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Run tests on ${{ matrix.platform }}
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        include:
+          - platform: macOS
+            build: swift build --target StoryblokUITests
+            test: swift test --filter StoryblokUITests
+          - platform: iOS
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=iOS Simulator,name=iPhone 17'
+          - platform: watchOS
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+          - platform: tvOS
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=tvOS Simulator,name=Apple TV'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+      - name: List simulators
+        run: xcrun simctl list
+      - name: Disable swift-syntax prebuilts
+        run: defaults write com.apple.dt.Xcode IDEPackageEnablePrebuilts -bool NO
+      - name: Build
+        run: ${{ matrix.build }}
+      - name: Run tests on ${{ matrix.platform }}
+        run: ${{ matrix.test }}
