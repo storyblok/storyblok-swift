@@ -1,5 +1,10 @@
 ### Changelog
 
+**main**
+
+- Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
+  response the URL cache holds for a request and then the response the request loads.
+
 **1.0.0**
 
 - BREAKING CHANGE: `StoryblokClient.Error` is now an enum with `api(message:underlyingError:)` and
