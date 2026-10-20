@@ -109,6 +109,82 @@ import Testing
         """.data(using: .utf8)!
     }
 
+    /// One story object, as it appears in a response's `story`, `stories` or `rels`.
+    private func storyJSON(id: Int, uuid: String, name: String, content: String) -> String {
+        """
+        {
+            "id": \(id),
+            "uuid": "\(uuid)",
+            "name": "\(name)",
+            "content": \(content),
+            "slug": "s\(id)",
+            "full_slug": "articles/s\(id)",
+            "created_at": "2025-07-09T14:35:26.851Z",
+            "published_at": null,
+            "first_published_at": null,
+            "updated_at": null,
+            "sort_by_date": null,
+            "position": 0,
+            "tag_list": [],
+            "is_startpage": false,
+            "parent_id": null,
+            "meta_data": null,
+            "group_id": "33333333-3333-3333-3333-333333333333",
+            "release_id": null,
+            "lang": "default",
+            "path": null,
+            "alternates": [],
+            "default_full_slug": null,
+            "translated_slugs": null
+        }
+        """
+    }
+
+    /// A stories response holding `stories`, with the author every article refers to in its `rels`.
+    private func wrapStories(_ stories: [String]) -> Data {
+        let author = storyJSON(id: 42, uuid: authorUuid, name: "Alice", content: """
+            { "_uid": "a1", "component": "author", "name": "Alice" }
+        """)
+        return """
+        {
+            "stories": [\(stories.joined(separator: ","))],
+            "rels": [\(author)]
+        }
+        """.data(using: .utf8)!
+    }
+
+    @Test
+    func `page of stories resolves each story's relations from the shared rels`() throws {
+        let data = wrapStories([
+            storyJSON(id: 1, uuid: articleUuid, name: "First", content: """
+                { "_uid": "c1", "component": "article", "headline": "First", "author": "\(authorUuid)" }
+            """),
+            storyJSON(id: 2, uuid: otherUuid, name: "Second", content: """
+                { "_uid": "c2", "component": "article", "headline": "Second", "author": "\(authorUuid)" }
+            """),
+        ])
+
+        let response = try makeDecoder(relStore: RelationStore())
+            .decode(ContentResponse<[Story<MyBlock.Article>]>.self, from: data)
+
+        #expect(response.payload.map(\.content.headline) == ["First", "Second"])
+        #expect(response.payload.map(\.content.author.content.name) == ["Alice", "Alice"])
+    }
+
+    @Test
+    func `stories response decoded as a single story is a decoding failure`() throws {
+        let data = wrapStories([
+            storyJSON(id: 1, uuid: articleUuid, name: "First", content: """
+                { "_uid": "c1", "component": "article", "headline": "First", "author": "\(authorUuid)" }
+            """),
+        ])
+
+        #expect(throws: DecodingError.self) {
+            _ = try makeDecoder(relStore: RelationStore())
+                .decode(ContentResponse<Story<MyBlock.Article>>.self, from: data)
+        }
+    }
+
     @Test
     func `relation UUID is resolved into the referenced story during decoding`() throws {
         let data = wrapStory(content: """
@@ -118,9 +194,9 @@ import Testing
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
 
-        let response = try decoder.decode(StoryResponse<MyBlock>.self, from: data)
+        let response = try decoder.decode(ContentResponse<Story<MyBlock>>.self, from: data)
 
-        if case let .article(article) = response.story.content {
+        if case let .article(article) = response.payload.content {
             #expect(article.headline == "Hi")
             #expect(article.author.name == "Alice")
         } else {
@@ -138,7 +214,7 @@ import Testing
         let decoder = makeDecoder(relStore: store)
 
         #expect(throws: (any Error).self) {
-            _ = try decoder.decode(StoryResponse<MyBlock>.self, from: data)
+            _ = try decoder.decode(ContentResponse<Story<MyBlock>>.self, from: data)
         }
     }
 
@@ -177,9 +253,9 @@ import Testing
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
         
-        let response = try decoder.decode(StoryResponse<MyBlock>.self, from: data)
+        let response = try decoder.decode(ContentResponse<Story<MyBlock>>.self, from: data)
         
-        if case let .popular(articles) = response.story.content {
+        if case let .popular(articles) = response.payload.content {
             #expect(articles.count == 1)
             #expect(articles[0].content.headline == "Hi")
             #expect(articles[0].content.author.name == "Alice")
@@ -242,10 +318,10 @@ import Testing
 
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
-        let response = try decoder.decode(StoryResponse<CircularBlock>.self, from: data)
+        let response = try decoder.decode(ContentResponse<Story<CircularBlock>>.self, from: data)
 
         // A → B → A (cycle break) → ref is nil
-        guard case .node(let nameA, let refB) = response.story.content else { return #expect(Bool(false)) }
+        guard case .node(let nameA, let refB) = response.payload.content else { return #expect(Bool(false)) }
         guard case .node(let nameB, let refA) = refB?.content else { return #expect(Bool(false)) }
         guard case .node(_, let cyclicRef) = refA?.content else { return #expect(Bool(false)) }
         #expect(nameA == "A")
@@ -268,10 +344,10 @@ import Testing
 
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
-        let response = try decoder.decode(StoryResponse<CircularBlock>.self, from: data)
+        let response = try decoder.decode(ContentResponse<Story<CircularBlock>>.self, from: data)
 
         // A → B → C → A → B (cycle break) → ref is nil
-        guard case .node(let nameA, let refB) = response.story.content else { return #expect(Bool(false)) }
+        guard case .node(let nameA, let refB) = response.payload.content else { return #expect(Bool(false)) }
         guard case .node(let nameB, let refC) = refB?.content else { return #expect(Bool(false)) }
         guard case .node(let nameC, let refA) = refC?.content else { return #expect(Bool(false)) }
         guard case .node(_, let cyclicRef) = refA?.content else { return #expect(Bool(false)) }
@@ -310,7 +386,7 @@ import Testing
         let decoder = makeDecoder(relStore: store)
 
         #expect {
-            _ = try decoder.decode(StoryResponse<NonOptionalCircularBlock>.self, from: data)
+            _ = try decoder.decode(ContentResponse<Story<NonOptionalCircularBlock>>.self, from: data)
         } throws: { error in
             guard case DecodingError.dataCorrupted(let context) = error else { return false }
             return context.debugDescription.hasPrefix("Circular story relation:")
@@ -346,8 +422,8 @@ import Testing
         """.data(using: .utf8)!
 
         let decoder = makePlainDecoder()
-        let response = try decoder.decode(StoryResponse<ArticleWithOptionalAuthor>.self, from: data)
-        #expect(response.story.content.author == nil)
+        let response = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthor>>.self, from: data)
+        #expect(response.payload.content.author == nil)
     }
 
     @Test
@@ -385,8 +461,8 @@ import Testing
 
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
-        let response = try decoder.decode(StoryResponse<ArticleWithOptionalAuthor>.self, from: data)
-        #expect(response.story.content.author?.content.name == "Alice")
+        let response = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthor>>.self, from: data)
+        #expect(response.payload.content.author?.content.name == "Alice")
     }
 
     private struct ArticleWithOptionalAuthorArray: Decodable {
@@ -414,8 +490,8 @@ import Testing
         """.data(using: .utf8)!
 
         let decoder = makePlainDecoder()
-        let response = try decoder.decode(StoryResponse<ArticleWithOptionalAuthorArray>.self, from: data)
-        #expect(response.story.content.authors == nil)
+        let response = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthorArray>>.self, from: data)
+        #expect(response.payload.content.authors == nil)
     }
 
     @Test
@@ -453,8 +529,8 @@ import Testing
 
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
-        let response = try decoder.decode(StoryResponse<ArticleWithOptionalAuthorArray>.self, from: data)
-        #expect(response.story.content.authors?.first?.content.name == "Alice")
+        let response = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthorArray>>.self, from: data)
+        #expect(response.payload.content.authors?.first?.content.name == "Alice")
     }
 
     @Test
@@ -491,9 +567,9 @@ import Testing
 
         let store = RelationStore()
         let decoder = makeDecoder(relStore: store)
-        let response = try decoder.decode(StoryResponse<MyBlock>.self, from: data)
+        let response = try decoder.decode(ContentResponse<Story<MyBlock>>.self, from: data)
 
-        if case let .author(author) = response.story.content {
+        if case let .author(author) = response.payload.content {
             #expect(author.name == "Alice")
         } else {
             #expect(Bool(false), "Expected author")
