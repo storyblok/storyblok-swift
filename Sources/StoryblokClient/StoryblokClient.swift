@@ -73,6 +73,22 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         public var errorDescription: String? {
             message ?? underlyingError?.localizedDescription
         }
+
+        /// Maps a failure from the request or the decode onto this client's own error.
+        ///
+        /// A decoding failure stays a decoding failure: content that does not match your types is a
+        /// modelling error rather than a transient one, and retrying cannot resolve it.
+        static func from(_ error: any Swift.Error) -> Self {
+            if let error = error as? DecodingError { return .decoding(error) }
+            if let error = error as? Self { return error }
+            if let error = error as? Api.ResponseError {
+                switch error {
+                    case let .client(_, data, _), let .server(_, data, _):
+                        return .api(message: String(data: data, encoding: .utf8), underlyingError: error)
+                }
+            }
+            return .api(message: error.localizedDescription, underlyingError: error)
+        }
     }
 
     /// The underlying URL session configured for the Storyblok Content Delivery API.
@@ -184,72 +200,41 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel)
     }
 
-    // MARK: -
-
     private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        let request = buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel)
-
-        var cachedRequest = request
-        cachedRequest.cachePolicy = .returnCacheDataDontLoad
-
-        let cached = session.dataTaskPublisher(for: cachedRequest)
-            .map { $0.data }
-            .catch { _ in Empty<Data, URLError>() }
-            .mapError { $0 as any Swift.Error }
-
-        let fresh = session.dataTaskPublisher(for: request)
-            .failOnErrorResponse(.recoverable)
-            .retry(3)
-            .failOnErrorResponse(.all)
-            .tryMap { (data, _) in data }
-
-        return cached
-            .append(fresh)
-            .removeDuplicates()
-            .tryMap { data in
-                let decoder: JSONDecoder
-                if resolveLevel > 0 {
-                    let store = RelationStore()
-                    store.resolveLevel = resolveLevel
-                    decoder = Self.makeDecoder(relStore: store)
-                } else {
-                    decoder = Self.makeDecoder()
-                }
-                return try decoder.decode(StoryResponse<Content>.self, from: data).story
+        session.cachedDataTaskPublisher(for: buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel))
+            .tryMap { data, _ in
+                try Self.decoder(resolveLevel: resolveLevel).decode(ContentResponse<Story<Content>>.self, from: data).payload
             }
-            .mapError { error -> Error in
-                if let error = error as? DecodingError { return .decoding(error) }
-                if let error = error as? Error { return error }
-                if let error = error as? Api.ResponseError {
-                    switch error {
-                        case let .client(_, data, _), let .server(_, data, _):
-                            let message = String(data: data, encoding: .utf8)
-                            return .api(message: message, underlyingError: error)
-                    }
-                }
-                return .api(message: error.localizedDescription, underlyingError: error)
-            }
+            .mapError { .from($0) }
             .eraseToAnyPublisher()
     }
 
+    // MARK: -
+
     internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
-        var queryItems: [URLQueryItem] = []
-        if resolveLevel > 0 && !relations.isEmpty {
-            queryItems.append(URLQueryItem(name: "resolve_relations", value: relations))
-        }
-        if resolveLevel >= 2 {
-            queryItems.append(URLQueryItem(name: "resolve_level", value: String(resolveLevel)))
-        }
-        if findByUuid {
-            queryItems.append(URLQueryItem(name: "find_by", value: "uuid"))
-        }
-        if !queryItems.isEmpty {
-            request.url!.append(queryItems: queryItems)
-        }
-        //one spelling per request, so the cache probe finds what the previous fetch stored
+        request.url!.append(queryItems: relationParameters(resolveLevel: resolveLevel))
+        if findByUuid { request.url!.append(queryItems: [URLQueryItem(name: "find_by", value: "uuid")]) }
+        // One spelling per request, so the cache probe finds what the previous fetch stored.
         request.url = request.url!.sortingQueryItems()
         return request
+    }
+
+    /// The relation-resolution parameters a story request sends for `resolveLevel`. They come from
+    /// the block library rather than from a query.
+    func relationParameters(resolveLevel: Int) -> [URLQueryItem] {
+        guard resolveLevel > 0, !relations.isEmpty else { return [] }
+        var parameters = [URLQueryItem(name: "resolve_relations", value: relations)]
+        if resolveLevel >= 2 { parameters.append(URLQueryItem(name: "resolve_level", value: String(resolveLevel))) }
+        return parameters
+    }
+
+    /// A decoder for one response, resolving relations `resolveLevel` deep from the response's `rels`.
+    static func decoder(resolveLevel: Int) -> JSONDecoder {
+        guard resolveLevel > 0 else { return makeDecoder() }
+        let store = RelationStore()
+        store.resolveLevel = resolveLevel
+        return makeDecoder(relStore: store)
     }
 
     /// Returns a `JSONDecoder` configured with Storyblok's date formats and an optional relation store.
