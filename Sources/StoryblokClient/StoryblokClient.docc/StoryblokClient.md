@@ -62,6 +62,30 @@ Read <doc:UserGuide> to get started.
 - ``StoryblokClient/story(_:resolveLevel:)-(UUID,_)``
 - ``StoryblokClient/Error``
 
+### Fetching multiple stories
+
+- ``StoryblokClient/stories(page:pageSize:resolveLevel:query:)``
+- ``Page``
+- ``StoriesQuery``
+- ``StoryAttribute``
+- ``SortDirection``
+- ``SortAs``
+
+### Filtering stories
+
+- ``Fields``
+- ``QueryField``
+- ``Filter``
+- ``FilterBuilder``
+- ``Presence``
+- ``WholeNumberText``
+- ``DecimalText``
+
+### Querying your content
+
+- ``QueryableContent``
+- ``StoryblokContent(_:)``
+
 ### Stories
 
 - ``Story``
