@@ -594,28 +594,48 @@ public struct StoryblokContentMacro: ExtensionMacro {
             codingKeys = parseCodingKeys(from: enumDecl)
         }
 
+        // Every property decoding fills in: a query can address any of them, and one missing here
+        // would be sent under its Swift name, which `CodingKeys` may have changed.
         var entries: [String] = []
         for member in structDecl.memberBlock.members {
-            guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { continue }
+            // A static property is not part of the content, and a key path cannot refer to one.
+            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+                  !varDecl.modifiers.contains(where: { ["static", "class"].contains($0.name.text) })
+            else { continue }
+            let isConstant = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
             for binding in varDecl.bindings {
-                guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-                      binding.typeAnnotation?.type != nil,
-                      binding.accessorBlock == nil
+                guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                      isStored(binding),
+                      // Decoding leaves a constant that already has a value alone.
+                      !(isConstant && binding.initializer != nil)
                 else { continue }
-                entries.append("        \\\(type.trimmed).\(name): \(literalString(codingKeys[name] ?? name)),")
+                let name = strippingBackticks(identifier)
+                entries.append("        \\\(type.trimmed).\(identifier): \(literalString(codingKeys[name] ?? name)),")
             }
         }
 
         let table = entries.isEmpty ? "[:]" : "[\n" + entries.joined(separator: "\n") + "\n    ]"
 
+        // `AnyKeyPath` is not `Sendable`, so a static table of them needs `nonisolated(unsafe)`. The
+        // comment that says why that is safe goes in the generated code, next to it.
         return [try ExtensionDeclSyntax(
             """
             nonisolated extension \(type.trimmed): QueryableContent {
                 public static var technicalName: String? { \(raw: literalString(technicalName)) }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
                 nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = \(raw: table)
             }
             """
         )]
+    }
+}
+
+/// Whether `binding` stores its value: it has no accessors, or only `willSet` and `didSet`.
+private func isStored(_ binding: PatternBindingSyntax) -> Bool {
+    guard let accessors = binding.accessorBlock?.accessors else { return true }
+    guard case let .accessors(list) = accessors else { return false }
+    return list.allSatisfy {
+        $0.accessorSpecifier.tokenKind == .keyword(.willSet) || $0.accessorSpecifier.tokenKind == .keyword(.didSet)
     }
 }
 

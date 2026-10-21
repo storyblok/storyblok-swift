@@ -1530,4 +1530,61 @@ final class BlockLibraryMacroTests: XCTestCase {
             macros: macros
         )
     }
+
+    // MARK: - StoryblokContent
+
+    func test_storyblokContent_namesEveryDecodedPropertyAndNothingElse() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                static let shared: String = ""
+                let `hero-image`: String
+                let title: String
+                let kind: String = "product"
+                var stock = 0
+                var price: Int {
+                    didSet {}
+                }
+                var label: String { title }
+
+                enum CodingKeys: String, CodingKey {
+                    case `hero-image`, title = "headline", stock, price
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                static let shared: String = ""
+                let `hero-image`: String
+                let title: String
+                let kind: String = "product"
+                var stock = 0
+                var price: Int {
+                    didSet {}
+                }
+                var label: String { title }
+
+                enum CodingKeys: String, CodingKey {
+                    case `hero-image`, title = "headline", stock, price
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.`hero-image`: "hero-image",
+                    \\Product.title: "headline",
+                    \\Product.stock: "stock",
+                    \\Product.price: "price",
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
 }
