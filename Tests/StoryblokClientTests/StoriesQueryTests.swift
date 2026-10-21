@@ -58,6 +58,15 @@ struct StoriesQueryTests {
     }
 
     @Test
+    func `a query typed to the whole library asks for every component`() {
+        var query = StoriesQuery<QueryLibrary>()
+        query.searchTerm = "space"
+
+        #expect(QueryLibrary.technicalName == nil)
+        #expect(query.queryItems.map(\.name) == ["search_term"], "no content_type")
+    }
+
+    @Test
     func `a field declared under #if is named`() {
         #expect(QueryLibrary.Article.fieldNames[\QueryLibrary.Article.title] == "title")
         #expect(QueryLibrary.Article.fieldNames[\QueryLibrary.Article.subtitle] == "subtitle")

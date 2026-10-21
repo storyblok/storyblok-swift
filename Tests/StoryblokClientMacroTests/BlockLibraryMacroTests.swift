@@ -1,3 +1,4 @@
+import SwiftSyntaxMacroExpansion
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
@@ -1672,6 +1673,46 @@ final class BlockLibraryMacroTests: XCTestCase {
             """,
             diagnostics: [],
             macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    // MARK: - Conformances
+
+    func test_conformsToBlockLibraryAndQueryableContent() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case divider
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case divider
+
+                nonisolated static let relations: String = ""
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "divider":
+                        self = .divider
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+
+            nonisolated extension Content: BlockLibrary, QueryableContent {
+            }
+            """,
+            diagnostics: [],
+            macroSpecs: ["BlockLibrary": MacroSpec(type: BlockLibraryMacro.self, conformances: ["BlockLibrary", "QueryableContent"])]
         )
     }
 }

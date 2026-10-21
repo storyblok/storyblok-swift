@@ -46,7 +46,8 @@ extension BlockLibrary {
 ///   the `resolve_relations` API parameter.
 /// - Synthesizes an `init(from:)` decoder that dispatches on the `component` field, plus the
 ///   `CodingKeys` enums it needs.
-/// - Adds a conformance to ``BlockLibrary`` if the type does not already declare it.
+/// - Adds conformances to ``BlockLibrary`` and ``QueryableContent`` if the type does not already
+///   declare them, so a ``StoriesQuery`` typed to the whole library asks for every component.
 ///
 /// ```swift
 /// @BlockLibrary
@@ -69,7 +70,7 @@ extension BlockLibrary {
 /// ```
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
 @attached(memberAttribute)
-@attached(extension, conformances: BlockLibrary)
+@attached(extension, conformances: BlockLibrary, QueryableContent)
 public macro BlockLibrary() = #externalMacro(
     module: "StoryblokClientMacros",
     type: "BlockLibraryMacro"
