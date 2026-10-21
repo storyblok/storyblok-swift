@@ -587,34 +587,31 @@ public struct StoryblokContentMacro: ExtensionMacro {
             .segments
             .description ?? structDecl.name.text
 
-        // A field whose Storyblok name differs from the property is named by CodingKeys.
-        var codingKeys: [String: String] = [:]
+        // A field whose Storyblok name differs from the property is named by CodingKeys. When the
+        // struct declares them, they are also the only properties decoding fills in.
+        var codingKeys: [String: String]?
         for member in structDecl.memberBlock.members {
             guard let enumDecl = member.decl.as(EnumDeclSyntax.self), enumDecl.name.text == "CodingKeys" else { continue }
             codingKeys = parseCodingKeys(from: enumDecl)
         }
 
-        // Every property decoding fills in: a query can address any of them, and one missing here
-        // would be sent under its Swift name, which `CodingKeys` may have changed.
-        var entries: [String] = []
-        for member in structDecl.memberBlock.members {
-            // A static property is not part of the content, and a key path cannot refer to one.
-            guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-                  !varDecl.modifiers.contains(where: { ["static", "class"].contains($0.name.text) })
-            else { continue }
-            let isConstant = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
-            for binding in varDecl.bindings {
-                guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-                      isStored(binding),
-                      // Decoding leaves a constant that already has a value alone.
-                      !(isConstant && binding.initializer != nil)
-                else { continue }
-                let name = strippingBackticks(identifier)
-                entries.append("        \\\(type.trimmed).\(identifier): \(literalString(codingKeys[name] ?? name)),")
-            }
+        let entries = fieldEntries(in: structDecl.memberBlock.members, codingKeys: codingKeys)
+        let fields = entries.compactMap { entry -> String? in
+            guard case let .field(keyPath, name) = entry else { return nil }
+            return "\\\(type.trimmed).\(keyPath): \(literalString(name)),"
         }
+        let literal = fields.isEmpty ? "[:]" : "[\n" + fields.joined(separator: "\n") + "\n]"
 
-        let table = entries.isEmpty ? "[:]" : "[\n" + entries.joined(separator: "\n") + "\n    ]"
+        // A field declared under `#if` is named under the same condition: its key path may not
+        // compile elsewhere, and two branches declaring one field would repeat a literal's key.
+        let conditionals = entries.filter { if case .conditional = $0 { true } else { false } }
+        let table = conditionals.isEmpty ? literal : """
+            {
+            var fieldNames: [AnyKeyPath: String] = \(literal)
+            \(renderAssignments(conditionals, of: type.trimmedDescription).joined(separator: "\n"))
+            return fieldNames
+            }()
+            """
 
         // `AnyKeyPath` is not `Sendable`, so a static table of them needs `nonisolated(unsafe)`. The
         // comment that says why that is safe goes in the generated code, next to it.
@@ -627,6 +624,66 @@ public struct StoryblokContentMacro: ExtensionMacro {
             }
             """
         )]
+    }
+}
+
+/// A property `@StoryblokContent` names, or a `#if` whose clauses declare some.
+private indirect enum FieldEntry {
+    /// The property's identifier as written, for its key path, and the name Storyblok knows it by.
+    case field(keyPath: String, name: String)
+    /// Each clause's directive (`#if os(iOS)`, `#else`) with the entries it declares.
+    case conditional([(directive: String, entries: [FieldEntry])])
+}
+
+/// The properties among `members` that decoding fills in, keeping any `#if` around them.
+private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: [String: String]?) -> [FieldEntry] {
+    var entries: [FieldEntry] = []
+    for member in members {
+        if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+            let clauses = ifConfig.clauses.map { clause -> (directive: String, entries: [FieldEntry]) in
+                let directive = [clause.poundKeyword.text, clause.condition?.trimmedDescription]
+                    .compactMap { $0 }
+                    .joined(separator: " ")
+                guard case let .decls(decls) = clause.elements else { return (directive, []) }
+                return (directive, fieldEntries(in: decls, codingKeys: codingKeys))
+            }
+            if clauses.contains(where: { !$0.entries.isEmpty }) { entries.append(.conditional(clauses)) }
+            continue
+        }
+
+        // A static property is not part of the content, and a key path cannot refer to one.
+        guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+              !varDecl.modifiers.contains(where: { ["static", "class"].contains($0.name.text) })
+        else { continue }
+        let isConstant = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
+        for binding in varDecl.bindings {
+            guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                  isStored(binding),
+                  // Decoding leaves a constant that already has a value alone.
+                  !(isConstant && binding.initializer != nil)
+            else { continue }
+            let name = strippingBackticks(identifier)
+            if let codingKeys {
+                // Not among the declared CodingKeys, so not decoded.
+                guard let key = codingKeys[name] else { continue }
+                entries.append(.field(keyPath: identifier, name: key))
+            } else {
+                entries.append(.field(keyPath: identifier, name: name))
+            }
+        }
+    }
+    return entries
+}
+
+/// Statements adding `entries` to a `fieldNames` table of `type`, under their `#if` directives.
+private func renderAssignments(_ entries: [FieldEntry], of type: String) -> [String] {
+    entries.flatMap { entry -> [String] in
+        switch entry {
+            case let .field(keyPath, name):
+                return ["fieldNames[\\\(type).\(keyPath)] = \(literalString(name))"]
+            case let .conditional(clauses):
+                return clauses.flatMap { [$0.directive] + renderAssignments($0.entries, of: type) } + ["#endif"]
+        }
     }
 }
 

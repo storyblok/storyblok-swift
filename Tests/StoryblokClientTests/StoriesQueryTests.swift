@@ -28,6 +28,10 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
 
     nonisolated struct Article : Decodable, Hashable, Sendable {
         let title: String
+        #if canImport(Foundation)
+        /// Declared under `#if`, which the macro names under the same condition.
+        var subtitle: String?
+        #endif
     }
 }
 
@@ -51,6 +55,12 @@ struct StoriesQueryTests {
         let query = items { $0.filter { $0.releaseDate > Date(timeIntervalSince1970: 0) } }
         #expect(query["filter_query[release_date][gt_date]"] == "1970-01-01T00:00:00Z")
         #expect(query["filter_query[releaseDate][gt_date]"] == nil)
+    }
+
+    @Test
+    func `a field declared under #if is named`() {
+        #expect(QueryLibrary.Article.fieldNames[\QueryLibrary.Article.title] == "title")
+        #expect(QueryLibrary.Article.fieldNames[\QueryLibrary.Article.subtitle] == "subtitle")
     }
 
     @Test
