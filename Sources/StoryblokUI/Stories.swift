@@ -128,10 +128,20 @@ public struct Stories<Library : BlockLibrary, Content : QueryableContent, Row : 
     /// SwiftUI calls `update()` before each `body`, which is how a view that produces only rows
     /// notices that its query changed: it has no container of its own to hang `onChange` on.
     private struct Request : DynamicProperty {
-        @StateObject var loader = StoriesLoader<Library, Content>()
+        @StateObject var loader: StoriesLoader<Library, Content>
 
         let key: StoriesLoader<Library, Content>.Key
         let fetch: (_ page: Int) -> StoriesLoader<Library, Content>.PagePublisher
+
+        // Written out because creating a `StateObject` is main-actor isolated in newer SDKs, which a
+        // memberwise initializer, being nonisolated, cannot be. `Stories` creates this on the main
+        // actor, as a view.
+        @MainActor
+        init(key: StoriesLoader<Library, Content>.Key, fetch: @escaping (_ page: Int) -> StoriesLoader<Library, Content>.PagePublisher) {
+            self._loader = StateObject(wrappedValue: StoriesLoader())
+            self.key = key
+            self.fetch = fetch
+        }
 
         // SwiftUI updates a view's properties on the main thread, as it evaluates `body`, so handing
         // this property to a main-actor closure never takes it to another thread.

@@ -94,7 +94,7 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
     /// cached one in place even after later pages have arrived.
     private func receive(_ page: Page<Story<Content>>, as number: Int) {
         pages[number] = page
-        self.page = pages.keys.sorted().map { pages[$0]! }.reduce([], +)
+        self.page = pages.keys.sorted().map { pages[$0]! }.reduce(Page([]), +)
     }
 
     private func reset() {
