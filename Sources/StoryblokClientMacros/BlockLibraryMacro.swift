@@ -60,8 +60,12 @@ extension BlockLibraryMacro: ExtensionMacro {
 
         var extensions: [ExtensionDeclSyntax] = []
 
+        // `BlockLibrary`, and `QueryableContent` so that a `StoriesQuery` typed to the whole library
+        // asks for every component: the protocol's defaults send no `content_type`. Only those the
+        // type does not already declare are listed.
         if !protocols.isEmpty {
-            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): BlockLibrary {}")
+            let names = protocols.map(\.trimmedDescription).joined(separator: ", ")
+            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): \(raw: names) {}")
             extensions.append(ext)
         }
 
