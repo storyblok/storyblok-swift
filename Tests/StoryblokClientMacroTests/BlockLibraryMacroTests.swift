@@ -1587,4 +1587,91 @@ final class BlockLibraryMacroTests: XCTestCase {
             macros: ["StoryblokContent": StoryblokContentMacro.self]
         )
     }
+
+    func test_storyblokContent_namesFieldsUnderTheirIfConfig() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                #if os(iOS)
+                let haptics: Bool
+                let layout: String
+                #else
+                let layout: String
+                #endif
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                #if os(iOS)
+                let haptics: Bool
+                let layout: String
+                #else
+                let layout: String
+                #endif
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = {
+                    var fieldNames: [AnyKeyPath: String] = [
+                        \\Product.title: "title",
+                    ]
+                    #if os(iOS)
+                    fieldNames[\\Product.haptics] = "haptics"
+                    fieldNames[\\Product.layout] = "layout"
+                    #else
+                    fieldNames[\\Product.layout] = "layout"
+                    #endif
+                    return fieldNames
+                }()
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_leavesOutPropertiesCodingKeysDoNotList() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                var isFavourite = false
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "headline"
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                var isFavourite = false
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "headline"
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.title: "headline",
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
 }
