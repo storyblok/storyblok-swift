@@ -46,6 +46,9 @@ extension BlockLibrary {
 ///   the `resolve_relations` API parameter.
 /// - Synthesizes an `init(from:)` decoder that dispatches on the `component` field, plus the
 ///   `CodingKeys` enums it needs.
+/// - Attaches ``StoryblokContent(_:)`` to each nested content struct, so that a ``StoriesQuery``
+///   can be typed to it and address its fields by key path. A component carried in labeled
+///   values has no type of its own, so model one you query by its fields with a nested struct.
 /// - Adds conformances to ``BlockLibrary`` and ``QueryableContent`` if the type does not already
 ///   declare them, so a ``StoriesQuery`` typed to the whole library asks for every component.
 ///

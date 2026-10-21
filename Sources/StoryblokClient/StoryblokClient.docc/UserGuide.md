@@ -145,6 +145,8 @@ enum Content {
 }
 ```
 
+Choose a nested struct for a component whose stories you query by their fields, such as a content type you list or search. The struct is the component's type, so a ``StoriesQuery`` can be typed to it and a ``Story`` can decode it: see <doc:UserGuide#Querying-a-component-by-its-fields>. Labeled values give a component no type of its own, so its fields can't be addressed by key path.
+
 ### Mapping component and field names
 
 When a Swift identifier can't match the API name (for example a technical name containing a dash, or a field whose JSON key differs), provide a mapping enum:
@@ -315,6 +317,40 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 The ``BlockLibrary()`` macro makes this possible by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
 
 For a parameter that has no entry point, such as a filter on a nested field, add it as written with ``StoriesQuery/parameter(_:_:)``.
+
+### Querying a component by its fields
+
+A query is typed to a component's struct, so only a component modelled with a nested struct can be queried by its fields. One modelled with labeled values has no type to name, and Swift has no key paths into an enum case's values. To query it by its fields, model it with a nested struct:
+
+```swift
+@BlockLibrary
+enum Content {
+    // Before: case header(altTitle: String, altSubtitle: String)
+    case header(Header)
+
+    struct Header: Decodable {
+        let altTitle: String
+        let altSubtitle: String
+    }
+}
+
+client.stories { (query: inout StoriesQuery<Content.Header>) in
+    query.filter {
+        $0.altTitle.like("*news*")
+    }
+}
+```
+
+Code that switches over the library then reads the struct, `case let .header(header)`, in place of the values, `case let .header(altTitle, altSubtitle)`.
+
+Until then, a query typed to the whole block library can still ask for that component's stories, naming its type and fields as the API does:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content>) in
+    query.parameter("content_type", "header")
+    query.parameter("filter_query[altTitle][like]", "*news*")
+}
+```
 
 ### Paging through the results
 

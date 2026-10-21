@@ -191,9 +191,9 @@ extension StoriesQuery {
     /// The parameter is added to the query string after those this query generates, in the order
     /// added, and adding a name more than once sends it more than once. It replaces nothing, so
     /// add only names this library does not send itself: one it does — a parameter this query
-    /// generates, such as `content_type` or `sort_by`, or one the client sends around the query,
-    /// such as `page`, `per_page` or `resolve_relations` — would go out twice, leaving the API to
-    /// choose between the two.
+    /// generates, such as `sort_by`, or `content_type` when `Content` is one component, or one the
+    /// client sends around the query, such as `page`, `per_page` or `resolve_relations` — would go
+    /// out twice, leaving the API to choose between the two.
     public mutating func parameter(_ name: String, _ value: String) {
         additions.append(URLQueryItem(name: name, value: value))
     }
