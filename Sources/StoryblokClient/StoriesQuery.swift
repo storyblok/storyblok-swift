@@ -161,8 +161,7 @@ extension StoriesQuery {
     }
 
     private mutating func sort(_ field: AnyKeyPath, _ direction: SortDirection, _ sortAs: SortAs) {
-        guard let name = Content.fieldName(for: field) else { return }
-        sorts.append("content.\(name):\(direction.rawValue)\(sortAs.suffix ?? "")")
+        sorts.append("content.\(Content.fieldName(for: field)):\(direction.rawValue)\(sortAs.suffix ?? "")")
     }
 }
 
