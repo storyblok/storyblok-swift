@@ -9,6 +9,9 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 /// ``technicalName`` from the enum case that carries it and ``fieldNames`` from the struct's
 /// `CodingKeys`. A hand-written content type can conform manually.
 ///
+/// A component modelled with labeled values, such as `case header(altTitle: String)`, has no
+/// type of its own to conform. To query it by its fields, model it with a nested struct instead.
+///
 /// Conformance is what lets a query say `\.price` instead of `"price"`: the key path fixes the
 /// field's Swift type, so the compiler can reject an operation the field cannot support, and the
 /// lookup here supplies the name Storyblok knows it by.
