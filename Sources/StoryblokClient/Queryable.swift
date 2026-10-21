@@ -1,4 +1,7 @@
 import Foundation
+import Logging
+
+private let log = Logger(label: "com.storyblok.StoryblokClient")
 
 /// A content type whose fields can be addressed by key path in a ``StoriesQuery``.
 ///
@@ -25,6 +28,11 @@ public protocol QueryableContent : Decodable, Sendable {
     ///
     /// A field whose JSON name differs from the Swift property is named by the struct's
     /// `CodingKeys`, and that mapping is what appears here.
+    ///
+    /// A key path missing from the table, such as a computed property or a nested path, is sent
+    /// under its Swift name, `price` or `author.name`, and a warning is logged. That is the right
+    /// name when `CodingKeys` does not change it, so a hand-written conformance need only list the
+    /// fields it renames.
     static var fieldNames: [AnyKeyPath: String] { get }
 }
 
@@ -33,9 +41,19 @@ extension QueryableContent {
     public static var technicalName: String? { nil }
     public static var fieldNames: [AnyKeyPath: String] { [:] }
 
-    /// The name Storyblok knows `keyPath` by, falling back to nothing when the type does not
-    /// describe its fields — a hand-written conformance need only supply what it uses.
-    static func fieldName(for keyPath: AnyKeyPath) -> String? { fieldNames[keyPath] }
+    /// The name Storyblok knows `keyPath` by, or its Swift name when ``fieldNames`` does not say.
+    ///
+    /// Sorting and filtering both fall back to the Swift name rather than leave the field out,
+    /// which would quietly widen a filter or ignore a sort.
+    static func fieldName(for keyPath: AnyKeyPath) -> String {
+        if let name = fieldNames[keyPath] { return name }
+        // A key path describes itself as `\Root.path`.
+        let description = String(describing: keyPath)
+        let root = "\\\(String(describing: Self.self))."
+        let name = description.hasPrefix(root) ? String(description.dropFirst(root.count)) : description
+        log.warning("\(Self.self).fieldNames has no entry for \(description), so it is sent as \"\(name)\".")
+        return name
+    }
 }
 
 // MARK: - Story attributes

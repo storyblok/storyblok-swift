@@ -17,6 +17,9 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
         let price: String
         let releaseDate: Date
 
+        /// Not a Storyblok field, so the macro leaves it out of `fieldNames`.
+        var isDiscounted: Bool { false }
+
         enum CodingKeys: String, CodingKey {
             case headline, categories, stock, rating, price
             case releaseDate = "release_date"
@@ -48,6 +51,16 @@ struct StoriesQueryTests {
         let query = items { $0.filter { $0.releaseDate > Date(timeIntervalSince1970: 0) } }
         #expect(query["filter_query[release_date][gt_date]"] == "1970-01-01T00:00:00Z")
         #expect(query["filter_query[releaseDate][gt_date]"] == nil)
+    }
+
+    @Test
+    func `a field missing from fieldNames is sent under its Swift name by a sort as by a filter`() {
+        let query = items {
+            $0.sort(by: \.isDiscounted)
+            $0.filter { $0.isDiscounted.is(.isTrue) }
+        }
+        #expect(query["sort_by"] == "content.isDiscounted:asc")
+        #expect(query["filter_query[isDiscounted][is]"] == "true")
     }
 
     @Test

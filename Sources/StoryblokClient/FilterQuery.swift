@@ -13,10 +13,7 @@ public struct Filter<Content : QueryableContent> : Sendable {
     let value: String
 
     init(_ keyPath: AnyKeyPath, _ operation: String, _ value: String) {
-        // A key path the content type does not describe cannot be named. Rather than drop the
-        // condition — which would silently widen the result — the field is sent as the property
-        // name, which the API answers with an empty result rather than the wrong stories.
-        self.name = Content.fieldName(for: keyPath) ?? "\(keyPath)"
+        self.name = Content.fieldName(for: keyPath)
         self.operation = operation
         self.value = value
     }
