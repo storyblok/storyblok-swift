@@ -78,9 +78,10 @@ struct PageTests {
 
     @Test
     func `joining onto an empty page gives the later page`() {
+        let empty: Page<Story<QueryLibrary.Article>> = []
         let first = page([1, 2], total: 4)
 
-        #expect([] + first == first)
+        #expect(empty + first == first)
     }
 
     @Test
