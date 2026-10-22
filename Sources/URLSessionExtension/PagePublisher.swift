@@ -25,13 +25,19 @@ extension URLSession {
     /// }
     /// ```
     ///
-    /// The upstream publisher decides how the page is fetched:
+    /// By default each page is fetched fresh, pass
+    /// [`URLSession.CachedDataTaskPublisher.init`](doc:URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher/init(request:session:))
+    /// as the `upstream` to receive the cached page, if present, then the fresh one (see
+    /// <doc:UserGuide#Showing-cached-responses-while-revalidating>):
     ///
-    /// - `URLSession.DataTaskPublisher.init`, the default, fetches it fresh each time, as a
-    ///   server or a script wants.
-    /// - `URLSession.CachedDataTaskPublisher.init` publishes the copy the URL cache holds first,
-    ///   then the fresh one, as a ``CachedDataTaskPublisher`` does, so an app can show a page at
-    ///   once.
+    /// ```swift
+    /// let pages = storyblok.pagePublisher(for: request, page: 1, perPage: 100, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+    ///     try JSONDecoder().decode([String: [Tag]].self, from: body)["internal_tags"] ?? []
+    /// }
+    /// for try await page in pages.values {
+    ///     tags = page  // the cached copy at once, then the fresh one
+    /// }
+    /// ```
     ///
     /// Any error response fails the publisher with an ``Api/ResponseError``, whichever upstream
     /// fetched it, and so does a body that `elements` cannot read.
