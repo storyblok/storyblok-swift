@@ -1,29 +1,29 @@
 import SwiftUI
 import StoryblokClient
 
-/// Makes any ``StoryblokClient/RichText`` value renderable as a SwiftUI `View`.
-///
-/// The conformance is available whenever the rich text's `BlockLibrary` is itself a `View`, so
-/// that embedded component blocks render alongside the standard rich-text nodes. Place a decoded
-/// `RichText` value anywhere a `View` is expected:
-///
-/// ```swift
-/// struct ArticleView: View {
-///     let content: RichText<Content>
-///
-///     var body: some View {
-///         ScrollView {
-///             content   // rendered as native SwiftUI views
-///                 .padding()
-///         }
-///     }
-/// }
-/// ```
-///
-/// Each node type has a built-in default renderer. Override individual node types with a
-/// ``RichTextViewDelegate`` applied via ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)``, and handle
-/// taps on internal story links with ``StoryblokUI/SwiftUICore/View/onStoryLink(_:)``.
 extension RichText: View where BlockLibrary: View {
+    /// The rich text, rendered as native SwiftUI views.
+    ///
+    /// `RichText` is a `View` whenever its `BlockLibrary` is one, so that embedded component blocks
+    /// render alongside the standard rich-text nodes. Place a decoded `RichText` value anywhere a
+    /// `View` is expected:
+    ///
+    /// ```swift
+    /// struct ArticleView: View {
+    ///     let content: RichText<Content>
+    ///
+    ///     var body: some View {
+    ///         ScrollView {
+    ///             content   // rendered as native SwiftUI views
+    ///                 .padding()
+    ///         }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Each node type has a built-in default renderer. Override individual node types with a
+    /// ``RichTextViewDelegate`` applied via ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)``,
+    /// and handle taps on internal story links with ``StoryblokUI/SwiftUICore/View/onStoryLink(_:)``.
     public var body: some View {
         RichTextView(node: self)
     }
