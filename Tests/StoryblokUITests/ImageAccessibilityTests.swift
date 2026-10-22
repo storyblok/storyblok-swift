@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 import Testing
 import StoryblokClient
-@testable import RichTextView
+@testable import StoryblokUI
 
 /// `ImageView` conforms to `View`, so it is `@MainActor` isolated. The suite runs on the main
 /// actor to match.

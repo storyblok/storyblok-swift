@@ -6,7 +6,7 @@ import StoryblokClient
 /// A delegate that provides custom SwiftUI views for individual rich-text node types.
 ///
 /// Conform to this protocol and install your delegate with
-/// ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)`` to override the rendering of specific node types
+/// ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)`` to override the rendering of specific node types
 /// while leaving all others at their built-in defaults.
 ///
 /// Every requirement has a default implementation that matches the corresponding built-in

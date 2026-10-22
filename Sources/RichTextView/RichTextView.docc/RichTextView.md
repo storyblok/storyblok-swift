@@ -1,53 +1,11 @@
 # ``RichTextView``
 
-Render Storyblok rich text as native SwiftUI views.
-
-`RichTextView` is a SwiftUI rendering layer for the ``/StoryblokClient/RichText`` type from ``/StoryblokClient``. Importing it makes a decoded `RichText` value conform to `View`, so you can drop rich text straight into a SwiftUI hierarchy and get native text, headings, lists, tables, images, code blocks, embedded component blocks, and more — with sensible built-in styling.
+Deprecated: rich text rendering is now part of StoryblokUI.
 
 ## Overview
 
-Once you import `RichTextView`, any `RichText<Library>` whose `Library` is itself a `View` becomes renderable:
+The `RichTextView` library has moved into [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui), alongside its other SwiftUI views. This module now only re-exports `StoryblokUI`, so existing code keeps working, and it will be removed in the next major release.
 
-```swift
-import SwiftUI
-import StoryblokClient
-import RichTextView
+To move, depend on the `StoryblokUI` product in place of `RichTextView`, and write `import StoryblokUI` in place of `import RichTextView`. Nothing else changes.
 
-struct ArticleView: View {
-    let content: RichText<Content>
-
-    var body: some View {
-        ScrollView {
-            content
-                .padding()
-        }
-        .onStoryLink { uuid, anchor in
-            // navigate to the linked story
-        }
-    }
-}
-```
-
-Each rich-text node renders with a built-in default view. To customize specific node types, supply a ``RichTextViewDelegate`` with ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)``. To handle taps on internal story links, use ``RichTextView/SwiftUICore/View/onStoryLink(_:)``.
-
-Read <doc:UserGuide> to get started.
-
-## Topics
-
-### Essentials
-
-- <doc:UserGuide>
-
-### Rendering rich text
-
-- ``RichTextView/StoryblokClient/RichText/body``
-
-### Customizing node rendering
-
-- ``RichTextViewDelegate``
-- ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)``
-
-### Handling story links
-
-- ``RichTextView/SwiftUICore/View/onStoryLink(_:)``
-- ``StoryLinkHandler``
+See [Rendering rich text](https://storyblok.github.io/storyblok-swift/documentation/storyblokui/renderingrichtext) for how to use it.

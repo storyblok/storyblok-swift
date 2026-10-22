@@ -13,8 +13,8 @@ One package (`Package.swift`, swift-tools-version 6.2) with four library product
 | `URLSessionExtension`   | swift-log                                        | `URLSession(storyblok:)` and `URLRequest(storyblok:path:)`: auth, regions, rate limiting, backoff, `cv`, caching, Combine helpers. |
 | `StoryblokClient`       | `URLSessionExtension`, `StoryblokClientMacros`   | Typed Content Delivery API client (`StoryblokClient<Library>`), `Story`, `Field`, `RichText`, relation resolution. |
 | `StoryblokClientMacros` | swift-syntax (`"602.0.0" ..< "605.0.0"`)         | The `@BlockLibrary` macro, which synthesises decoding and relation keys for a block enum. Not a product.            |
-| `RichTextView`          | `StoryblokClient`                                | SwiftUI rendering of rich text (`RichTextView`, `RichTextViewDelegate`).                                             |
-| `StoryblokUI`           | `StoryblokClient`                                | SwiftUI `Stories` view: rows for the stories matching a query, fetching the next page as the user scrolls.          |
+| `StoryblokUI`           | `StoryblokClient`                                | SwiftUI views: `Stories` (rows that fetch the next page as the user scrolls) and rich text rendering (`RichTextViewDelegate`). |
+| `RichTextView`          | `StoryblokUI`                                    | Deprecated. Only `@_exported import StoryblokUI`, so 1.x users' imports keep working. Remove in 2.0.                 |
 
 - `Tests/<Target>Tests/`: unit tests per target (`StoryblokClientMacroTests` for the macro).
 - `Examples/URLSessionExtension/`: docs-site snippets as a test target (`Examples`). **They call
@@ -35,7 +35,6 @@ swift build                                   # whole package (first build compi
 swift test --filter URLSessionExtensionTests  # ~20s, mostly real backoff waits
 swift test --filter StoryblokClientTests
 swift test --filter StoryblokClientMacroTests
-swift test --filter RichTextViewTests
 swift test --filter StoryblokUITests
 ```
 
