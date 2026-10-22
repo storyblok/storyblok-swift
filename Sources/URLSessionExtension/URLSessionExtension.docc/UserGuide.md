@@ -232,7 +232,7 @@ repeat {
 
 Joining pages with `+` leaves out an element already on an earlier page, since page-number paging shifts when content changes between requests.
 
-By default each page is fetched fresh, as a server or a script wants. In an app, pass ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher/init(request:session:)`` as the `upstream` to show the page the URL cache holds at once, then the fresh one, as described in <doc:UserGuide#Showing-cached-responses-while-revalidating>. Each page can then arrive twice, so keep the last copy:
+By default each page is fetched fresh, as a server or a script wants. In an app, pass `URLSession.CachedDataTaskPublisher.init` as the `upstream` to show the page the URL cache holds at once, then the fresh one, as a ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher`` does (see <doc:UserGuide#Showing-cached-responses-while-revalidating>). Each page can then arrive twice, so keep the last copy:
 
 ```swift
 let pages = storyblok.pagePublisher(for: request, page: 1, perPage: 100, upstream: URLSession.CachedDataTaskPublisher.init) { body in
