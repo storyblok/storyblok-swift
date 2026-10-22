@@ -1,18 +1,19 @@
 import Foundation
 
-/// A page of a paginated endpoint's elements, such as the stories
-/// ``StoryblokClient/stories(page:pageSize:resolveLevel:query:)`` publishes.
+/// A page of a paginated endpoint's elements, such as the page
+/// ``Foundation/URLSession/pagePublisher(for:page:perPage:elements:)`` publishes.
+///
+/// The Content Delivery and Management APIs page the same way, so a `Page` serves both: StoryblokClient
+/// publishes its stories as one, and its endpoints' other lists fit it too.
 ///
 /// A `Page` holds the elements of page ``number`` and says whether there is a page after it, so
 /// the next page to fetch is `number + 1` while ``hasNextPage`` is `true`. Join a later page onto
 /// the ones before it with ``+(_:_:)``, which leaves out the elements already present.
-/// `StoryblokUI`'s `Stories` view does this for a SwiftUI list, fetching each page as the user
-/// scrolls to the end of the ones loaded.
 public struct Page<Element> {
 
     private var items: [Element]
 
-    /// The total number of elements matching the request, as the endpoint's `Total` header reports
+    /// The total number of elements matching the request, as the endpoint's `total` header reports
     /// it, or `nil` when the response carried none or the page was not fetched.
     public let total: Int?
 
@@ -26,12 +27,12 @@ public struct Page<Element> {
 
     /// Whether there is a page after ``number`` to fetch.
     ///
-    /// It follows the endpoint's `Total` when it gave one, and otherwise whether the page came
+    /// It follows the endpoint's `total` when it gave one, and otherwise whether the page came
     /// back short, since no page but the last can be.
     public let hasNextPage: Bool
 
     /// Page `number` of an endpoint, holding `elements` as it returned them.
-    init(_ elements: [Element], number: Int, size: Int, total: Int?) {
+    package init(_ elements: [Element], number: Int, size: Int, total: Int?) {
         self.items = elements
         self.total = total
         self.number = number

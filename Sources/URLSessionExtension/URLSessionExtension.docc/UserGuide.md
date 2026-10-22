@@ -205,6 +205,32 @@ A failure ends the publisher after the cached response, if there was one, so kee
 
 For published content the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)) sets [`returnCacheDataElseLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedataelseload), so the request is also answered from the cache when it holds a response, and only one response is published. A new `cv` changes the URL of every request and so starts them on a fresh cache entry, as described in <doc:UserGuide#Configuring-default-parameters-for-all-requests>.
 
+### Paging through results
+
+The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another. Like ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)``, it publishes the page the URL cache holds, if any, then the fresh one:
+
+```swift
+struct Asset: Decodable, Identifiable {
+    let id: Int
+    let filename: String
+}
+
+var assets: Page<Asset> = []
+var number = 1
+repeat {
+    let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/assets")
+    let pages = storyblok.pagePublisher(for: request, page: number, perPage: 100) { body in
+        try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
+    }
+    var page: Page<Asset> = []
+    for try await copy in pages.values { page = copy }  // the latest copy arrives last
+    assets = assets + page
+    number += 1
+} while assets.hasNextPage
+```
+
+Joining pages with `+` leaves out an element already on an earlier page, since page-number paging shifts when content changes between requests.
+
 ### Working with JSON 
 
 All Storyblok APIs responses, including errors, return JSON which you can convert to objects and values [using Foundation APIs](https://developer.apple.com/documentation/foundation/archives-and-serialization/#overview) or [with Combine operators](https://developer.apple.com/documentation/foundation/processing-url-session-data-task-results-with-combine#Convert-incoming-raw-data-to-your-types-with-Combine-operators). 

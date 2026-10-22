@@ -130,7 +130,7 @@ The `failure` closure receives the client's [`StoryblokClient.Error`](https://st
 
 `Stories` keeps its stories, and the requests for further pages, for as long as it stays in the view hierarchy, however many of its rows are on screen. Taking it out — closing a search, say — cancels any page still loading. Showing it again loads page 1 again, from the URL cache when it holds the page.
 
-To use the stories outside a list, call [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)) yourself for each page you need: it publishes the page as a [`Page`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/page), which says whether there is another, and joins onto the pages before it with `+`.
+To use the stories outside a list, call [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)) yourself for each page you need: it publishes the page as a [`Page`](https://storyblok.github.io/storyblok-swift/documentation/urlsessionextension/page), which says whether there is another, and joins onto the pages before it with `+`.
 
 ## See Also
 
