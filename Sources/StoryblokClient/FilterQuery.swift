@@ -8,7 +8,8 @@ import Foundation
 /// `$0.headline.like("*space*")`, `$0.categories.isNotEmpty`.
 public struct Filter<Content : QueryableContent> : Sendable {
 
-    let name: String
+    /// The field's name, or `nil` when it has none, which leaves the condition out of the query.
+    let name: String?
     let operation: String
     let value: String
 

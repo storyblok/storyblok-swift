@@ -28,10 +28,11 @@ public protocol QueryableContent : Decodable {
     /// A field whose JSON name differs from the Swift property is named by the struct's
     /// `CodingKeys`, and that mapping is what appears here.
     ///
-    /// A key path missing from the table, such as a computed property or a nested path, is sent
-    /// under its Swift name, `price` or `author.name`, and a warning is logged. That is the right
-    /// name when `CodingKeys` does not change it, so a hand-written conformance need only list the
-    /// fields it renames.
+    /// A key path missing from the table, such as a nested path, is sent under its Swift name,
+    /// `price` or `author.name`, and a warning is logged. That is the right name when `CodingKeys`
+    /// does not change it, so a hand-written conformance need only list the fields it renames. A
+    /// computed property is no Storyblok field, and a stripped binary cannot name one: a sort or
+    /// condition on a key path with no readable name is left out, and an error is logged.
     static var fieldNames: [AnyKeyPath: String] { get }
 }
 
@@ -40,18 +41,31 @@ extension QueryableContent {
     public static var technicalName: String? { nil }
     public static var fieldNames: [AnyKeyPath: String] { [:] }
 
-    /// The name Storyblok knows `keyPath` by, or its Swift name when ``fieldNames`` does not say.
-    ///
-    /// Sorting and filtering both fall back to the Swift name rather than leave the field out,
-    /// which would quietly widen a filter or ignore a sort.
-    static func fieldName(for keyPath: AnyKeyPath) -> String {
+    /// The name Storyblok knows `keyPath` by, or its Swift name when ``fieldNames`` does not say,
+    /// or `nil` when neither can be had.
+    static func fieldName(for keyPath: AnyKeyPath) -> String? {
         if let name = fieldNames[keyPath] { return name }
-        // A key path describes itself as `\Root.path`.
         let description = String(describing: keyPath)
-        let root = "\\\(String(describing: Self.self))."
-        let name = description.hasPrefix(root) ? String(description.dropFirst(root.count)) : description
+        guard let name = swiftName(fromDescription: description) else {
+            log.error("\(Self.self).fieldNames has no entry for \(description), and no name can be read from it, so it is left out of the query.")
+            return nil
+        }
         log.warning("\(Self.self).fieldNames has no entry for \(description), so it is sent as \"\(name)\".")
         return name
+    }
+
+    /// The property path a key path's description names, `price` or `author.name`, or `nil` when
+    /// it names none.
+    ///
+    /// A key path describes itself as `\Root.path`. A stored property's name is always there, but
+    /// a computed property's is only while the binary keeps its symbols: a stripped one describes
+    /// it as `<computed 0x… (Bool)>`, which is no field name.
+    static func swiftName(fromDescription description: String) -> String? {
+        let root = "\\\(String(describing: Self.self))."
+        guard description.hasPrefix(root) else { return nil }
+        let path = description.dropFirst(root.count)
+        guard !path.isEmpty, !path.contains(where: { "<>()[]".contains($0) || $0.isWhitespace }) else { return nil }
+        return String(path)
     }
 }
 

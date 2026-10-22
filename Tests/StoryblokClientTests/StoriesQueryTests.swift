@@ -20,9 +20,6 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
         let restock: Int?
         let weight: Double?
 
-        /// Not a Storyblok field, so the macro leaves it out of `fieldNames`.
-        var isDiscounted: Bool { false }
-
         enum CodingKeys: String, CodingKey {
             case headline, categories, stock, rating, price, restock, weight
             case releaseDate = "release_date"
@@ -36,6 +33,12 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
         var subtitle: String?
         #endif
     }
+}
+
+/// Content conformed by hand, listing no field names.
+struct Listing : QueryableContent {
+    let headline: String
+    let price: Int
 }
 
 @Suite("StoriesQuery")
@@ -76,13 +79,22 @@ struct StoriesQueryTests {
     }
 
     @Test
-    func `a field missing from fieldNames is sent under its Swift name by a sort as by a filter`() {
-        let query = items {
-            $0.sort(by: \.isDiscounted)
-            $0.filter { $0.isDiscounted.is(.isTrue) }
-        }
-        #expect(query["sort_by"] == "content.isDiscounted:asc")
-        #expect(query["filter_query[isDiscounted][is]"] == "true")
+    func `a hand-written conformance's fields are sent under their Swift names`() {
+        var query = StoriesQuery<Listing>()
+        query.sort(by: \.price)
+        query.filter { $0.headline.like("*space*") }
+        let items = Dictionary(uniqueKeysWithValues: query.queryItems.map { ($0.name, $0.value ?? "") })
+
+        #expect(items["sort_by"] == "content.price:asc:int")
+        #expect(items["filter_query[headline][like]"] == "*space*")
+    }
+
+    @Test
+    func `a key path described without a name is left out rather than sent`() {
+        // How a stripped binary describes a computed property.
+        #expect(Listing.swiftName(fromDescription: "\\Listing.<computed 0x0000000102384bbc (Bool)>") == nil)
+        #expect(Listing.swiftName(fromDescription: "\\Listing.price") == "price")
+        #expect(Listing.swiftName(fromDescription: "\\Listing.author.name") == "author.name")
     }
 
     @Test
