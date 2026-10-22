@@ -23,13 +23,7 @@ Read <doc:UserGuide> and <doc:RenderingRichText> to get started.
 ### Rendering rich text
 
 - ``StoryblokUI/StoryblokClient/RichText/body``
-
-### Customizing rich text rendering
-
 - ``RichTextViewDelegate``
 - ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)``
-
-### Handling story links
-
 - ``StoryblokUI/SwiftUICore/View/onStoryLink(_:)``
 - ``StoryLinkHandler``
