@@ -2,9 +2,9 @@
 
 A Swift client for Storyblok's [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) built on top of ``/URLSessionExtension``.
 
-With out-of-the-box support for reactive and `async` story fetching, automatic relation resolution, rich text parsing, and macro-driven component decoding.
-
 ## Overview
+
+The client supports reactive and `async` story fetching, automatic relation resolution, rich text parsing, and macro-driven component decoding out of the box.
 
 You describe your space's components once as a ``BlockLibrary`` — typically an `enum` annotated with the ``BlockLibrary()`` macro — and create a ``StoryblokClient`` generic over it. The library drives both how story content is decoded and which relations the client resolves.
 
