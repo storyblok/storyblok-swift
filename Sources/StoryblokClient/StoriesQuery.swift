@@ -173,7 +173,8 @@ extension StoriesQuery {
     }
 
     private mutating func sort(_ field: AnyKeyPath, _ direction: SortDirection, _ sortAs: SortAs) {
-        sorts.append("content.\(Content.fieldName(for: field)):\(direction.rawValue)\(sortAs.suffix ?? "")")
+        guard let name = Content.fieldName(for: field) else { return }
+        sorts.append("content.\(name):\(direction.rawValue)\(sortAs.suffix ?? "")")
     }
 }
 
@@ -242,7 +243,8 @@ extension StoriesQuery {
         if !sorts.isEmpty { items["sort_by"] = sorts.joined(separator: ",") }
 
         for filter in filters {
-            items["filter_query[\(filter.name)][\(filter.operation)]"] = filter.value
+            guard let name = filter.name else { continue }
+            items["filter_query[\(name)][\(filter.operation)]"] = filter.value
         }
 
         return items.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) } + additions
