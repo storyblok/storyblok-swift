@@ -22,7 +22,6 @@ public struct Filter<Content : QueryableContent> : Sendable {
 /// Collects the conditions written in a ``StoriesQuery/filter(_:)`` block.
 @resultBuilder
 public enum FilterBuilder<Content : QueryableContent> {
-    public static func buildBlock(_ filters: Filter<Content>...) -> [Filter<Content>] { filters }
     public static func buildArray(_ filters: [[Filter<Content>]]) -> [Filter<Content>] { filters.flatMap { $0 } }
     public static func buildOptional(_ filters: [Filter<Content>]?) -> [Filter<Content>] { filters ?? [] }
     public static func buildEither(first filters: [Filter<Content>]) -> [Filter<Content>] { filters }
