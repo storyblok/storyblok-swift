@@ -1,6 +1,6 @@
 # Calling Storyblok's APIs with URLSession
 
-How to use the Storyblok [URLSession](https://developer.apple.com/documentation/foundation/urlsession) extension to call the Content Delivery and Management APIs.
+How to use the Storyblok [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) extension to call the Content Delivery and Management APIs.
 
 ## Getting Started
 
@@ -96,7 +96,7 @@ let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN", reg
 
 ### Rate limit handling
 
-The Content Delivery and Management APIs have different rate limits depending on the [type of request](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit) and your [pricing plan](https://www.storyblok.com/pricing/technical-limits), these are expressed in requests per second.
+The Content Delivery and Management APIs have different [rate limits](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit) depending on the type of request and your [pricing plan](https://www.storyblok.com/pricing/technical-limits), these are expressed in requests per second.
 
 The plugin implements *API throttling* to slow down the API requests by introducing intermediate delays. You can specify the maximum number of requests per second allowed:
 
@@ -168,7 +168,7 @@ storyblok.dataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "spaces/
 The pattern in the example above can be used as a robust way to handle failed requests:
 - The initial [`dataTaskPublisher(for:)`](https://developer.apple.com/documentation/foundation/urlsession/datataskpublisher(for:)-61v3e) returns a publisher that will publish a [URLError](https://developer.apple.com/documentation/foundation/urlerror/) on network failure.
 - While [`failOnErrorResponse(.recoverable)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving a transient error response from the API.
-- [`retry(5)`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
+- [`retry`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
 - For unrecoverable error responses, [`failOnErrorResponse(.all)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving any other error response from the API.
 - Finally, [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) will handle any errors published by the preceding `failOnErrorResponse(.all)`, in addition to errors thrown by the preceding `retry(5)` in the case the fifth and final retry also resulted in failure.
 
