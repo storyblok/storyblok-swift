@@ -129,8 +129,21 @@ extension StoriesQuery {
         sort(field, direction, .wholeNumber)
     }
 
+    /// Sort by an optional whole-number content field, ordered numerically like a present one.
+    public mutating func sort<Value : BinaryInteger>(
+        by field: KeyPath<Content, Value?>,
+        _ direction: SortDirection = .ascending
+    ) {
+        sort(field, direction, .wholeNumber)
+    }
+
     /// Sort by a decimal content field, ordered numerically.
     public mutating func sort(by field: KeyPath<Content, Double>, _ direction: SortDirection = .ascending) {
+        sort(field, direction, .decimal)
+    }
+
+    /// Sort by an optional decimal content field, ordered numerically like a present one.
+    public mutating func sort(by field: KeyPath<Content, Double?>, _ direction: SortDirection = .ascending) {
         sort(field, direction, .decimal)
     }
 

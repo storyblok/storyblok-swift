@@ -181,6 +181,16 @@ public func < <Content, Value : BinaryInteger>(field: QueryField<Content, Value>
     field.filter("lt_int", String(describing: value))
 }
 
+/// `gt_int` — the optional whole-number field is greater than `value`.
+public func > <Content, Value : BinaryInteger>(field: QueryField<Content, Value?>, value: Value) -> Filter<Content> {
+    field.filter("gt_int", String(describing: value))
+}
+
+/// `lt_int` — the optional whole-number field is less than `value`.
+public func < <Content, Value : BinaryInteger>(field: QueryField<Content, Value?>, value: Value) -> Filter<Content> {
+    field.filter("lt_int", String(describing: value))
+}
+
 /// `gt_float` — the decimal field is greater than `value`.
 public func > <Content>(field: QueryField<Content, Double>, value: Double) -> Filter<Content> {
     field.filter("gt_float", decimalOperand(value))
@@ -188,6 +198,16 @@ public func > <Content>(field: QueryField<Content, Double>, value: Double) -> Fi
 
 /// `lt_float` — the decimal field is less than `value`.
 public func < <Content>(field: QueryField<Content, Double>, value: Double) -> Filter<Content> {
+    field.filter("lt_float", decimalOperand(value))
+}
+
+/// `gt_float` — the optional decimal field is greater than `value`.
+public func > <Content>(field: QueryField<Content, Double?>, value: Double) -> Filter<Content> {
+    field.filter("gt_float", decimalOperand(value))
+}
+
+/// `lt_float` — the optional decimal field is less than `value`.
+public func < <Content>(field: QueryField<Content, Double?>, value: Double) -> Filter<Content> {
     field.filter("lt_float", decimalOperand(value))
 }
 
@@ -201,10 +221,12 @@ public func < <Content>(field: QueryField<Content, Date>, value: Date) -> Filter
     field.filter("lt_date", value.wireValue)
 }
 
+/// `gt_date` — the optional date field is after `value`.
 public func > <Content>(field: QueryField<Content, Date?>, value: Date) -> Filter<Content> {
     field.filter("gt_date", value.wireValue)
 }
 
+/// `lt_date` — the optional date field is before `value`.
 public func < <Content>(field: QueryField<Content, Date?>, value: Date) -> Filter<Content> {
     field.filter("lt_date", value.wireValue)
 }

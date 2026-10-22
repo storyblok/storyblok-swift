@@ -16,12 +16,15 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
         /// A number Storyblok holds in a text field, which is how it serialises number fields.
         let price: String
         let releaseDate: Date
+        /// Optional numbers, which must sort and compare as numbers like present ones.
+        let restock: Int?
+        let weight: Double?
 
         /// Not a Storyblok field, so the macro leaves it out of `fieldNames`.
         var isDiscounted: Bool { false }
 
         enum CodingKeys: String, CodingKey {
-            case headline, categories, stock, rating, price
+            case headline, categories, stock, rating, price, restock, weight
             case releaseDate = "release_date"
         }
     }
@@ -128,6 +131,21 @@ struct StoriesQueryTests {
             $0.sort(by: .publishedAt, .descending)
         }
         #expect(query["sort_by"] == "content.headline:asc,content.stock:desc:int,content.rating:asc:float,content.price:desc:int,published_at:desc")
+    }
+
+    @Test
+    func `an optional number sorts and compares as a number`() {
+        let query = items {
+            $0.sort(by: \.restock)
+            $0.sort(by: \.weight, .descending)
+            $0.filter {
+                $0.restock > 5
+                $0.weight < 2.5
+            }
+        }
+        #expect(query["sort_by"] == "content.restock:asc:int,content.weight:desc:float")
+        #expect(query["filter_query[restock][gt_int]"] == "5")
+        #expect(query["filter_query[weight][lt_float]"] == "2.5")
     }
 
     @Test
