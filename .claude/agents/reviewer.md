@@ -36,7 +36,7 @@ Read your `MEMORY.md` at the start of each review. Update it when you learn some
   the code before reporting it.
 - Prioritise what reviewers in this repo care about most: `public` API and semver (there is no ABI
   checker), Swift 6 concurrency safety, request and cache behaviour, payload tolerance, accessibility
-  in `RichTextView`, and regression tests for fixes.
+  in StoryblokUI's rich text rendering, and regression tests for fixes.
 - Be fast. CI already runs iOS, tvOS and watchOS, so run host `swift test --filter` per target only
   when the change is checked out and touches package code.
 
