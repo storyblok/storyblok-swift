@@ -29,9 +29,9 @@ extension URLSession {
     ///
     /// - `URLSession.DataTaskPublisher.init`, the default, fetches it fresh each time, as a
     ///   server or a script wants.
-    /// - ``CachedDataTaskPublisher/init(request:session:)`` publishes the copy the URL cache holds
-    ///   first, then the fresh one, so an app can show a page at once. A page can then arrive
-    ///   twice: keep the last copy received.
+    /// - `URLSession.CachedDataTaskPublisher.init` publishes the copy the URL cache holds first,
+    ///   then the fresh one, as a ``CachedDataTaskPublisher`` does, so an app can show a page at
+    ///   once. A page can then arrive twice: keep the last copy received.
     ///
     /// Any error response fails the publisher with an ``Api/ResponseError``, whichever upstream
     /// fetched it, and so does a body that `elements` cannot read.
@@ -67,7 +67,7 @@ extension URLSession {
         ///   - session: The session that performs the request.
         ///   - upstream: Creates the publisher that fetches the page, given the paged request and
         ///     `session`, such as `URLSession.DataTaskPublisher.init` or
-        ///     ``CachedDataTaskPublisher/init(request:session:)``.
+        ///     `URLSession.CachedDataTaskPublisher.init`.
         ///   - elements: Reads the page's elements out of a response body.
         public init(
             request: URLRequest,
@@ -121,7 +121,7 @@ extension URLSession {
     ///     Content Delivery API's stories and 1000 elsewhere.
     ///   - upstream: Creates the publisher that fetches the page. Defaults to
     ///     `URLSession.DataTaskPublisher.init`, which fetches it fresh; pass
-    ///     ``CachedDataTaskPublisher/init(request:session:)`` to publish the cached copy first.
+    ///     `URLSession.CachedDataTaskPublisher.init` to publish the cached copy first.
     ///   - elements: Reads the page's elements out of a response body.
     public func pagePublisher<Upstream : Publisher, Element>(
         for request: URLRequest,
