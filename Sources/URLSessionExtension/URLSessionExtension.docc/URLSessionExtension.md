@@ -8,6 +8,10 @@ Read <doc:UserGuide> to get started.
 
 ## Topics
 
+### Essentials
+
+- <doc:UserGuide>
+
 ### Creating a session
 
 - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)``
