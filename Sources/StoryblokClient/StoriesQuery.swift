@@ -171,10 +171,9 @@ extension StoriesQuery {
     /// Add [filter query](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries)
     /// conditions, addressing fields by key path.
     ///
-    /// A key path addresses one of `Content`'s own fields. [Nested blocks and
-    /// fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields),
-    /// which the API addresses with a dotted path, have no entry point — write those out with
-    /// ``parameter(_:_:)``.
+    /// A key path addresses one of `Content`'s own fields. The API addresses
+    /// [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields)
+    /// with a dotted path, which has no entry point — write those out with ``parameter(_:_:)``.
     public mutating func filter(@FilterBuilder<Content> _ conditions: (Fields<Content>) -> [Filter<Content>]) {
         filters.append(contentsOf: conditions(Fields()))
     }

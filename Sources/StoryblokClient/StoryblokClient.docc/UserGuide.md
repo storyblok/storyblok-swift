@@ -145,7 +145,7 @@ enum Content {
 }
 ```
 
-Choose a nested struct for a component whose stories you query by their fields, such as a content type you list or search. The struct is the component's type, so a ``StoriesQuery`` can be typed to it and a ``Story`` can decode it: see <doc:UserGuide#Querying-a-component-by-its-fields>. Labeled values give a component no type of its own, so its fields can't be addressed by key path.
+Choose a nested struct for a component whose stories you query by their fields, such as a content type you list or search. The struct is the component's type, so a ``StoriesQuery`` can be typed to it and a ``Story`` can decode it (see <doc:UserGuide#Fetching-multiple-stories>). Labeled values give a component no type of its own, so its fields can't be addressed by key path.
 
 ### Mapping component and field names
 
@@ -385,11 +385,9 @@ The field's Swift type decides which operations are offered, so one the field ca
 
 The ``BlockLibrary()`` macro makes key paths work by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
 
-> Note: A key path addresses one of the component's own fields. [Nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields), which the API addresses with a dotted path, have no entry point; write those out with ``StoriesQuery/parameter(_:_:)``.
-
 ### Parameters without an entry point
 
-``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, for a filter on a nested field or a parameter the API has gained since this version:
+``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, such as a filter on one of the [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields) a key path cannot address, or a parameter the API has gained since this version:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Article>) in
@@ -399,40 +397,6 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 ```
 
 > Warning: A parameter is added rather than replacing one, so don't add one the client already sends: `page`, `per_page`, `resolve_relations` and `resolve_level`, or `content_type` and `sort_by` when the query sets them. It would go out twice, leaving the API to choose between the two.
-
-### Querying a component by its fields
-
-A query is typed to a component's struct, so only a component modelled with a nested struct can be queried by its fields. One modelled with labeled values has no type to name, and Swift has no key paths into an enum case's values. To query it by its fields, model it with a nested struct:
-
-```swift
-@BlockLibrary
-enum Content {
-    // Before: case header(altTitle: String, altSubtitle: String)
-    case header(Header)
-
-    struct Header: Decodable {
-        let altTitle: String
-        let altSubtitle: String
-    }
-}
-
-client.stories { (query: inout StoriesQuery<Content.Header>) in
-    query.filter {
-        $0.altTitle.like("*news*")
-    }
-}
-```
-
-Code that switches over the library then reads the struct, `case let .header(header)`, in place of the values, `case let .header(altTitle, altSubtitle)`.
-
-Alternatively, a query typed to the whole block library can still ask for that component's stories, naming its type and fields as the API does:
-
-```swift
-client.stories { (query: inout StoriesQuery<Content>) in
-    query.parameter("content_type", "header")
-    query.parameter("filter_query[altTitle][like]", "*news*")
-}
-```
 
 ### Paging through the results
 
