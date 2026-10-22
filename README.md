@@ -40,9 +40,6 @@ This package consists of the following libraries:
 | [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient)         | A typed client for Storyblok's Content Delivery API with automatic relation resolution |
 | [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui)                 | SwiftUI views for paged lists of stories and for rendering rich text                  |
 
-> [!NOTE]
-> `RichTextView` is now part of `StoryblokUI`. The `RichTextView` library still works, re-exporting `StoryblokUI`, but is deprecated: depend on `StoryblokUI` and `import StoryblokUI` instead.
-
 ## 📱 Samples
 
 A runnable app, reading the same content from the same Storyblok space as the [Kotlin samples](https://github.com/storyblok/storyblok-kotlin#-samples):
