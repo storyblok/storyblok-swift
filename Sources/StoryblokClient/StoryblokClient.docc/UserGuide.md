@@ -441,6 +441,8 @@ enum Content {
 }
 ```
 
+> Tip: To render rich text as native SwiftUI views, use the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui/renderingrichtext) library, which makes a `RichText` value a `View`.
+
 ### Supported rich text nodes
 
 | Node Type        | Case                          |
@@ -483,8 +485,6 @@ if case let .document(document) = article.body {
     }
 }
 ```
-
-> Tip: To render rich text as native SwiftUI views, use the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui/renderingrichtext) library, which makes a `RichText` value a `View`.
 
 ## Field types
 
