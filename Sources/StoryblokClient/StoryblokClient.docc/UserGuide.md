@@ -343,7 +343,7 @@ client.stories { (query: inout StoriesQuery<Content.Header>) in
 
 Code that switches over the library then reads the struct, `case let .header(header)`, in place of the values, `case let .header(altTitle, altSubtitle)`.
 
-Until then, a query typed to the whole block library can still ask for that component's stories, naming its type and fields as the API does:
+Alternatively, a query typed to the whole block library can still ask for that component's stories, naming its type and fields as the API does:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content>) in
