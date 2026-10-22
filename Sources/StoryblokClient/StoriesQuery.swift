@@ -28,8 +28,7 @@ public enum SortDirection : String, Sendable {
 }
 
 /// Builder for the query parameters of the
-/// [retrieve multiple stories](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories)
-/// endpoint.
+/// [stories endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories).
 ///
 /// Every documented parameter has a typed entry point. Fields of your own content are addressed
 /// by key path, which fixes the field's Swift type — so an operation the field cannot support does
