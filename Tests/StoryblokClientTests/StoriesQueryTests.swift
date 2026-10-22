@@ -134,6 +134,18 @@ struct StoriesQueryTests {
     }
 
     @Test
+    func `an empty filter body or branch adds no conditions`() {
+        let skip = false
+        let query = items {
+            $0.filter { _ in }
+            $0.filter { fields in
+                if skip {}
+            }
+        }
+        #expect(query.keys.filter { $0.hasPrefix("filter_query") }.isEmpty)
+    }
+
+    @Test
     func `an optional number sorts and compares as a number`() {
         let query = items {
             $0.sort(by: \.restock)
