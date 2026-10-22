@@ -28,7 +28,7 @@ public enum Api : Sendable {
     ///   - language: Optionally, specify the default language to retrieve resources. Accepts any language code configured in the Storyblok space. Note that the language code needs to be provided with underscores, even if it is defined with hyphens. E.g., es_co instead of es-co.
     ///   - fallbackLanguage:Optionally, specify the default fallback language to handle untranslated fields. Accepts any language code configured in the Storyblok space. Note that the language code needs to be provided with underscores, even if it is defined with hyphens. E.g., es_co instead of es-co.
     ///   - version: Optionally, specify the [version](doc:Version) to retrieve all resources. Defaults to [.published`](doc:Version/published).
-    ///   - cv: Optionally, specify the cached version Unix timestamp (see [Cache Invalidation](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/cache-invalidation)). Note this is set automatically, set this property manually if you want to retrieve a specific cached version of a resource. Learn more in [How stories are cached in the Content Delivery API](https://www.storyblok.com/faq/how-stories-are-cached-content-delivery-api#how-the-js-client-uses-the-cv-param).
+    ///   - cv: Optionally, specify the [cached version](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/cache-invalidation) Unix timestamp. Note this is set automatically, set this property manually if you want to retrieve a specific cached version of a resource. Learn more in [How stories are cached in the Content Delivery API](https://www.storyblok.com/faq/how-stories-are-cached-content-delivery-api#how-the-js-client-uses-the-cv-param).
     ///   - region: Optionally, specify the [region](doc:Region) depending on the server location of your space. Defaults to the [European Union](doc:Region/eu)
     ///   - requestsPerSecond: Optionally, specify the maximum number of API requests allowed per second. Defaults to 1000 requests per second, you can lower the value if necessary to avoid exceeding the [rate limits](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit).
     /// ## See Also
@@ -46,9 +46,9 @@ public enum Api : Sendable {
 
     /// Configure the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) for the [Management API](https://www.storyblok.com/docs/api/management)
     /// - Parameters:
-    ///   - accessToken: It is necessary to specify an case of ``AccessToken`` to [authenticate requests to the Management API](https://www.storyblok.com/docs/api/management/getting-started/authentication).
+    ///   - accessToken: It is necessary to specify a case of ``AccessToken`` to [authenticate requests](https://www.storyblok.com/docs/api/management/getting-started/authentication) to the Management API.
     ///   - region: Optionally, specify the [region](doc:Region) depending on the server location of your space. Defaults to the [European Union](doc:Region/eu)
-    ///   - requestsPerSecond: Optionally, specify the maximum number of API requests allowed per second. Defaults to 6 requests per second, you can lower the value if necessary to avoid exceeding the [rate limits](https://www.storyblok.com/pricing/technical-limits).
+    ///   - requestsPerSecond: Optionally, specify the maximum number of API requests allowed per second. Defaults to 6 requests per second, you can lower the value if necessary to avoid exceeding the rate limits of your [pricing plan](https://www.storyblok.com/pricing/technical-limits).
     /// ## See Also
     /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)``
     /// - ``URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:delegate:delegateQueue:)``
@@ -65,8 +65,8 @@ public enum Api : Sendable {
     ///
     /// Defaults to the [European Union](doc:Api/Region/eu).
     ///
-    /// Learn more in the [Content Delivery API Reference](https://www.storyblok.com/docs/api/content-delivery/v2)
-    /// or [Management API Reference](https://www.storyblok.com/docs/api/management).
+    /// Learn more in the [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2)
+    /// or [Management API](https://www.storyblok.com/docs/api/management) reference.
     public enum Region : Sendable {
         /// European Union API server location.
         case eu
