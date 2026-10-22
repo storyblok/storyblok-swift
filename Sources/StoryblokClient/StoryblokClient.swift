@@ -7,8 +7,7 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 
 /// A client for the Storyblok [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
 ///
-/// Provides type-safe access to stories with automatic JSON decoding and [relation
-/// resolution](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations).
+/// Provides type-safe access to stories with automatic JSON decoding and relation resolution.
 ///
 /// The client is generic over a ``BlockLibrary`` — a type (typically an `enum` annotated with
 /// the ``BlockLibrary()`` macro) that enumerates the Storyblok components your space uses. The

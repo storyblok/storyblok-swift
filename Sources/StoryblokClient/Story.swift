@@ -1,6 +1,6 @@
 import Foundation
 
-/// Represents a single story retrieved from the [Storyblok Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
+/// Represents a single story retrieved from the Storyblok [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
 public struct Story<Content : Decodable> {
 
     /// Story ID.
