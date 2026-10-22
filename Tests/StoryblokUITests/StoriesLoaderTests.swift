@@ -204,4 +204,23 @@ struct StoriesLoaderTests {
         await settle()
         #expect(loader.page?.count == 4)
     }
+
+    @Test
+    func `pages that fail together can all be retried`() async {
+        let server = Server()
+        let loader = await loaded(from: server, total: 4)  // page 1's cached copy
+        loader.load(page: 2)
+        await settle()
+
+        // Page 1's fresh copy and page 2 both fail, so neither is lost to the other.
+        server.fail(1)
+        server.fail(2)
+        await settle()
+        #expect(loader.failure != nil)
+
+        loader.retry()
+        await settle()
+        #expect(loader.failure == nil)
+        #expect(server.requested == [1, 2, 1, 2], "both failed pages are fetched again")
+    }
 }

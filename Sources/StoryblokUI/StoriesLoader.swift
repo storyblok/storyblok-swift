@@ -22,7 +22,7 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
     /// The stories loaded so far, or `nil` until the first page arrives.
     @Published private(set) var page: Page<Story<Content>>?
 
-    /// Why the last page that failed did, until it is retried.
+    /// Why the most recent page to fail did, until the failed pages are retried.
     @Published private(set) var failure: StoryblokClient<Library>.Error?
 
     private var key: Key?
@@ -31,8 +31,9 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
     /// The latest copy of each page received, by number.
     private var pages: [Int: Page<Story<Content>>] = [:]
 
-    /// The page that failed, so that `retry` can fetch it again.
-    private var failed: Int?
+    /// The pages that failed, so that `retry` can fetch them again. Pages load concurrently, so
+    /// more than one can fail before the user retries.
+    private var failed: Set<Int> = []
 
     // One per page requested, so each is fetched once. Cancelled in deinit, which is not isolated
     // to the main actor.
@@ -73,7 +74,7 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
                 }
             } catch let error as StoryblokClient<Library>.Error {
                 guard !Task.isCancelled else { return }
-                self?.failed = number
+                self?.failed.insert(number)
                 self?.failure = error
             } catch {
                 // Only cancellation reaches here, and a cancelled load reports nothing.
@@ -81,13 +82,15 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
         }
     }
 
-    /// Fetches the page that failed again, showing what loaded until it arrives.
+    /// Fetches every page that failed again, showing what loaded until they arrive.
     func retry() {
-        guard let failed else { return }
-        self.failed = nil
+        let pages = failed.sorted()
+        failed = []
         failure = nil
-        tasks[failed] = nil
-        load(page: failed)
+        for number in pages {
+            tasks[number] = nil
+            load(page: number)
+        }
     }
 
     /// Replaces the copy of page `number` and joins the pages again, so a fresh copy replaces its
@@ -101,7 +104,7 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         pages = [:]
-        failed = nil
+        failed = []
         page = nil
         failure = nil
     }
