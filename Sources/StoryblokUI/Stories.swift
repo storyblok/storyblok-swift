@@ -23,7 +23,7 @@ import StoryblokClient
 /// After the rows comes one of three views, each of which you can replace:
 /// - `loading`, while the first page loads and while there are more pages to come;
 /// - `empty`, when the query matched no stories;
-/// - `failure`, when a page failed to load, with a `retry` action that fetches that page again.
+/// - `failure`, when a page failed to load, with a `retry` action that fetches the failed pages again.
 public struct Stories<Library : BlockLibrary, Content : QueryableContent, Row : View, Loading : View, Empty : View, Failure : View> : View {
 
     private let row: (Story<Content>) -> Row

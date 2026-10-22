@@ -124,7 +124,7 @@ Stories(client: client, query: query) { story in
 }
 ```
 
-The `failure` closure receives the client's [`StoryblokClient.Error`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/error) as `any Error`; cast it to tell a failed request from content that does not match your types. A failure keeps the stories that loaded on screen, and `retry` fetches the page that failed again.
+The `failure` closure receives the client's [`StoryblokClient.Error`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/error) as `any Error`; cast it to tell a failed request from content that does not match your types. A failure keeps the stories that loaded on screen, and `retry` fetches every page that failed again.
 
 ## Where the stories are kept
 
