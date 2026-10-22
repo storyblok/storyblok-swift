@@ -17,7 +17,9 @@ extension URLSession {
     ///   errors and the error responses ``Api/ErrorResponseType/recoverable`` covers — are retried
     ///   up to three times, and any error response then fails the publisher with a
     ///   ``Api/ResponseError``, as described in <doc:UserGuide#Retrying-failed-requests>.
-    /// - When the request's response has the same data as the cached one, it is not published again.
+    /// - When the request's response has the same data and `total` header as the cached one, it is
+    ///   not published again. A paginated endpoint reports its element count in `total`, so a page
+    ///   whose count changed is published even when its elements did not.
     ///
     /// A failure of the request ends the publisher after the cached response, if there was one, so a
     /// subscriber that keeps the last value received still has it.
@@ -57,7 +59,7 @@ extension URLSession {
 
             cached
                 .append(loaded)
-                .removeDuplicates { $0.data == $1.data }
+                .removeDuplicates { $0.data == $1.data && total($0.response) == total($1.response) }
                 .receive(subscriber: subscriber)
         }
     }
@@ -75,4 +77,9 @@ extension URLSession {
     public func cachedDataTaskPublisher(for url: URL) -> CachedDataTaskPublisher {
         CachedDataTaskPublisher(request: URLRequest(url: url), session: self)
     }
+}
+
+/// The `total` header of `response`, the element count a paginated endpoint reports.
+private func total(_ response: URLResponse) -> String? {
+    (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "total")
 }
