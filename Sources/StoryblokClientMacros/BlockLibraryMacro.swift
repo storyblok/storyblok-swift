@@ -655,9 +655,10 @@ private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: [St
             continue
         }
 
-        // A static property is not part of the content, and a key path cannot refer to one.
+        // A static property is not part of the content, nor is a lazy one, which is derived from
+        // it; and a key path can refer to neither.
         guard let varDecl = member.decl.as(VariableDeclSyntax.self),
-              !varDecl.modifiers.contains(where: { ["static", "class"].contains($0.name.text) })
+              !varDecl.modifiers.contains(where: { ["static", "class", "lazy"].contains($0.name.text) })
         else { continue }
         let isConstant = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
         for binding in varDecl.bindings {

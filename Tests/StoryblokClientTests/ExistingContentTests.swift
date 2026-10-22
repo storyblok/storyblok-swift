@@ -19,12 +19,29 @@ enum MutableLibrary : Decodable {
     }
 }
 
+/// A block library whose content has a lazy property, which a key path cannot refer to. This
+/// compiles only while `@StoryblokContent` leaves lazy properties out of `fieldNames`.
+@BlockLibrary
+enum LazyLibrary : Decodable {
+    case note(Note)
+
+    struct Note : Decodable {
+        let title: String
+        lazy var normalized: String = title.lowercased()
+    }
+}
+
 @Suite
-struct NonSendableContentTests {
+struct ExistingContentTests {
 
     @Test
     func `content holding a non-Sendable value can still be queried`() {
         #expect(MutableLibrary.Widget.technicalName == "widget")
         #expect(MutableLibrary.technicalName == nil)
+    }
+
+    @Test
+    func `content with a lazy property can still be queried`() {
+        #expect(LazyLibrary.Note.fieldNames.values.sorted() == ["title"])
     }
 }
