@@ -2,7 +2,7 @@
 
 SwiftUI views for Storyblok stories and rich text.
 
-``Stories`` shows the stories matching a query as list rows that load the next page as the user scrolls, and a decoded `RichText` value renders as native SwiftUI views.
+``Stories`` lists the stories matching a query, loading the next page as the user scrolls, and a decoded `RichText` value renders as native SwiftUI views.
 
 Read <doc:UserGuide> and <doc:RenderingRichText> to get started.
 
@@ -13,7 +13,7 @@ Read <doc:UserGuide> and <doc:RenderingRichText> to get started.
 - <doc:UserGuide>
 - <doc:RenderingRichText>
 
-### Showing stories
+### Listing stories
 
 - ``Stories``
 - ``Stories/init(client:pageSize:resolveLevel:query:row:loading:empty:failure:)``

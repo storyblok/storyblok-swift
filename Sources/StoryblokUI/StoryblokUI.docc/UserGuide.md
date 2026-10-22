@@ -1,6 +1,6 @@
-# Showing paged stories with StoryblokUI
+# Listing paged stories with StoryblokUI
 
-How to show the stories matching a query in a SwiftUI list that loads the next page as the user scrolls, change the query, and replace the loading, empty and failure views.
+How to list the stories matching a query in SwiftUI, loading the next page as the user scrolls, change the query, and replace the loading, empty and failure views.
 
 ## Getting Started
 
@@ -31,7 +31,7 @@ targets: [
 
 > Note: `StoryblokUI` builds on [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient). See the [StoryblokClient User Guide](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/userguide) for how to define a block library and create a client.
 
-### Show the stories
+### List the stories
 
 Give ``Stories`` a client, the query, and the row for one story, and put it in a lazy container:
 
