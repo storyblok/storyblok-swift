@@ -8,8 +8,8 @@ extension URLSession {
     ///
     /// The Content Delivery and Management APIs page the same way: `page` and `per_page` query
     /// parameters, and a `total` response header counting the elements across all pages. This adds
-    /// the two parameters to `request`, so leave them out of it, and reads `total` into the
-    /// ``Page``, which says whether there is a page after this one:
+    /// the two parameters to `request` and reads `total` into the ``Page``, which says whether there
+    /// is a page after this one:
     ///
     /// ```swift
     /// struct Tag: Decodable, Identifiable {
