@@ -9,7 +9,6 @@ import SwiftUI
 
 import StoryblokClient
 import StoryblokUI
-internal import URLSessionExtension
 
 @main
 struct JetNewsApp: App {
