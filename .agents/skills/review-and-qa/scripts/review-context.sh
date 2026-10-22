@@ -161,7 +161,7 @@ fi
 
 # --- repo-specific: storyblok-swift ----------------------------------------------------------
 
-targets="URLSessionExtension StoryblokClient StoryblokClientMacros RichTextView"
+targets="URLSessionExtension StoryblokClient StoryblokClientMacros StoryblokUI RichTextView"
 touched=""
 for t in $targets; do
   if changed_has "^(Sources/$t/|Tests/${t}Tests/)" ||
@@ -210,10 +210,12 @@ filters=""
 for t in $touched; do
   case "$t" in
     StoryblokClientMacros) filters="$filters StoryblokClientMacroTests StoryblokClientTests" ;;
+    # The deprecated module that re-exports StoryblokUI, whose tests cover it.
+    RichTextView) filters="$filters StoryblokUITests" ;;
     *) filters="$filters ${t}Tests" ;;
   esac
 done
-[[ -n "$package_changed" && -z "$filters" ]] && filters=" URLSessionExtensionTests StoryblokClientTests StoryblokClientMacroTests RichTextViewTests"
+[[ -n "$package_changed" && -z "$filters" ]] && filters=" URLSessionExtensionTests StoryblokClientTests StoryblokClientMacroTests StoryblokUITests"
 filters=$(echo $filters | tr ' ' '\n' | awk 'NF && !seen[$0]++' | tr '\n' ' ')
 if [[ -n "$filters" ]]; then
   echo "    swift build --build-tests"
