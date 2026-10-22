@@ -360,7 +360,7 @@ client.stories { (query: inout StoriesQuery<Content.Product>) in
     query.filter {
         $0.headline.like("*space*")                              // [headline][like]=*space*
         $0.headline.notLike("*draft*")                           // [headline][not_like]=*draft*
-        $0.headline.isIn(["Spaceship", "Rocket"])                // [headline][in]=Spaceship,Rocket
+        $0.headline.in(["Spaceship", "Rocket"])                  // [headline][in]=Spaceship,Rocket
         $0.headline.notIn(["Paper"])                             // [headline][not_in]=Paper
         $0.headline.is(.notEmpty)                                // [headline][is]=not_empty
         $0.categories.contains(allOf: ["solar-system", "mars"])  // [categories][all_in_array]=solar-system,mars
@@ -377,7 +377,7 @@ client.stories { (query: inout StoriesQuery<Content.Product>) in
 
 The field's Swift type decides which operations are offered, so one the field cannot support doesn't compile:
 
-- Text has `like(_:)`, `notLike(_:)`, `isIn(_:)` and `notIn(_:)`.
+- Text has `like(_:)`, `notLike(_:)`, `in(_:)` and `notIn(_:)`.
 - An array of text has `contains(allOf:)`, `contains(anyOf:)`, `isEmpty` and `isNotEmpty`.
 - A whole number, decimal or date has `>` and `<`, which send the matching `_int`, `_float` or `_date` operation.
 - Any field has `is(_:)`, which takes a ``Presence``: `.empty`, `.notEmpty`, `.isTrue`, `.isFalse`, `.null` or `.notNull`.

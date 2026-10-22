@@ -105,11 +105,15 @@ struct StoriesQueryTests {
         let query = items {
             $0.filter {
                 $0.headline.like("*space*")
+                $0.headline.in(["Spaceship", "Rocket"])
+                $0.headline.notIn(["Paper"])
                 $0.categories.contains(anyOf: ["solar-system", "mars"])
                 $0.categories.isNotEmpty
             }
         }
         #expect(query["filter_query[headline][like]"] == "*space*")
+        #expect(query["filter_query[headline][in]"] == "Spaceship,Rocket")
+        #expect(query["filter_query[headline][not_in]"] == "Paper")
         #expect(query["filter_query[categories][any_in_array]"] == "solar-system,mars")
         #expect(query["filter_query[categories][is]"] == "not_empty_array")
     }

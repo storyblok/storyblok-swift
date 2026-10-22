@@ -74,7 +74,7 @@ extension QueryField where Value == String {
     public func notLike(_ pattern: String) -> Filter<Content> { filter("not_like", pattern) }
 
     /// [in](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-in): the value is one of `values`.
-    public func isIn(_ values: [String]) -> Filter<Content> { filter("in", values.joined(separator: ",")) }
+    public func `in`(_ values: [String]) -> Filter<Content> { filter("in", values.joined(separator: ",")) }
 
     /// [not_in](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/operation-not-in): the value is none of `values`.
     public func notIn(_ values: [String]) -> Filter<Content> { filter("not_in", values.joined(separator: ",")) }
@@ -93,7 +93,7 @@ extension QueryField where Value == String {
 extension QueryField where Value == String? {
     public func like(_ pattern: String) -> Filter<Content> { filter("like", pattern) }
     public func notLike(_ pattern: String) -> Filter<Content> { filter("not_like", pattern) }
-    public func isIn(_ values: [String]) -> Filter<Content> { filter("in", values.joined(separator: ",")) }
+    public func `in`(_ values: [String]) -> Filter<Content> { filter("in", values.joined(separator: ",")) }
     public func notIn(_ values: [String]) -> Filter<Content> { filter("not_in", values.joined(separator: ",")) }
     public var asWholeNumber: QueryField<Content, WholeNumberText> { QueryField<Content, WholeNumberText>(keyPath) }
     public var asDecimal: QueryField<Content, DecimalText> { QueryField<Content, DecimalText>(keyPath) }
