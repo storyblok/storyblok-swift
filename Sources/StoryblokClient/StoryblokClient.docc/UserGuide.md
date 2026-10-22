@@ -372,7 +372,7 @@ client.stories { (query: inout StoriesQuery<Content.Product>) in
 
 ### Filter queries
 
-[Filter queries](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries) are written in a ``StoriesQuery/filter(_:)`` block, which addresses fields through its argument. Each condition becomes a `filter_query[<field>][<operation>]` parameter:
+Write [filter query](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries) conditions in a ``StoriesQuery/filter(_:)`` block, which addresses fields through its argument. Each condition becomes a `filter_query[<field>][<operation>]` parameter:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Product>) in
@@ -475,7 +475,7 @@ The page size defaults to 25 and can be raised to 100 with `pageSize`.
 
 ## Story relations
 
-The client automatically resolves [story relations](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations) declared on your block library. Whenever a case (or one of its nested struct fields) has a ``Story``-typed associated value, the macro records it in ``BlockLibrary/relations``, and the client will:
+The client automatically resolves story relations declared on your block library. Whenever a case (or one of its nested struct fields) has a ``Story``-typed associated value, the macro records it in ``BlockLibrary/relations``, and the client will:
 
 1. Include the appropriate `resolve_relations` query parameter in API requests.
 2. Replace the referenced UUID string in the response with the matching object from the `rels` array.
@@ -665,6 +665,6 @@ The error's case suggests how to respond:
 ## See Also
 
 - [URLSessionExtension User Guide](doc:/URLSessionExtension/UserGuide)
-- [Storyblok Content Delivery API reference](https://www.storyblok.com/docs/api/content-delivery/v2)
+- [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2)
 - [Resolving relations](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations)
 - [Storyblok rich text](https://www.storyblok.com/docs/richtext-field)
