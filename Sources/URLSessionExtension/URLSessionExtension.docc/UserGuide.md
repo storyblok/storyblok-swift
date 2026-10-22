@@ -207,7 +207,7 @@ For published content the Storyblok `URLRequest` [convenience initializer](doc:F
 
 ### Paging through results
 
-The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/cachedPagePublisher(for:page:perPage:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another. Like ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)``, it publishes the page the URL cache holds, if any, then the fresh one:
+The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:upstream:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another:
 
 ```swift
 struct Asset: Decodable, Identifiable {
@@ -219,17 +219,32 @@ var assets: Page<Asset> = []
 var number = 1
 repeat {
     let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/assets")
-    let pages = storyblok.cachedPagePublisher(for: request, page: number, perPage: 100) { body in
-        try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
-    }
-    var page: Page<Asset> = []
-    for try await copy in pages.values { page = copy }  // the latest copy arrives last
+    let page = try await storyblok
+        .pagePublisher(for: request, page: number, perPage: 100) { body in
+            try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
+        }
+        .values
+        .first { _ in true }!
     assets = assets + page
     number += 1
 } while assets.hasNextPage
 ```
 
 Joining pages with `+` leaves out an element already on an earlier page, since page-number paging shifts when content changes between requests.
+
+By default each page is fetched fresh, as a server or a script wants. In an app, pass ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher/init(request:session:)`` as the `upstream` to show the page the URL cache holds at once, then the fresh one, as described in <doc:UserGuide#Showing-cached-responses-while-revalidating>. Each page can then arrive twice, so keep the last copy:
+
+```swift
+let pages = storyblok.pagePublisher(for: request, page: 1, perPage: 100, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+    try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
+}
+```
+
+The `upstream` can be any function that creates a publisher of a request's data and response, so a script can retry transient failures, for example:
+
+```swift
+upstream: { URLSession.DataTaskPublisher(request: $0, session: $1).failOnErrorResponse(.recoverable).retry(3) }
+```
 
 ### Working with JSON 
 

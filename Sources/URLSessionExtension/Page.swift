@@ -1,7 +1,7 @@
 import Foundation
 
 /// A page of a paginated endpoint's elements, such as the page
-/// ``Foundation/URLSession/CachedPagePublisher`` publishes.
+/// ``Foundation/URLSession/PagePublisher`` publishes.
 ///
 /// The Content Delivery and Management APIs page the same way, so a `Page` can hold any of their
 /// lists, such as stories, assets or datasource entries.

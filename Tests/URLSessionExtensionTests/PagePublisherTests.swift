@@ -7,7 +7,7 @@ import URLSessionExtension
 /// Served by a stub protocol only this suite's session uses, rather than Mocker, whose shared
 /// registrations other suites clear while they run alongside this one.
 @Suite(.serialized)
-struct CachedPagePublisherTests {
+struct PagePublisherTests {
 
     struct Entry : Decodable {
         let id: Int
@@ -18,11 +18,13 @@ struct CachedPagePublisherTests {
         let datasource_entries: [Entry]
     }
 
-    /// Answers every request with one canned response, recording the query of each. The response
-    /// is not stored, so the cache stays cold: URLSession fails each cache-only request itself,
-    /// without asking the stub.
+    /// Answers a cache-only request with the cached response URLSession hands it, and every other
+    /// request with one canned response, recording the query of each. The canned response is not
+    /// stored, so the cache holds only what a test puts there; when it holds nothing, URLSession
+    /// fails a cache-only request itself, without asking the stub.
     final class Stub : URLProtocol {
 
+        nonisolated(unsafe) static var status = 200
         nonisolated(unsafe) static var headers: [String: String] = [:]
         nonisolated(unsafe) static var body = Data()
         nonisolated(unsafe) static var queries: [[String: String]] = []
@@ -33,14 +35,18 @@ struct CachedPagePublisherTests {
         override func stopLoading() {}
 
         override func startLoading() {
-            let (headers, body) = Self.lock.withLock {
+            if request.cachePolicy == .returnCacheDataDontLoad, let cachedResponse {
+                client?.urlProtocol(self, cachedResponseIsValid: cachedResponse)
+                return
+            }
+            let (status, headers, body) = Self.lock.withLock {
                 let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
                 Self.queries.append(Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { _, last in last }))
-                return (Self.headers, Self.body)
+                return (Self.status, Self.headers, Self.body)
             }
             let response = HTTPURLResponse(
                 url: request.url!,
-                statusCode: 200,
+                statusCode: status,
                 httpVersion: "HTTP/1.1",
                 headerFields: headers.merging(["Content-Type": "application/json"]) { stated, _ in stated }
             )!
@@ -50,18 +56,20 @@ struct CachedPagePublisherTests {
         }
     }
 
+    let cache = URLCache(memoryCapacity: 1_000_000, diskCapacity: 0)
     let session: URLSession
 
     init() {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [Stub.self]
+        configuration.urlCache = cache
         session = URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: configuration)
     }
 
     @Test
     func `keeps the request as given, adding the page only when it is sent`() throws {
         let request = URLRequest(storyblok: session, path: "datasource_entries")
-        let publisher = session.cachedPagePublisher(for: request, page: 3, perPage: 50) { _ in [Entry]() }
+        let publisher = session.pagePublisher(for: request, page: 3, perPage: 50) { _ in [Entry]() }
 
         #expect(publisher.request == request)
         #expect(publisher.page == 3)
@@ -73,18 +81,14 @@ struct CachedPagePublisherTests {
 
     @Test
     func `pages a Management API endpoint the same way`() async throws {
-        Stub.lock.withLock {
-            Stub.headers = ["total": "3"]
-            Stub.body = Data(#"{ "datasource_entries": [{ "id": 1, "name": "a" }, { "id": 2, "name": "b" }] }"#.utf8)
-            Stub.queries = []
-        }
+        serve(headers: ["total": "3"])
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [Stub.self]
         let mapi = URLSession(storyblok: .mapi(accessToken: .personal("mock-token")), configuration: configuration)
 
         let request = URLRequest(storyblok: mapi, path: "spaces/1/datasource_entries")
         let page = try await mapi
-            .cachedPagePublisher(for: request, page: 2, perPage: 2) { body in
+            .pagePublisher(for: request, page: 2, perPage: 2) { body in
                 try JSONDecoder().decode(Entries.self, from: body).datasource_entries
             }
             .values
@@ -97,24 +101,92 @@ struct CachedPagePublisherTests {
         #expect(page?.hasNextPage == false, "pages 1 and 2 hold all three")
     }
 
+    private static let entries = #"{ "datasource_entries": [{ "id": 1, "name": "a" }, { "id": 2, "name": "b" }] }"#
+
+    /// Has the stub answer every request that reaches it with `status`, `headers` and `body`.
+    private func serve(status: Int = 200, headers: [String: String] = [:], body: String = Self.entries) {
+        Stub.lock.withLock {
+            Stub.status = status
+            Stub.headers = headers
+            Stub.body = Data(body.utf8)
+            Stub.queries = []
+        }
+        cache.removeAllCachedResponses()
+    }
+
+    /// Puts a response holding `names` in the cache for page 1 of `request`, as a previous fetch
+    /// of it would have.
+    private func cache(_ names: [String], forPage1Of request: URLRequest) {
+        var paged = request
+        paged.url!.append(queryItems: [URLQueryItem(name: "page", value: "1"), URLQueryItem(name: "per_page", value: "2")])
+        paged.url = paged.url!.sortingQueryItems()
+        let entries = names.enumerated().map { #"{ "id": \#($0.offset + 1), "name": "\#($0.element)" }"# }
+        let body = #"{ "datasource_entries": ["# + entries.joined(separator: ",") + "] }"
+        let response = HTTPURLResponse(url: paged.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+        cache.storeCachedResponse(CachedURLResponse(response: response, data: Data(body.utf8)), for: paged)
+    }
+
+    /// Every page `publisher` delivers, by the names of its entries.
+    private func names<Upstream>(_ publisher: URLSession.PagePublisher<Upstream, Entry>) async throws -> [[String]] {
+        var pages: [[String]] = []
+        for try await page in publisher.values { pages.append(page.map(\.name)) }
+        return pages
+    }
+
+    @Test
+    func `by default the page is fetched fresh, without the cached copy`() async throws {
+        serve()
+        let request = URLRequest(storyblok: session, path: "datasource_entries")
+        cache(["cached"], forPage1Of: request)
+
+        let pages = try await names(session.pagePublisher(for: request, page: 1, perPage: 2) { body in
+            try JSONDecoder().decode(Entries.self, from: body).datasource_entries
+        })
+
+        #expect(pages == [["a", "b"]])
+    }
+
+    @Test
+    func `with CachedDataTaskPublisher upstream the cached copy comes first`() async throws {
+        serve()
+        let request = URLRequest(storyblok: session, path: "datasource_entries")
+        cache(["cached"], forPage1Of: request)
+
+        let pages = try await names(session.pagePublisher(
+            for: request, page: 1, perPage: 2, upstream: URLSession.CachedDataTaskPublisher.init
+        ) { body in
+            try JSONDecoder().decode(Entries.self, from: body).datasource_entries
+        })
+
+        #expect(pages == [["cached"], ["a", "b"]])
+    }
+
+    @Test
+    func `an error response fails with a ResponseError, not a decoding error`() async throws {
+        serve(status: 404, body: #"{ "error": "not found" }"#)
+        let request = URLRequest(storyblok: session, path: "datasource_entries")
+
+        await #expect(throws: Api.ResponseError.self) {
+            _ = try await names(session.pagePublisher(for: request, page: 1, perPage: 2) { body in
+                try JSONDecoder().decode(Entries.self, from: body).datasource_entries
+            })
+        }
+    }
+
     /// Serves `body` with `headers` and returns the first value the publisher for page `number`
     /// emits, with the query of each request made for it.
     private func fetchPage(
         _ number: Int = 1,
         queryItems: [URLQueryItem] = [],
         headers: [String: String] = [:],
-        body: String = #"{ "datasource_entries": [{ "id": 1, "name": "a" }, { "id": 2, "name": "b" }] }"#
+        body: String = Self.entries
     ) async throws -> (page: Page<Entry>?, queries: [[String: String]]) {
-        Stub.lock.withLock {
-            Stub.headers = headers
-            Stub.body = Data(body.utf8)
-            Stub.queries = []
-        }
+        serve(headers: headers, body: body)
 
         var request = URLRequest(storyblok: session, path: "datasource_entries")
         request.url!.append(queryItems: queryItems)
         let page = try await session
-            .cachedPagePublisher(for: request, page: number, perPage: 2) { body in
+            .pagePublisher(for: request, page: number, perPage: 2) { body in
                 try JSONDecoder().decode(Entries.self, from: body).datasource_entries
             }
             .values
