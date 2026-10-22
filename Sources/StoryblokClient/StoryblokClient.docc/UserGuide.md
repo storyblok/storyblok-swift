@@ -316,7 +316,13 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 
 The ``BlockLibrary()`` macro makes this possible by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
 
-For a parameter that has no entry point, such as a filter on a nested field, add it as written with ``StoriesQuery/parameter(_:_:)``.
+For a parameter that has no entry point, such as a filter on a nested field, add it as written with ``StoriesQuery/parameter(_:_:)``:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.parameter("filter_query[seo.description][is]", "not_empty")
+}
+```
 
 ### Querying a component by its fields
 
