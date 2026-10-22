@@ -333,7 +333,7 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
         completionHandler: @Sendable @escaping (URLRequest?) -> Void
     ) {
         var request = request
-        request.url = request.url?.sortingQueryItems()
+        request.url = request.url?.sortingQueryItems(readingPlusAsSpace: true)
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
     }
 

@@ -51,14 +51,27 @@ struct StableCacheKeys {
         let theirs = URL(string: "https://api.storyblok.com/v2/cdn/stories?search_term=a+b~c&token=mock-api-key")!
 
         #expect(mine.url!.query() == "search_term=a%20b~c&token=mock-api-key", "URLComponents percent encodes it")
-        #expect(mine.url!.sortingQueryItems().absoluteString == theirs.sortingQueryItems().absoluteString)
+        #expect(mine.url!.sortingQueryItems().absoluteString == theirs.sortingQueryItems(readingPlusAsSpace: true).absoluteString)
+    }
+
+    @Test func `a plus in a value the client builds is sent as a plus`() {
+        // URLQueryItem leaves a literal plus unescaped, so read as a space it would search for "C  ".
+        var mine = URLComponents(string: "https://api.storyblok.com/v2/cdn/stories")!
+        mine.queryItems = [URLQueryItem(name: "search_term", value: "C++"), URLQueryItem(name: "token", value: "k")]
+
+        let normalized = mine.url!.sortingQueryItems()
+
+        #expect(normalized.query() == "search_term=C%2B%2B&token=k")
+        let value = URLComponents(url: normalized, resolvingAgainstBaseURL: false)!
+            .queryItems!.first { $0.name == "search_term" }!.value
+        #expect(value == "C++")
     }
 
     @Test func `a plus the API meant literally survives`() {
         // CGI.escape writes a literal plus as %2B, so it must neither be read as a space nor written back as a
         // bare plus, which the API would then read as one.
         let url = URL(string: "https://api.storyblok.com/v2/cdn/stories?search_term=1%2B1&token=k")!
-        let normalized = url.sortingQueryItems()
+        let normalized = url.sortingQueryItems(readingPlusAsSpace: true)
 
         #expect(normalized.query() == "search_term=1%2B1&token=k")
         let value = URLComponents(url: normalized, resolvingAgainstBaseURL: false)!
