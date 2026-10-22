@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AB71D1FF2FDAA75700252801 /* RichTextView in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D1FE2FDAA75700252801 /* RichTextView */; };
 		AB71D2012FDAA75700252801 /* StoryblokClient in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2002FDAA75700252801 /* StoryblokClient */; };
 		AB71D2032FDAA75700252801 /* URLSessionExtension in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2022FDAA75700252801 /* URLSessionExtension */; };
 		AB71D2052FDAA75700252801 /* StoryblokUI in Frameworks */ = {isa = PBXBuildFile; productRef = AB71D2042FDAA75700252801 /* StoryblokUI */; };
@@ -32,7 +31,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB71D1FF2FDAA75700252801 /* RichTextView in Frameworks */,
 				AB71D2032FDAA75700252801 /* URLSessionExtension in Frameworks */,
 				AB71D2012FDAA75700252801 /* StoryblokClient in Frameworks */,
 				AB71D2052FDAA75700252801 /* StoryblokUI in Frameworks */,
@@ -86,7 +84,6 @@
 			);
 			name = JetNews;
 			packageProductDependencies = (
-				AB71D1FE2FDAA75700252801 /* RichTextView */,
 				AB71D2002FDAA75700252801 /* StoryblokClient */,
 				AB71D2022FDAA75700252801 /* URLSessionExtension */,
 				AB71D2042FDAA75700252801 /* StoryblokUI */,
@@ -367,10 +364,6 @@
 		AB71D2042FDAA75700252801 /* StoryblokUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StoryblokUI;
-		};
-		AB71D1FE2FDAA75700252801 /* RichTextView */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RichTextView;
 		};
 		AB71D2002FDAA75700252801 /* StoryblokClient */ = {
 			isa = XCSwiftPackageProductDependency;
