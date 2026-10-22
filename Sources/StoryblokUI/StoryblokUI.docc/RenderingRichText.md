@@ -8,8 +8,6 @@ How to render `RichText` content as native SwiftUI views, customize individual n
 
 Add the `StoryblokUI` library to your target, as described in <doc:UserGuide#Add-package-dependency>.
 
-> Note: Rich text rendering used to be the separate `RichTextView` library. Its product and module still work, re-exporting `StoryblokUI`, but are deprecated and will be removed in the next major release. To move, depend on the `StoryblokUI` product and write `import StoryblokUI` in place of `import RichTextView`; nothing else changes.
-
 ### Make your block library a `View`
 
 `RichText` becomes a SwiftUI `View` only when its block library is itself a `View`. Conform your [`BlockLibrary`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/blocklibrary) to `View` so that embedded component blocks render alongside the standard rich-text nodes:
