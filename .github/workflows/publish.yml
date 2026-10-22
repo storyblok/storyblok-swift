@@ -23,7 +23,6 @@ jobs:
             generate-documentation \
             --enable-experimental-combined-documentation \
             --target StoryblokClient \
-            --target RichTextView \
             --target URLSessionExtension \
             --target StoryblokUI \
             --disable-indexing \
