@@ -155,7 +155,7 @@ extension StoriesQuery {
     ///
     /// Only some attributes are sortable. The API answers the rest with `Not sortable by this
     /// column` rather than this library second-guessing which those are.
-    public mutating func sort(byAttribute attribute: StoryAttribute, _ direction: SortDirection = .ascending) {
+    public mutating func sort(by attribute: StoryAttribute, _ direction: SortDirection = .ascending) {
         sorts.append("\(attribute.rawValue):\(direction.rawValue)")
     }
 

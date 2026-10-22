@@ -121,7 +121,7 @@ struct StoriesQueryTests {
             $0.sort(by: \.stock, .descending)
             $0.sort(by: \.rating)
             $0.sort(by: \.price, .descending, as: .wholeNumber)
-            $0.sort(byAttribute: .publishedAt, .descending)
+            $0.sort(by: .publishedAt, .descending)
         }
         #expect(query["sort_by"] == "content.headline:asc,content.stock:desc:int,content.rating:asc:float,content.price:desc:int,published_at:desc")
     }
