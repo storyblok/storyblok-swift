@@ -354,7 +354,7 @@ client.stories { (query: inout StoriesQuery<Content>) in
 
 ### Paging through the results
 
-Each value is a ``Page``: a collection of that page's stories, along with the ``Page/total`` the API reports and whether there is a page after it. Fetch the next page with `page + 1` while ``Page/hasNextPage`` is `true`, and join each page onto the ones before it with `+`, which leaves out any story already on an earlier page:
+Each value is a ``/URLSessionExtension/Page``: a collection of that page's stories, along with the ``/URLSessionExtension/Page/total`` the API reports and whether there is a page after it. Fetch the next page with `page + 1` while ``/URLSessionExtension/Page/hasNextPage`` is `true`, and join each page onto the ones before it with `+`, which leaves out any story already on an earlier page:
 
 ```swift
 var articles: Page<Story<Content.Article>> = []

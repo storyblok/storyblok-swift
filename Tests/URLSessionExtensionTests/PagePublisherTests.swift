@@ -1,14 +1,13 @@
 import Testing
 import Foundation
 import URLSessionExtension
-@testable import StoryblokClient
 
-/// The request any paged endpoint makes, exercised through an endpoint other than stories.
+/// The request a paged endpoint's publisher makes, and the page it reads from the response.
 ///
 /// Served by a stub protocol only this suite's session uses, rather than Mocker, whose shared
 /// registrations other suites clear while they run alongside this one.
 @Suite(.serialized)
-struct URLSessionPagesTests {
+struct PagePublisherTests {
 
     struct Entry : Decodable {
         let id: Int
@@ -59,6 +58,32 @@ struct URLSessionPagesTests {
         session = URLSession(storyblok: .cdn(accessToken: "mock-api-key", version: .draft, cv: "mock-cv"), configuration: configuration)
     }
 
+    @Test
+    func `pages a Management API endpoint the same way`() async throws {
+        Stub.lock.withLock {
+            Stub.headers = ["total": "3"]
+            Stub.body = Data(#"{ "datasource_entries": [{ "id": 1, "name": "a" }, { "id": 2, "name": "b" }] }"#.utf8)
+            Stub.queries = []
+        }
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [Stub.self]
+        let mapi = URLSession(storyblok: .mapi(accessToken: .personal("mock-token")), configuration: configuration)
+
+        let request = URLRequest(storyblok: mapi, path: "spaces/1/datasource_entries")
+        let page = try await mapi
+            .pagePublisher(for: request, page: 2, perPage: 2) { body in
+                try JSONDecoder().decode(Entries.self, from: body).datasource_entries
+            }
+            .values
+            .first { _ in true }
+
+        let query = try #require(Stub.lock.withLock { Stub.queries.last })
+        #expect(query["page"] == "2")
+        #expect(query["per_page"] == "2")
+        #expect(page?.number == 2)
+        #expect(page?.hasNextPage == false, "pages 1 and 2 hold all three")
+    }
+
     /// Serves `body` with `headers` and returns the first value the publisher for page `number`
     /// emits, with the query of each request made for it.
     private func fetchPage(
@@ -73,8 +98,10 @@ struct URLSessionPagesTests {
             Stub.queries = []
         }
 
+        var request = URLRequest(storyblok: session, path: "datasource_entries")
+        request.url!.append(queryItems: queryItems)
         let page = try await session
-            .page(number, of: "datasource_entries", size: 2, queryItems: queryItems) { body in
+            .pagePublisher(for: request, page: number, perPage: 2) { body in
                 try JSONDecoder().decode(Entries.self, from: body).datasource_entries
             }
             .values
@@ -94,7 +121,7 @@ struct URLSessionPagesTests {
 
     @Test
     func `asks for the page given, and counts the total from it`() async throws {
-        let (page, queries) = try await fetchPage(3, headers: ["Total": "6"])
+        let (page, queries) = try await fetchPage(3, headers: ["total": "6"])  // as the API docs spell it
 
         #expect(try #require(queries.last)["page"] == "3")
         let third = try #require(page)
@@ -103,7 +130,7 @@ struct URLSessionPagesTests {
     }
 
     @Test
-    func `decodes the elements and reads the Total header`() async throws {
+    func `decodes the elements and reads the total header`() async throws {
         let (page, _) = try await fetchPage(headers: ["Total": "3"])
 
         let first = try #require(page)
@@ -113,7 +140,7 @@ struct URLSessionPagesTests {
     }
 
     @Test
-    func `without a Total header, a full page is not taken as the last`() async throws {
+    func `without a total header, a full page is not taken as the last`() async throws {
         let (page, _) = try await fetchPage()
 
         let first = try #require(page)

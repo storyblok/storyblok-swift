@@ -24,6 +24,11 @@ Read <doc:UserGuide> to get started.
 - ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URL)``
 - ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher``
 
+### Paging through results
+
+- ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:elements:)``
+- ``Page``
+
 ### Retrying failed requests
 
 - ``URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)``

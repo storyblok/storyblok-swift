@@ -16,7 +16,7 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 /// field's Swift type, so the compiler can reject an operation the field cannot support, and the
 /// lookup here supplies the name Storyblok knows it by.
 ///
-/// Content must be `Sendable`: a ``Page`` of stories is built on the URL session's queue and
+/// Content must be `Sendable`: a ``/URLSessionExtension/Page`` of stories is built on the URL session's queue and
 /// received on the caller's, typically the main actor. Decoded content is a value type in
 /// practice, so this costs nothing in the normal case.
 public protocol QueryableContent : Decodable, Sendable {

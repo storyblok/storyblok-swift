@@ -212,9 +212,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     /// Page `page` of the stories matching `query`.
     ///
     /// As ``story(_:resolveLevel:)-(String,_)`` does, the publisher sends the copy of the page the
-    /// URL cache holds, if any, then the fresh one, and finishes. The ``Page`` says whether there
+    /// URL cache holds, if any, then the fresh one, and finishes. The ``/URLSessionExtension/Page`` says whether there
     /// is a page after it; fetch that with `page + 1`, and join it onto the ones before with
-    /// ``Page/+(_:_:)``, which leaves out stories already on an earlier page:
+    /// ``/URLSessionExtension/Page/+(_:_:)``, which leaves out stories already on an earlier page:
     ///
     /// ```swift
     /// var posts: Page<Story<Block.Post>> = []
@@ -251,7 +251,10 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ) -> AnyPublisher<Page<Story<Content>>, Error> {
         let queryItems = relationParameters(resolveLevel: resolveLevel) + StoriesQuery(query).queryItems
 
-        return session.page(page, of: "stories", size: pageSize, queryItems: queryItems) { body in
+        var request = URLRequest(storyblok: session, path: "stories")
+        request.url!.append(queryItems: queryItems)
+
+        return session.pagePublisher(for: request, page: page, perPage: pageSize) { body in
             try Self.decoder(resolveLevel: resolveLevel)
                 .decode(ContentResponse<[Story<Content>]>.self, from: body)
                 .payload
@@ -306,40 +309,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             decoder.userInfo[.storyblokRelations] = relStore
         }
         return decoder
-    }
-}
-
-// MARK: - Stable cache keys
-
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-internal extension URL {
-    /// Returns the URL with its query items ordered by name, and their percent encoding normalized.
-    ///
-    /// `URLCache` keys an entry on the request URL exactly as written, so two spellings of one request are two
-    /// cache entries, and the cached value the story publisher looks for first is never found. They arise
-    /// readily: the Content Delivery API returns the `Location` it redirects a published request to with its
-    /// query items sorted by name and their values escaped.
-    func sortingQueryItems() -> URL {
-        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false) else { return self }
-        // Percent decoding is unambiguous, so any two spellings of a value decode alike and re-encode alike —
-        // except `+`, which the API writes for a space while `queryItems` reads it as a literal plus. Restoring
-        // the shared meaning first is what lets the two sides meet. A plus the API meant literally arrives as
-        // `%2B`, so it is left alone.
-        if let query = components.percentEncodedQuery {
-            components.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%20")
-        }
-        guard let items = components.queryItems, items.count > 1 else { return components.url ?? self }
-        // Sorted on (name, position) so repeated names keep the order their values were given in:
-        // `sorted(by:)` is not itself a stable sort.
-        components.queryItems = items.enumerated()
-            .sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }
-            .map(\.element)
-        // Re-encoding writes a plus literally, which the API would read back as a space. Every `+` that meant a
-        // space became `%20` above, so whatever is left is a plus someone meant, and has to say so.
-        if let query = components.percentEncodedQuery {
-            components.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%2B")
-        }
-        return components.url ?? self
     }
 }
 

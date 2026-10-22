@@ -65,7 +65,6 @@ Read <doc:UserGuide> to get started.
 ### Fetching multiple stories
 
 - ``StoryblokClient/stories(page:pageSize:resolveLevel:query:)``
-- ``Page``
 - ``StoriesQuery``
 - ``StoryAttribute``
 - ``SortDirection``
