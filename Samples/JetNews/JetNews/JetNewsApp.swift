@@ -8,7 +8,7 @@
 import SwiftUI
 
 import StoryblokClient
-import RichTextView
+import StoryblokUI
 internal import URLSessionExtension
 
 @main
