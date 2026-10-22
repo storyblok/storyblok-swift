@@ -339,32 +339,13 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 }
 ```
 
-A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it. The examples from here on use this product component:
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it:
 
 ```swift
-@BlockLibrary
-enum Content {
-    case product(Product)
-
-    struct Product: Decodable {
-        let headline: String
-        let categories: [String]
-        let stock: Int
-        let rating: Double
-        let price: String  // a number Storyblok holds in a text field
-        let releaseDate: Date
-
-        enum CodingKeys: String, CodingKey {
-            case headline, categories, stock, rating, price
-            case releaseDate = "release_date"
-        }
-    }
-}
-
 client.stories { (query: inout StoriesQuery<Content.Product>) in
     query.sort(by: \.stock)                    // content.stock:asc:int
     query.sort(by: \.rating, .descending)      // content.rating:desc:float
-    query.sort(by: \.price, as: .wholeNumber)  // content.price:asc:int
+    query.sort(by: \.price, as: .wholeNumber)  // content.price:asc:int, price being a String
 }
 ```
 
