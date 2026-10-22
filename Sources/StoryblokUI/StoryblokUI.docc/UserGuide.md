@@ -1,4 +1,4 @@
-# Rendering paged stories with StoryblokUI
+# Rendering paged stories
 
 How to render the stories matching a query in SwiftUI, loading the next page as the user scrolls, change the query, and replace the loading, empty and failure views.
 
