@@ -207,7 +207,7 @@ For published content the Storyblok `URLRequest` [convenience initializer](doc:F
 
 ### Paging through results
 
-The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another. Like ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)``, it publishes the page the URL cache holds, if any, then the fresh one:
+The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/cachedPagePublisher(for:page:perPage:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another. Like ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)``, it publishes the page the URL cache holds, if any, then the fresh one:
 
 ```swift
 struct Asset: Decodable, Identifiable {
@@ -219,7 +219,7 @@ var assets: Page<Asset> = []
 var number = 1
 repeat {
     let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/assets")
-    let pages = storyblok.pagePublisher(for: request, page: number, perPage: 100) { body in
+    let pages = storyblok.cachedPagePublisher(for: request, page: number, perPage: 100) { body in
         try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
     }
     var page: Page<Asset> = []
