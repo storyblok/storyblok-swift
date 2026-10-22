@@ -115,14 +115,18 @@ struct PagePublisherTests {
     }
 
     /// Puts a response holding `names` in the cache for page 1 of `request`, as a previous fetch
-    /// of it would have.
-    private func cache(_ names: [String], forPage1Of request: URLRequest) {
+    /// of it would have, with `headers`.
+    private func cache(_ names: [String], forPage1Of request: URLRequest, headers: [String: String]? = nil) {
+        let entries = names.enumerated().map { #"{ "id": \#($0.offset + 1), "name": "\#($0.element)" }"# }
+        cache(body: #"{ "datasource_entries": ["# + entries.joined(separator: ",") + "] }", forPage1Of: request, headers: headers)
+    }
+
+    /// Puts a response with `body` and `headers` in the cache for page 1 of `request`.
+    private func cache(body: String, forPage1Of request: URLRequest, headers: [String: String]? = nil) {
         var paged = request
         paged.url!.append(queryItems: [URLQueryItem(name: "page", value: "1"), URLQueryItem(name: "per_page", value: "2")])
         paged.url = paged.url!.sortingQueryItems()
-        let entries = names.enumerated().map { #"{ "id": \#($0.offset + 1), "name": "\#($0.element)" }"# }
-        let body = #"{ "datasource_entries": ["# + entries.joined(separator: ",") + "] }"
-        let response = HTTPURLResponse(url: paged.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+        let response = HTTPURLResponse(url: paged.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: headers)!
         cache.storeCachedResponse(CachedURLResponse(response: response, data: Data(body.utf8)), for: paged)
     }
 
@@ -159,6 +163,22 @@ struct PagePublisherTests {
         })
 
         #expect(pages == [["cached"], ["a", "b"]])
+    }
+
+    @Test
+    func `a fresh copy whose total changed is published though its elements did not`() async throws {
+        serve(headers: ["total": "3"])  // a third entry was published since the page was cached
+        let request = URLRequest(storyblok: session, path: "datasource_entries")
+        cache(body: Self.entries, forPage1Of: request, headers: ["total": "2"])  // the body the stub serves
+
+        var pages: [Page<Entry>] = []
+        let publisher = session.pagePublisher(for: request, page: 1, perPage: 2, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+            try JSONDecoder().decode(Entries.self, from: body).datasource_entries
+        }
+        for try await page in publisher.values { pages.append(page) }
+
+        #expect(pages.map(\.total) == [2, 3])
+        #expect(pages.last?.hasNextPage == true, "the fresh total reveals a second page")
     }
 
     @Test
