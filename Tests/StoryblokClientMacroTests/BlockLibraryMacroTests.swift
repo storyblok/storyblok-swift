@@ -1715,4 +1715,34 @@ final class BlockLibraryMacroTests: XCTestCase {
             macroSpecs: ["BlockLibrary": MacroSpec(type: BlockLibraryMacro.self, conformances: ["BlockLibrary", "QueryableContent"])]
         )
     }
+
+    func test_storyblokContent_leavesOutLazyProperties() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("note")
+            struct Note {
+                let title: String
+                lazy var normalized: String = title.lowercased()
+            }
+            """,
+            expandedSource: """
+            struct Note {
+                let title: String
+                lazy var normalized: String = title.lowercased()
+            }
+
+            nonisolated extension Note: QueryableContent {
+                public static var technicalName: String? {
+                    "note"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Note.title: "title",
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
 }
