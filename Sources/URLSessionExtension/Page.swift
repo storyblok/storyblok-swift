@@ -4,7 +4,7 @@ import Foundation
 /// ``Foundation/URLSession/pagePublisher(for:page:perPage:elements:)`` publishes.
 ///
 /// The Content Delivery and Management APIs page the same way, so a `Page` can hold any of their
-/// lists, such as stories, assets or datasource entries. StoryblokClient publishes its stories as one.
+/// lists, such as stories, assets or datasource entries.
 ///
 /// A `Page` holds the elements of page ``number`` and says whether there is a page after it, so
 /// the next page to fetch is `number + 1` while ``hasNextPage`` is `true`. Join a later page onto
