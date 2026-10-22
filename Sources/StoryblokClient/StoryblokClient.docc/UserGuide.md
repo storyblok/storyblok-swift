@@ -376,7 +376,7 @@ repeat {
 
 The page size defaults to 25 and can be raised to 100 with `pageSize`.
 
-> Tip: To list the stories in SwiftUI, fetching the next page as the user scrolls, use the `Stories` view from the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui) library.
+> Tip: To render the stories in SwiftUI, fetching the next page as the user scrolls, use the `Stories` view from the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui) library.
 
 ## Story relations
 
