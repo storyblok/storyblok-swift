@@ -12,8 +12,9 @@
 - Added `Page<Element>` to URLSessionExtension, a page of a paginated endpoint's elements: a collection carrying the
   `total`, page `number`, page `size` and `hasNextPage`. Join a later page onto earlier ones with `+`, which leaves out
   elements already present.
-- Added `URLSession.pagePublisher(for:page:perPage:elements:)`, which fetches a page of any paginated Content Delivery
-  or Management API endpoint as a `Page`, publishing its cached copy and then the fresh one.
+- Added `URLSession.CachedPagePublisher`, created with `cachedPagePublisher(for:page:perPage:elements:)`, which fetches a
+  page of any paginated Content Delivery or Management API endpoint as a `Page`, publishing its cached copy and then
+  the fresh one.
 - StoryblokClient now re-exports URLSessionExtension, so `import StoryblokClient` alone makes `Page`, `Api` and the
   session helpers available.
 - Added the `StoryblokUI` library, whose `Stories` view produces rows for the stories matching a query, loads the

@@ -7,7 +7,7 @@ import URLSessionExtension
 /// Served by a stub protocol only this suite's session uses, rather than Mocker, whose shared
 /// registrations other suites clear while they run alongside this one.
 @Suite(.serialized)
-struct PagePublisherTests {
+struct CachedPagePublisherTests {
 
     struct Entry : Decodable {
         let id: Int
@@ -59,6 +59,19 @@ struct PagePublisherTests {
     }
 
     @Test
+    func `keeps the request as given, adding the page only when it is sent`() throws {
+        let request = URLRequest(storyblok: session, path: "datasource_entries")
+        let publisher = session.cachedPagePublisher(for: request, page: 3, perPage: 50) { _ in [Entry]() }
+
+        #expect(publisher.request == request)
+        #expect(publisher.page == 3)
+        #expect(publisher.perPage == 50)
+        #expect(publisher.session === session)
+        let query = try #require(URLComponents(url: publisher.request.url!, resolvingAgainstBaseURL: false))
+        #expect(query.queryItems?.contains { $0.name == "page" } != true)
+    }
+
+    @Test
     func `pages a Management API endpoint the same way`() async throws {
         Stub.lock.withLock {
             Stub.headers = ["total": "3"]
@@ -71,7 +84,7 @@ struct PagePublisherTests {
 
         let request = URLRequest(storyblok: mapi, path: "spaces/1/datasource_entries")
         let page = try await mapi
-            .pagePublisher(for: request, page: 2, perPage: 2) { body in
+            .cachedPagePublisher(for: request, page: 2, perPage: 2) { body in
                 try JSONDecoder().decode(Entries.self, from: body).datasource_entries
             }
             .values
@@ -101,7 +114,7 @@ struct PagePublisherTests {
         var request = URLRequest(storyblok: session, path: "datasource_entries")
         request.url!.append(queryItems: queryItems)
         let page = try await session
-            .pagePublisher(for: request, page: number, perPage: 2) { body in
+            .cachedPagePublisher(for: request, page: number, perPage: 2) { body in
                 try JSONDecoder().decode(Entries.self, from: body).datasource_entries
             }
             .values
