@@ -299,30 +299,125 @@ client.stories(page: 1) { (query: inout StoriesQuery<Content.Article>) in
 
 The query's type names the content type. A query typed to one of your content structs, `Content.Article` here, sends its component as `content_type` and so asks for those stories only. A query typed to the whole block library asks for stories of every type.
 
-### Building a query
+### Narrowing the result
 
-``StoriesQuery`` has a property or method for each of the endpoint's parameters. Fields of your own content are addressed by key path, so a misspelled field doesn't compile, and a filter offers only the operations the field's type supports:
+Every documented parameter has a property on ``StoriesQuery``:
+
+```swift
+let since = ISO8601DateFormatter().date(from: "2024-01-01T00:00:00Z")!
+
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.startsWith = "articles/"             // starts_with
+    query.searchTerm = "spaceship"             // search_term
+    query.isStartPage = false                  // is_startpage
+    query.bySlugs = ["articles/*"]             // by_slugs
+    query.excludingSlugs = ["articles/wip-*"]  // excluding_slugs
+    query.byUuids = [uuid]                     // by_uuids
+    query.byUuidsOrdered = [uuid]              // by_uuids_ordered, in the order given
+    query.excludingIds = [1, 2]                // excluding_ids
+    query.withTag = ["featured"]               // with_tag
+    query.excludingFields = ["body"]           // excluding_fields
+    query.fromRelease = "12345"                // from_release
+
+    query.firstPublishedAfter = since          // first_published_at_gt
+    query.firstPublishedBefore = since         // first_published_at_lt
+    query.publishedAfter = since               // published_at_gt
+    query.publishedBefore = since              // published_at_lt
+    query.updatedAfter = since                 // updated_at_gt
+    query.updatedBefore = since                // updated_at_lt
+}
+```
+
+### Sorting
+
+Content fields are named by key path, which resolves to the name Storyblok knows the field by and adds the `content.` prefix the API expects. ``Story`` attributes are named by a ``StoryAttribute``. Each call adds to `sort_by`, in the order made:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Article>) in
-    query.searchTerm = "space"
-    query.sort(by: \.headline)
-    query.sort(by: .publishedAt, .descending)
+    query.sort(by: \.headline)                 // content.headline:asc
+    query.sort(by: .publishedAt, .descending)  // published_at:desc
+}
+```
+
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it. The examples from here on use this product component:
+
+```swift
+@BlockLibrary
+enum Content {
+    case product(Product)
+
+    struct Product: Decodable {
+        let headline: String
+        let categories: [String]
+        let stock: Int
+        let rating: Double
+        let price: String  // a number Storyblok holds in a text field
+        let releaseDate: Date
+
+        enum CodingKeys: String, CodingKey {
+            case headline, categories, stock, rating, price
+            case releaseDate = "release_date"
+        }
+    }
+}
+
+client.stories { (query: inout StoriesQuery<Content.Product>) in
+    query.sort(by: \.stock)                    // content.stock:asc:int
+    query.sort(by: \.rating, .descending)      // content.rating:desc:float
+    query.sort(by: \.price, as: .wholeNumber)  // content.price:asc:int
+}
+```
+
+> Note: Only some ``Story`` attributes are sortable. The API answers the rest with `Not sortable by this column` rather than the client second-guessing which those are.
+
+### Filter queries
+
+[Filter queries](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries) are written in a ``StoriesQuery/filter(_:)`` block, which addresses fields through its argument. Each condition becomes a `filter_query[<field>][<operation>]` parameter:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Product>) in
     query.filter {
-        $0.headline.like("*Mars*")
+        $0.headline.like("*space*")                              // [headline][like]=*space*
+        $0.headline.notLike("*draft*")                           // [headline][not_like]=*draft*
+        $0.headline.isIn(["Spaceship", "Rocket"])                // [headline][in]=Spaceship,Rocket
+        $0.headline.notIn(["Paper"])                             // [headline][not_in]=Paper
+        $0.headline.is(.notEmpty)                                // [headline][is]=not_empty
+        $0.categories.contains(allOf: ["solar-system", "mars"])  // [categories][all_in_array]=solar-system,mars
+        $0.categories.contains(anyOf: ["moon", "mars"])          // [categories][any_in_array]=moon,mars
+        $0.categories.isNotEmpty                                 // [categories][is]=not_empty_array
+        $0.stock > 10                                            // [stock][gt_int]=10
+        $0.rating < 4.5                                          // [rating][lt_float]=4.5
+        $0.releaseDate > since                                   // [release_date][gt_date]=2024-01-01T00:00:00Z
+        $0.price.asWholeNumber > 100                             // [price][gt_int]=100
+        $0.price.asDecimal < 99.5                                // [price][lt_float]=99.5
     }
 }
 ```
 
-The ``BlockLibrary()`` macro makes this possible by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
+The field's Swift type decides which operations are offered, so one the field cannot support doesn't compile:
 
-For a parameter that has no entry point, such as a filter on a nested field, add it as written with ``StoriesQuery/parameter(_:_:)``:
+- Text has `like(_:)`, `notLike(_:)`, `isIn(_:)` and `notIn(_:)`.
+- An array of text has `contains(allOf:)`, `contains(anyOf:)`, `isEmpty` and `isNotEmpty`.
+- A whole number, decimal or date has `>` and `<`, which send the matching `_int`, `_float` or `_date` operation.
+- Any field has `is(_:)`, which takes a ``Presence``: `.empty`, `.notEmpty`, `.isTrue`, `.isFalse`, `.null` or `.notNull`.
+- Text holding a number is compared numerically once you say how, with `asWholeNumber` or `asDecimal`.
+
+The ``BlockLibrary()`` macro makes key paths work by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
+
+> Note: A key path addresses one of the component's own fields. [Nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields), which the API addresses with a dotted path, have no entry point; write those out with ``StoriesQuery/parameter(_:_:)``.
+
+### Parameters without an entry point
+
+``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, for a filter on a nested field or a parameter the API has gained since this version:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Article>) in
     query.parameter("filter_query[seo.description][is]", "not_empty")
+    query.parameter("some_future_param", "value")
 }
 ```
+
+> Warning: A parameter is added rather than replacing one, so don't add one the client already sends: `page`, `per_page`, `resolve_relations` and `resolve_level`, or `content_type` and `sort_by` when the query sets them. It would go out twice, leaving the API to choose between the two.
 
 ### Querying a component by its fields
 
