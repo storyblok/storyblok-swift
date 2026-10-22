@@ -484,6 +484,8 @@ if case let .document(document) = article.body {
 }
 ```
 
+> Tip: To render rich text as native SwiftUI views, use the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui/renderingrichtext) library, which makes a `RichText` value a `View`.
+
 ## Field types
 
 Common Storyblok field types are provided as `Decodable` values. ``Field`` is an enum that dispatches on the `fieldtype` JSON field, exposing ``Field/Link`` and ``Field/Asset`` cases (plus ``Field/unknown(fieldType:)`` for field types this client doesn't model). You can decode a property as ``Field`` when its type varies, or as the concrete ``Field/Link`` / ``Field/Asset`` struct when it is fixed.
