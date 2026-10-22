@@ -30,8 +30,8 @@ Read <doc:UserGuide> to get started.
 
 ### Paging through results
 
-- ``URLSessionExtension/Foundation/URLSession/cachedPagePublisher(for:page:perPage:elements:)``
-- ``URLSessionExtension/Foundation/URLSession/CachedPagePublisher``
+- ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:upstream:elements:)``
+- ``URLSessionExtension/Foundation/URLSession/PagePublisher``
 - ``Page``
 
 ### Retrying failed requests

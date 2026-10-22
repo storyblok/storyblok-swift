@@ -254,7 +254,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         var request = URLRequest(storyblok: session, path: "stories")
         request.url!.append(queryItems: queryItems)
 
-        return session.cachedPagePublisher(for: request, page: page, perPage: pageSize) { body in
+        return session.pagePublisher(for: request, page: page, perPage: pageSize, upstream: URLSession.CachedDataTaskPublisher.init) { body in
             try Self.decoder(resolveLevel: resolveLevel)
                 .decode(ContentResponse<[Story<Content>]>.self, from: body)
                 .payload
