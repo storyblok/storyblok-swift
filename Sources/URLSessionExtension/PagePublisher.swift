@@ -31,7 +31,7 @@ extension URLSession {
     ///   server or a script wants.
     /// - `URLSession.CachedDataTaskPublisher.init` publishes the copy the URL cache holds first,
     ///   then the fresh one, as a ``CachedDataTaskPublisher`` does, so an app can show a page at
-    ///   once. A page can then arrive twice: keep the last copy received.
+    ///   once.
     ///
     /// Any error response fails the publisher with an ``Api/ResponseError``, whichever upstream
     /// fetched it, and so does a body that `elements` cannot read.
