@@ -29,7 +29,7 @@ targets: [
 ]
 ```
 
-> Note: `StoryblokUI` builds on ``/StoryblokClient``. See the [StoryblokClient User Guide](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/userguide) for how to define a block library and create a client.
+> Note: `StoryblokUI` builds on [StoryblokClient](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient). See the [StoryblokClient User Guide](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/userguide) for how to define a block library and create a client.
 
 ### Show the stories
 
@@ -43,9 +43,9 @@ List {
 }
 ```
 
-The query is a ``/StoryblokClient/StoriesQuery`` value. Its type names the content type, `Content.Article` here, which fixes the component the query addresses, and `StoriesQuery { … }` configures it where it is passed. To show stories of every type, type the query to your whole block library.
+The query is a [`StoriesQuery`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storiesquery) value. Its type names the content type, `Content.Article` here, which fixes the component the query addresses, and `StoriesQuery { … }` configures it where it is passed. To show stories of every type, type the query to your whole block library.
 
-`Stories` fetches each page with ``/StoryblokClient/StoryblokClient/stories(page:pageSize:resolveLevel:query:)`` and keeps what loads for as long as it is in the view hierarchy, so the view using it holds no state for it. As that publisher does, it shows a page the URL cache holds at once, then updates it when the fresh copy arrives.
+`Stories` fetches each page with [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)) and keeps what loads for as long as it is in the view hierarchy, so the view using it holds no state for it. As that publisher does, it shows a page the URL cache holds at once, then updates it when the fresh copy arrives.
 
 ### Choose a lazy container
 
@@ -124,16 +124,17 @@ Stories(client: client, query: query) { story in
 }
 ```
 
-The `failure` closure receives the client's ``/StoryblokClient/StoryblokClient/Error`` as `any Error`; cast it to tell a failed request from content that does not match your types. A failure keeps the stories that loaded on screen, and `retry` fetches the page that failed again.
+The `failure` closure receives the client's [`StoryblokClient.Error`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/error) as `any Error`; cast it to tell a failed request from content that does not match your types. A failure keeps the stories that loaded on screen, and `retry` fetches the page that failed again.
 
 ## Where the stories are kept
 
 `Stories` keeps its stories, and the requests for further pages, for as long as it stays in the view hierarchy, however many of its rows are on screen. Taking it out — closing a search, say — cancels any page still loading. Showing it again loads page 1 again, from the URL cache when it holds the page.
 
-To use the stories outside a list, call ``/StoryblokClient/StoryblokClient/stories(page:pageSize:resolveLevel:query:)`` yourself for each page you need: it publishes the page as a ``/StoryblokClient/Page``, which says whether there is another, and joins onto the pages before it with `+`.
+To use the stories outside a list, call [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)) yourself for each page you need: it publishes the page as a [`Page`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/page), which says whether there is another, and joins onto the pages before it with `+`.
 
 ## See Also
 
+- <doc:RenderingRichText>
 - [StoryblokClient User Guide](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/userguide)
 - [Retrieve multiple stories](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories)
 - [JetNews sample](https://github.com/storyblok/storyblok-swift/tree/main/Samples/JetNews)

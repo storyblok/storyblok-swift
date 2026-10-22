@@ -15,7 +15,7 @@ import StoryblokClient
 /// }
 /// ```
 ///
-/// It fetches page 1 with ``/StoryblokClient/StoryblokClient/stories(page:pageSize:resolveLevel:query:)``
+/// It fetches page 1 with [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:))
 /// and keeps what loads for as long as it is in the view hierarchy, however many of its rows are
 /// on screen, so you hold no state for it. As the row showing the last story appears, it fetches
 /// the next page. When `query` changes, it starts again from page 1.
@@ -37,16 +37,16 @@ public struct Stories<Library : BlockLibrary, Content : QueryableContent, Row : 
     ///
     /// - Parameters:
     ///   - client: The client to load the stories with.
-    ///   - pageSize: Stories per page, as for ``/StoryblokClient/StoryblokClient/stories(page:pageSize:resolveLevel:query:)``.
+    ///   - pageSize: Stories per page, as for [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)).
     ///   - resolveLevel: How deeply nested relations are resolved, as for
-    ///     ``/StoryblokClient/StoryblokClient/stories(page:pageSize:resolveLevel:query:)``.
+    ///     [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)).
     ///   - query: The stories to show. A different value starts them again from page 1.
     ///   - row: The row for one story.
     ///   - loading: Shown after the rows while a page is loading or more are to come. Defaults to a
     ///     progress indicator.
     ///   - empty: Shown when the query matched no stories. Defaults to a short message.
     ///   - failure: Shown when a page failed to load, given the error — the client's
-    ///     ``/StoryblokClient/StoryblokClient/Error`` — and an action that retries. Defaults to the
+    ///     [`StoryblokClient.Error`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/error) — and an action that retries. Defaults to the
     ///     error's description and a Retry button.
     public init(
         client: StoryblokClient<Library>,

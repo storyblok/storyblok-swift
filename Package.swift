@@ -22,6 +22,7 @@ let package = Package(
             name: "StoryblokClient",
             targets: ["StoryblokClient"]
         ),
+        // Deprecated: rich text rendering is now part of StoryblokUI, which this re-exports.
         .library(
             name: "RichTextView",
             targets: ["RichTextView"]
@@ -63,7 +64,7 @@ let package = Package(
         ),
         .target(
             name: "RichTextView",
-            dependencies: ["StoryblokClient"]
+            dependencies: ["StoryblokUI"]
         ),
         .target(
             name: "StoryblokUI",
@@ -92,12 +93,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "RichTextViewTests",
-            dependencies: ["RichTextView"]
-        ),
-        .testTarget(
             name: "StoryblokUITests",
-            dependencies: ["StoryblokUI", "StoryblokClient"]
+            dependencies: ["StoryblokUI", "StoryblokClient", "RichTextView"]
         ),
         .testTarget(
             name: "Examples",

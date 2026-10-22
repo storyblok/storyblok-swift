@@ -21,8 +21,8 @@ import StoryblokClient
 /// ```
 ///
 /// Each node type has a built-in default renderer. Override individual node types with a
-/// ``RichTextViewDelegate`` applied via ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)``, and handle
-/// taps on internal story links with ``RichTextView/SwiftUICore/View/onStoryLink(_:)``.
+/// ``RichTextViewDelegate`` applied via ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)``, and handle
+/// taps on internal story links with ``StoryblokUI/SwiftUICore/View/onStoryLink(_:)``.
 extension RichText: View where BlockLibrary: View {
     public var body: some View {
         RichTextView(node: self)

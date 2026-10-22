@@ -14,7 +14,10 @@
   present.
 - Added the `StoryblokUI` library, whose `Stories` view produces rows for the stories matching a query, loads the
   next page as its last row appears, starts again when the query changes, and shows replaceable loading, empty and
-  failure views.
+  failure views. It also holds rich text rendering, moved from `RichTextView`.
+- Deprecated the `RichTextView` library, whose rich text rendering is now part of `StoryblokUI`. The `RichTextView`
+  product and module still work, re-exporting `StoryblokUI`, until the next major release. Depend on `StoryblokUI`
+  and `import StoryblokUI` instead; nothing else changes.
 - Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
   response the URL cache holds for a request and then the response the request loads.
 - `Story` now conforms to `Identifiable` via its `id`, so stories can be passed directly to `List` and `ForEach`.
