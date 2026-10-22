@@ -40,7 +40,7 @@ public struct Stories<Library : BlockLibrary, Content : QueryableContent, Row : 
     ///   - pageSize: Stories per page, as for [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)).
     ///   - resolveLevel: How deeply nested relations are resolved, as for
     ///     [`stories(page:pageSize:resolveLevel:query:)`](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/storyblokclient/stories(page:pagesize:resolvelevel:query:)).
-    ///   - query: The stories to list. A different value starts them again from page 1.
+    ///   - query: The stories to render. A different value starts them again from page 1.
     ///   - row: The row for one story.
     ///   - loading: Shown after the rows while a page is loading or more are to come. Defaults to a
     ///     progress indicator.
