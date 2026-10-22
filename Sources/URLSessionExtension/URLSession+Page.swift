@@ -3,8 +3,8 @@ import Combine
 
 extension URLSession {
 
-    /// Returns a publisher that delivers page `page` of the paginated endpoint `request` addresses,
-    /// `perPage` elements to a page, reading the elements out of the response body with `elements`.
+    /// Returns a publisher that delivers one page of the paginated endpoint `request` addresses,
+    /// reading its elements out of the response body with `elements`.
     ///
     /// The Content Delivery and Management APIs page the same way: `page` and `per_page` query
     /// parameters, and a `total` response header counting the elements across all pages. This adds

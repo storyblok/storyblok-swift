@@ -209,7 +209,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             .eraseToAnyPublisher()
     }
 
-    /// Page `page` of the stories matching `query`.
+    /// One page of the stories matching `query`.
     ///
     /// As ``story(_:resolveLevel:)-(String,_)`` does, the publisher sends the copy of the page the
     /// URL cache holds, if any, then the fresh one, and finishes. The ``/URLSessionExtension/Page`` says whether there
