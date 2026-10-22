@@ -166,6 +166,13 @@ struct PagePublisherTests {
     }
 
     @Test
+    func `a plus in a query value is sent as a plus`() async throws {
+        let (_, queries) = try await fetchPage(queryItems: [URLQueryItem(name: "search_term", value: "C++")])
+
+        #expect(try #require(queries.last)["search_term"] == "C++")
+    }
+
+    @Test
     func `a fresh copy whose total changed is published though its elements did not`() async throws {
         serve(headers: ["total": "3"])  // a third entry was published since the page was cached
         let request = URLRequest(storyblok: session, path: "datasource_entries")
