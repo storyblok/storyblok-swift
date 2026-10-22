@@ -307,7 +307,7 @@ The query's type names the content type. A query typed to one of your content st
 client.stories { (query: inout StoriesQuery<Content.Article>) in
     query.searchTerm = "space"
     query.sort(by: \.headline)
-    query.sort(byAttribute: .publishedAt, .descending)
+    query.sort(by: .publishedAt, .descending)
     query.filter {
         $0.headline.like("*Mars*")
     }
