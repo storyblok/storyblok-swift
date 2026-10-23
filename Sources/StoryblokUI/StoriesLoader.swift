@@ -31,6 +31,10 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
     /// The latest copy of each page received, by number.
     private var pages: [Int: Page<Story<Content>>] = [:]
 
+    /// The `total` the most recently received copy of any page reported. Every page reports the same
+    /// count, and a fresh copy arrives after its cached one, so the latest is the one to trust.
+    private var latestTotal: Int?
+
     /// The pages that failed, so that `retry` can fetch them again. Pages load concurrently, so
     /// more than one can fail before the user retries.
     private var failed: Set<Int> = []
@@ -95,15 +99,26 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
 
     /// Replaces the copy of page `number` and joins the pages again, so a fresh copy replaces its
     /// cached one in place even after later pages have arrived.
+    ///
+    /// The joined page takes its `total` and `hasNextPage` from the last page. An earlier page's
+    /// fresh copy can report a different total after the last page arrived, so the last page is
+    /// recounted against the latest total: more stories published since mean a next page to fetch.
     private func receive(_ page: Page<Story<Content>>, as number: Int) {
         pages[number] = page
-        self.page = pages.keys.sorted().map { pages[$0]! }.reduce(Page([]), +)
+        if let total = page.total { latestTotal = total }
+
+        var ordered = pages.keys.sorted().map { pages[$0]! }
+        if let latestTotal, let last = ordered.last, last.total != latestTotal {
+            ordered[ordered.count - 1] = Page(Array(last), number: last.number, size: last.size, total: latestTotal)
+        }
+        self.page = ordered.reduce(Page([]), +)
     }
 
     private func reset() {
         tasks.values.forEach { $0.cancel() }
         tasks = [:]
         pages = [:]
+        latestTotal = nil
         failed = []
         page = nil
         failure = nil
