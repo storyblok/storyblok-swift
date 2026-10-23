@@ -169,12 +169,17 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
     ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
+    ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
-    public func story<Content>(_ slug: String, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel)
+    public func story<Content>(
+        _ slug: String,
+        resolveLevel: Int = 1,
+        query: (inout StoryQuery) -> Void = { _ in }
+    ) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel, query: StoryQuery(query))
     }
 
     /// Retrieves a story by its UUID.
@@ -191,16 +196,26 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
     ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
+    ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
-    public func story<Content>(_ uuid: UUID, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel)
+    public func story<Content>(
+        _ uuid: UUID,
+        resolveLevel: Int = 1,
+        query: (inout StoryQuery) -> Void = { _ in }
+    ) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel, query: StoryQuery(query))
     }
 
-    private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        session.cachedDataTaskPublisher(for: buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel))
+    private func storyPublisher<Content : Decodable>(
+        path: String,
+        findByUuid: Bool = false,
+        resolveLevel: Int = 1,
+        query: StoryQuery
+    ) -> AnyPublisher<Story<Content>, Error> {
+        session.cachedDataTaskPublisher(for: buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel, queryItems: query.queryItems))
             .tryMap { data, _ in
                 try Self.decoder(resolveLevel: resolveLevel).decode(ContentResponse<Story<Content>>.self, from: data).payload
             }
@@ -210,7 +225,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     /// One page of the stories matching `query`.
     ///
-    /// As ``story(_:resolveLevel:)-(String,_)`` does, the publisher sends the copy of the page the
+    /// As ``story(_:resolveLevel:query:)-(String,_,_)`` does, the publisher sends the copy of the page the
     /// URL cache holds, if any, then the fresh one, and finishes. The ``/URLSessionExtension/Page`` says whether there
     /// is a page after it; fetch that with `page + 1`, and join it onto the ones before with
     /// ``/URLSessionExtension/Page/+(_:_:)``, which leaves out stories already on an earlier page:
@@ -240,7 +255,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///   - pageSize: Stories per page, sent as `per_page`. The endpoint caps this at 100 and
     ///     refuses a larger value rather than quietly reducing it.
     ///   - resolveLevel: How deeply nested ``Story`` relations are resolved, as for
-    ///     ``story(_:resolveLevel:)-(String,_)``.
+    ///     ``story(_:resolveLevel:query:)-(String,_,_)``.
     ///   - query: Configures the query parameters.
     public func stories<Content : QueryableContent>(
         page: Int = 1,
@@ -264,10 +279,11 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
     // MARK: -
 
-    internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
+    internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int, queryItems: [URLQueryItem] = []) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
         request.url!.append(queryItems: relationParameters(resolveLevel: resolveLevel))
         if findByUuid { request.url!.append(queryItems: [URLQueryItem(name: "find_by", value: "uuid")]) }
+        request.url!.append(queryItems: queryItems)
         // One spelling per request, so the cache probe finds what the previous fetch stored.
         request.url = request.url!.sortingQueryItems()
         return request

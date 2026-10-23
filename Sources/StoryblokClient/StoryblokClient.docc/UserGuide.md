@@ -72,7 +72,7 @@ API requests must be authenticated by providing an API access token. Learn more 
 
 ### Fetch a story
 
-``StoryblokClient/story(_:resolveLevel:)-(String,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
+``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
 
 - The cached version of the story if one is available locally.
 - The latest version from the API, unless it matches the cached version already emitted.
@@ -262,6 +262,15 @@ client.story(UUID(uuidString: "bfea4895-8a19-4e82-ae1c-1c8f3e4b6f9c")!)
     .store(in: &cancellables)
 ```
 
+A ``StoryQuery`` sets the endpoint's other parameters, such as leaving fields out of the response or fetching the story as it appears in a release:
+
+```swift
+let story: AnyPublisher<Story<Content>, _> = client.story("articles/hello-world") { query in
+    query.excludingFields = ["body"]  // excluding_fields
+    query.fromRelease = "12345"       // from_release
+}
+```
+
 ### Choosing the content type
 
 The `Content` generic of the returned ``Story`` is inferred from how you bind the result. Binding to the block library lets you switch over every component:
@@ -445,7 +454,7 @@ enum Content {
 
 ### Controlling resolution depth
 
-The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:)-(String,_)`` controls how deeply relations are followed:
+The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` controls how deeply relations are followed:
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
