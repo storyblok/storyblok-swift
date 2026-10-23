@@ -1,6 +1,8 @@
 import SwiftCompilerPlugin
 import SwiftDiagnostics
+import SwiftParser
 import SwiftSyntax
+import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 public struct BlockLibraryMacro {}
@@ -221,7 +223,7 @@ private func generateDecoding(
 
     var switchCases = ""
     for c in knownCases {
-        switchCases += "    case \"\(c.componentName)\":\n"
+        switchCases += "    case \(literalString(c.componentName)):\n"
         if c.params.isEmpty {
             switchCases += "        self = .\(c.caseName)\n"
         } else {
@@ -316,16 +318,17 @@ private func computeRelations(cases: [CaseInfo]) -> String {
 
 /// Parses a `CodingKeys`-style enum into a Swift-name → JSON-key map. Cases without a string
 /// raw value map to themselves.
+///
+/// A raw value is read as the string it denotes, with escapes such as `\u{2D}` resolved, not as
+/// it is spelled, so the key matches the one decoding uses wherever the macro writes it out.
 private func parseCodingKeys(from enumDecl: EnumDeclSyntax) -> [String: String] {
     var result: [String: String] = [:]
     for caseMember in enumDecl.memberBlock.members {
         guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
         for element in caseDecl.elements {
             let name = strippingBackticks(element.name.text)
-            if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
-               literal.segments.count == 1,
-               let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
-                result[name] = segment.content.text
+            if let value = element.rawValue?.value.as(StringLiteralExprSyntax.self)?.representedLiteralValue {
+                result[name] = value
             } else {
                 result[name] = name
             }
@@ -727,16 +730,7 @@ struct StoryblokClientPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [BlockLibraryMacro.self, StoryblokContentMacro.self]
 }
 
-/// Renders a Swift string literal, escaping what must be escaped. Written without Foundation,
-/// which a macro plugin does not link.
+/// Renders a Swift string literal that denotes `value`, escaping whatever it needs.
 private func literalString(_ value: String) -> String {
-    var escaped = ""
-    for character in value {
-        switch character {
-            case "\\": escaped += "\\\\"
-            case "\"": escaped += "\\\""
-            default: escaped.append(character)
-        }
-    }
-    return "\"" + escaped + "\""
+    StringLiteralExprSyntax(content: value).trimmedDescription
 }

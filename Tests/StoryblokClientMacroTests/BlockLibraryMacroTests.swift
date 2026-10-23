@@ -1831,4 +1831,68 @@ final class BlockLibraryMacroTests: XCTestCase {
             macros: ["StoryblokContent": StoryblokContentMacro.self]
         )
     }
+
+    func test_escapedRawValuesAreWrittenAsTheirValues() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case landing(Landing)
+                case unknown
+
+                enum CodingKeys: String, CodingKey {
+                    case landing = "landing\\u{2D}page"
+                    case unknown
+                }
+
+                struct Landing: Decodable {
+                    let author: Story<Content>
+
+                    enum CodingKeys: String, CodingKey {
+                        case author = "main\\u{2D}author"
+                    }
+                }
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case landing(Landing)
+                case unknown
+
+                enum CodingKeys: String, CodingKey {
+                    case landing = "landing\\u{2D}page"
+                    case unknown
+                }
+                @StoryblokContent("landing-page")
+
+                struct Landing: Decodable {
+                    let author: Story<Content>
+
+                    enum CodingKeys: String, CodingKey {
+                        case author = "main\\u{2D}author"
+                    }
+                }
+
+                nonisolated static let relations: String = "landing-page.main-author"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "landing-page":
+                        self = .landing(try Landing(from: decoder))
+                    default:
+                        self = .unknown
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            diagnostics: [],
+            macros: macros
+        )
+    }
 }
