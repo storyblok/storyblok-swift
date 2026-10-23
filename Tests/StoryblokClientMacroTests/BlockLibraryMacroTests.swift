@@ -1745,4 +1745,41 @@ final class BlockLibraryMacroTests: XCTestCase {
             macros: ["StoryblokContent": StoryblokContentMacro.self]
         )
     }
+
+    func test_storyblokContent_returnsItsArgumentAsWritten() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("landing\\u{2D}page")
+            struct Landing {
+            }
+            @StoryblokContent(promoComponent)
+            struct Promo {
+            }
+            """,
+            expandedSource: """
+            struct Landing {
+            }
+            struct Promo {
+            }
+
+            nonisolated extension Landing: QueryableContent {
+                public static var technicalName: String? {
+                    "landing\\u{2D}page"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [:]
+            }
+
+            nonisolated extension Promo: QueryableContent {
+                public static var technicalName: String? {
+                    promoComponent
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [:]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
 }

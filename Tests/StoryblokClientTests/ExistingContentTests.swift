@@ -31,6 +31,21 @@ enum LazyLibrary : Decodable {
     }
 }
 
+/// The technical name of a component named by a constant.
+let promoComponent = "promo-banner"
+
+/// Content conformed by hand with `@StoryblokContent`, naming its component with an escaped
+/// literal and with a constant, which must both mean what they say.
+@StoryblokContent("landing\u{2D}page")
+struct Landing : Decodable {
+    let title: String
+}
+
+@StoryblokContent(promoComponent)
+struct Promo : Decodable {
+    let title: String
+}
+
 @Suite
 struct ExistingContentTests {
 
@@ -38,6 +53,12 @@ struct ExistingContentTests {
     func `content holding a non-Sendable value can still be queried`() {
         #expect(MutableLibrary.Widget.technicalName == "widget")
         #expect(MutableLibrary.technicalName == nil)
+    }
+
+    @Test
+    func `a technical name is the argument's value, however it is written`() {
+        #expect(Landing.technicalName == "landing-page")
+        #expect(Promo.technicalName == "promo-banner")
     }
 
     @Test

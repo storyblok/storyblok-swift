@@ -583,13 +583,13 @@ public struct StoryblokContentMacro: ExtensionMacro {
     ) throws -> [ExtensionDeclSyntax] {
         guard let structDecl = declaration.as(StructDeclSyntax.self) else { return [] }
 
+        // The argument is returned as written, so Swift evaluates it: an escaped literal, such as
+        // "landing\u{2D}page", or a constant naming the component means what it says.
         let technicalName = node.arguments?
             .as(LabeledExprListSyntax.self)?
             .first?
             .expression
-            .as(StringLiteralExprSyntax.self)?
-            .segments
-            .description ?? structDecl.name.text
+            .trimmedDescription ?? literalString(structDecl.name.text)
 
         // A field whose Storyblok name differs from the property is named by CodingKeys. When the
         // struct declares them, they are also the only properties decoding fills in.
@@ -622,7 +622,7 @@ public struct StoryblokContentMacro: ExtensionMacro {
         return [try ExtensionDeclSyntax(
             """
             nonisolated extension \(type.trimmed): QueryableContent {
-                public static var technicalName: String? { \(raw: literalString(technicalName)) }
+                public static var technicalName: String? { \(raw: technicalName) }
                 // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
                 nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = \(raw: table)
             }
