@@ -11,8 +11,9 @@ extension URLSession {
     /// [`DataTaskPublisher`](https://developer.apple.com/documentation/foundation/urlsession/datataskpublisher):
     /// a view can show what it last received at once, then update when the request completes.
     ///
-    /// - The cached response is read without touching the network. When the cache holds none, the
-    ///   publisher skips straight to the request.
+    /// - The cached response is read without touching the network. When the cache holds none, or
+    ///   holds an error response, the publisher skips straight to the request: only a successful
+    ///   response stands in for the one the request loads.
     /// - The request is then performed with its own cache policy. Transient failures — network
     ///   errors and the error responses ``Api/ErrorResponseType/recoverable`` covers — are retried
     ///   up to three times, and any error response then fails the publisher with a
@@ -46,7 +47,9 @@ extension URLSession {
             cachedRequest.cachePolicy = .returnCacheDataDontLoad
 
             // A cache miss fails the cached request, which here means there is nothing to publish yet.
+            // A cached error response is passed over as well, rather than published as content.
             let cached = session.dataTaskPublisher(for: cachedRequest)
+                .filter { isSuccess($0.response) }
                 .map { (data: $0.data, response: $0.response) }
                 .catch { _ in Empty<Output, URLError>() }
                 .mapError { $0 as any Error }
@@ -77,6 +80,12 @@ extension URLSession {
     public func cachedDataTaskPublisher(for url: URL) -> CachedDataTaskPublisher {
         CachedDataTaskPublisher(request: URLRequest(url: url), session: self)
     }
+}
+
+/// Whether `response` has a 2xx status, as a response other than HTTP is taken to.
+private func isSuccess(_ response: URLResponse) -> Bool {
+    guard let statusCode = (response as? HTTPURLResponse)?.statusCode else { return true }
+    return (200..<300).contains(statusCode)
 }
 
 /// The `total` header of `response`, the element count a paginated endpoint reports.

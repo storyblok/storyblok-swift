@@ -196,7 +196,7 @@ storyblok.cachedDataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "s
     }
 ```
 
-1. The response the URL cache holds for the request, read with [`returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload) so that it never touches the network. When the cache holds none, the publisher moves straight on.
+1. The response the URL cache holds for the request, read with [`returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload) so that it never touches the network. When the cache holds none, or holds an error response, the publisher moves straight on.
 2. The response the request loads with its own cache policy. Transient failures are retried up to three times, and any error response then fails the publisher with a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError), as in <doc:UserGuide#Retrying-failed-requests>. When this response has the same data and `total` header as the cached one, it is not published again.
 
 A failure ends the publisher after the cached response, if there was one, so keep the last value received to go on showing it.

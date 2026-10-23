@@ -49,11 +49,12 @@ struct CachedDataTaskPublisherTests {
         session = URLSession(configuration: configuration)
     }
 
-    /// Publishes for a request with `cached` in the cache and `loaded` as the responses to it,
-    /// returning the bodies published, the failure that ended it, if any, and how many times the
+    /// Publishes for a request with `cached` in the cache, stored with `cachedStatus`, and `loaded`
+    /// as the responses to it, returning the bodies published, the failure that ended it, if any, and how many times the
     /// request was attempted.
     private func publish(
         cached: String?,
+        cachedStatus: Int = 200,
         loaded: [(status: Int, body: String)]
     ) async -> (bodies: [String], failure: (any Error)?, attempts: Int) {
         Stub.lock.withLock {
@@ -62,7 +63,7 @@ struct CachedDataTaskPublisherTests {
         }
         cache.removeAllCachedResponses()
         if let cached {
-            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            let response = HTTPURLResponse(url: url, statusCode: cachedStatus, httpVersion: "HTTP/1.1", headerFields: nil)!
             cache.storeCachedResponse(CachedURLResponse(response: response, data: Data(cached.utf8)), for: URLRequest(url: url))
         }
 
@@ -100,6 +101,14 @@ struct CachedDataTaskPublisherTests {
         let result = await publish(cached: "same", loaded: [(200, "same")])
 
         #expect(result.bodies == ["same"])
+    }
+
+    @Test
+    func `a cached error response is not published`() async {
+        let result = await publish(cached: "missing", cachedStatus: 404, loaded: [(200, "fresh")])
+
+        #expect(result.bodies == ["fresh"])
+        #expect(result.failure == nil)
     }
 
     @Test
