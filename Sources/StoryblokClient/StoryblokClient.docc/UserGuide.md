@@ -72,7 +72,7 @@ API requests must be authenticated by providing an API access token. Learn more 
 
 ### Fetch a story
 
-``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
+``StoryblokClient/story(_:resolveLevel:)-(String,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
 
 - The cached version of the story if one is available locally.
 - The latest version from the API, unless it matches the cached version already emitted.
@@ -454,7 +454,7 @@ enum Content {
 
 ### Controlling resolution depth
 
-The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` controls how deeply relations are followed:
+The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:)-(String,_)`` controls how deeply relations are followed:
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
