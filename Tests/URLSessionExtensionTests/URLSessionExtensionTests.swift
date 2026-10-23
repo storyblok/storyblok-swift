@@ -366,15 +366,26 @@ import Mocker
             )
             mock.register()
 
-            let duration = try await ContinuousClock.continuous.measure {
-                for _ in 0..<2 {
-                    let (data, _) = try await storyblok.data(for: request)
-                    let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                    #expect(json["story"] != nil)
-                    Mocker.ignore(request.url!)
-                }
+            _ = try await storyblok.data(for: request)
+            Mocker.ignore(request.url!)
+
+            // URLSession stores the response asynchronously. Until it has, the next request is not
+            // served from the cache and rightly waits out the rate limit, so wait for the store.
+            let cache = try #require(storyblok.configuration.urlCache)
+            let deadline = ContinuousClock.now + .milliseconds(500)
+            while cache.cachedResponse(for: request) == nil, ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(10))
             }
-            #expect(duration < .seconds(1) - .milliseconds(15))
+            try #require(cache.cachedResponse(for: request) != nil)
+
+            // Measured from within the rate limit's one second, so a request it delayed would
+            // take at least the half second left.
+            let duration = try await ContinuousClock.continuous.measure {
+                let (data, _) = try await storyblok.data(for: request)
+                let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                #expect(json["story"] != nil)
+            }
+            #expect(duration < .milliseconds(500))
         }
 
         @Test
