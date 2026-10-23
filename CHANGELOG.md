@@ -9,6 +9,9 @@
   content struct to the new `QueryableContent` protocol that makes this possible, by attaching the new
   `@StoryblokContent(_:)` macro to it. Apply `@StoryblokContent(_:)` yourself to a content struct declared outside a
   block library.
+- Added `StoryQuery` for the story endpoint's parameters, `excludingFields` and `fromRelease`, configured in a new
+  trailing `query` closure on both `story(_:resolveLevel:query:)` overloads. It defaults to none, so existing calls
+  are unchanged.
 - Added `Page<Element>` to URLSessionExtension, a page of a paginated endpoint's elements: a collection carrying the
   `total`, page `number`, page `size` and `hasNextPage`. Join a later page onto earlier ones with `+`, which leaves out
   elements already present.

@@ -142,6 +142,33 @@ indirect enum Block : Decodable {
         }
 
         @Test
+        func `a story query's parameters are sent with the story request`() async throws {
+            let client = StoryblokClient(
+                library: Block.self,
+                accessToken: "mock-api-key", version: .draft, cv: "mock-cv", configuration: mockConfiguration
+            )
+            let query = StoryQuery {
+                $0.excludingFields = ["body"]
+                $0.fromRelease = "12345"
+            }
+            // Only the request carrying the query's parameters is answered.
+            let request = client.buildRequest(path: "stories/mock-slug", findByUuid: false, resolveLevel: 1, queryItems: query.queryItems)
+            Mock(url: request.url!, contentType: .json, statusCode: 200, data: [.get: data]).register()
+
+            let story: Story<Block>? = try await client.story("mock-slug") {
+                $0.excludingFields = ["body"]
+                $0.fromRelease = "12345"
+            }
+            .values
+            .first { _ in true }
+
+            #expect(story?.name == "Alice")
+            let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems ?? []
+            #expect(items.contains(URLQueryItem(name: "from_release", value: "12345")))
+            #expect(items.contains(URLQueryItem(name: "excluding_fields", value: "body")))
+        }
+
+        @Test
         func `story request typed to root block library enum succeeds`() async throws {
             let mock = Mock(
                 url: URL.init(string: "https://api.storyblok.com/v2/cdn/stories/mock-slug")!,
