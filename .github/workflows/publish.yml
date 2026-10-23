@@ -23,8 +23,8 @@ jobs:
             generate-documentation \
             --enable-experimental-combined-documentation \
             --target StoryblokClient \
-            --target RichTextView \
             --target URLSessionExtension \
+            --target StoryblokUI \
             --disable-indexing \
             --transform-for-static-hosting \
             --hosting-base-path storyblok-swift \

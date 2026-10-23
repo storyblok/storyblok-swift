@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'Package.*'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/StoryblokClientTests/**.swift'
@@ -15,6 +16,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'Package.*'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
       - 'Tests/StoryblokClientTests/**.swift'

@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "RichTextView"
-               BuildableName = "RichTextView"
-               BlueprintName = "RichTextView"
+               BlueprintIdentifier = "StoryblokUI"
+               BuildableName = "StoryblokUI"
+               BlueprintName = "StoryblokUI"
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
@@ -33,9 +33,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "RichTextViewTests"
-               BuildableName = "RichTextViewTests"
-               BlueprintName = "RichTextViewTests"
+               BlueprintIdentifier = "StoryblokUITests"
+               BuildableName = "StoryblokUITests"
+               BlueprintName = "StoryblokUITests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

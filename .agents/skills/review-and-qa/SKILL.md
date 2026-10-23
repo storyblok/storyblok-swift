@@ -100,9 +100,11 @@ each one.
 - [ ] Diagnostics say what's wrong and how to fix it. Expansions compile without warnings in Swift 6
       mode.
 
-### `RichTextView` (SwiftUI)
+### `StoryblokUI` (SwiftUI)
 
-- [ ] Rendering covers the node and mark types the change touches, and unknown nodes degrade
+- [ ] `Stories` keeps one owner for its pages: each page is fetched once, a fresh copy replaces its
+      cached one in place, and a query change starts again from page 1.
+- [ ] Rich text rendering covers the node and mark types the change touches, and unknown nodes degrade
       gracefully.
 - [ ] Accessibility: images have descriptions (`alt`, then `title`) or are hidden as decorative,
       traits are correct, and Dynamic Type and dark mode work.

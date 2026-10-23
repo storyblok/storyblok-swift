@@ -72,7 +72,7 @@ API requests must be authenticated by providing an API access token. Learn more 
 
 ### Fetch a story
 
-``StoryblokClient/story(_:resolveLevel:)-(String,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
+``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
 
 - The cached version of the story if one is available locally.
 - The latest version from the API, unless it matches the cached version already emitted.
@@ -144,6 +144,8 @@ enum Content {
     }
 }
 ```
+
+Choose a nested struct for a component whose stories you query by their fields, such as a content type you list or search. The struct is the component's type, so a ``StoriesQuery`` can be typed to it and a ``Story`` can decode it (see <doc:UserGuide#Fetching-multiple-stories>). Labeled values give a component no type of its own, so its fields can't be addressed by key path.
 
 ### Mapping component and field names
 
@@ -260,6 +262,15 @@ client.story(UUID(uuidString: "bfea4895-8a19-4e82-ae1c-1c8f3e4b6f9c")!)
     .store(in: &cancellables)
 ```
 
+A ``StoryQuery`` sets the endpoint's other parameters, such as leaving fields out of the response or fetching the story as it appears in a release:
+
+```swift
+let story: AnyPublisher<Story<Content>, _> = client.story("articles/hello-world") { query in
+    query.excludingFields = ["body"]  // excluding_fields
+    query.fromRelease = "12345"       // from_release
+}
+```
+
 ### Choosing the content type
 
 The `Content` generic of the returned ``Story`` is inferred from how you bind the result. Binding to the block library lets you switch over every component:
@@ -278,9 +289,151 @@ let story: Story<Content.Page>? = try await client.story("home").values.first { 
 print(story?.content.title ?? "")
 ```
 
+## Fetching multiple stories
+
+``StoryblokClient/stories(page:pageSize:resolveLevel:query:)`` retrieves the stories matching a query from the [stories endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories), one page at a time. Like `story`, it publishes the copy the URL cache holds, if any, then the latest one from the API:
+
+```swift
+client.stories(page: 1) { (query: inout StoriesQuery<Content.Article>) in
+    query.startsWith = "articles/"
+}
+.sink(
+    receiveCompletion: { _ in },
+    receiveValue: { (page: Page<Story<Content.Article>>) in
+        for story in page { print(story.content.headline) }
+    }
+)
+.store(in: &cancellables)
+```
+
+The query's type names the content type. A query typed to one of your content structs, `Content.Article` here, sends its component as `content_type` and so asks for those stories only. A query typed to the whole block library asks for stories of every type.
+
+### Narrowing the result
+
+Every documented parameter has a property on ``StoriesQuery``:
+
+```swift
+let since = ISO8601DateFormatter().date(from: "2024-01-01T00:00:00Z")!
+
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.startsWith = "articles/"             // starts_with
+    query.searchTerm = "spaceship"             // search_term
+    query.isStartPage = false                  // is_startpage
+    query.bySlugs = ["articles/*"]             // by_slugs
+    query.excludingSlugs = ["articles/wip-*"]  // excluding_slugs
+    query.byUuids = [uuid]                     // by_uuids
+    query.byUuidsOrdered = [uuid]              // by_uuids_ordered, in the order given
+    query.excludingIds = [1, 2]                // excluding_ids
+    query.withTag = ["featured"]               // with_tag
+    query.excludingFields = ["body"]           // excluding_fields
+    query.fromRelease = "12345"                // from_release
+
+    query.firstPublishedAfter = since          // first_published_at_gt
+    query.firstPublishedBefore = since         // first_published_at_lt
+    query.publishedAfter = since               // published_at_gt
+    query.publishedBefore = since              // published_at_lt
+    query.updatedAfter = since                 // updated_at_gt
+    query.updatedBefore = since                // updated_at_lt
+}
+```
+
+### Sorting
+
+Content fields are named by key path, which resolves to the name Storyblok knows the field by and adds the `content.` prefix the API expects. ``Story`` attributes are named by a ``StoryAttribute``. Each call adds to `sort_by`, in the order made:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.sort(by: \.headline)                 // content.headline:asc
+    query.sort(by: .publishedAt, .descending)  // published_at:desc
+}
+```
+
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Product>) in
+    query.sort(by: \.stock)                    // content.stock:asc:int
+    query.sort(by: \.rating, .descending)      // content.rating:desc:float
+    query.sort(by: \.price, as: .wholeNumber)  // content.price:asc:int, price being a String
+}
+```
+
+> Note: Only some ``Story`` attributes are sortable. The API answers the rest with `Not sortable by this column` rather than the client second-guessing which those are.
+
+### Filter queries
+
+Write [filter query](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries) conditions in a ``StoriesQuery/filter(_:)`` block, which addresses fields through its argument. Each condition becomes a `filter_query[<field>][<operation>]` parameter:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Product>) in
+    query.filter {
+        $0.headline.like("*space*")                              // [headline][like]=*space*
+        $0.headline.notLike("*draft*")                           // [headline][not_like]=*draft*
+        $0.headline.in(["Spaceship", "Rocket"])                  // [headline][in]=Spaceship,Rocket
+        $0.headline.notIn(["Paper"])                             // [headline][not_in]=Paper
+        $0.headline.is(.notEmpty)                                // [headline][is]=not_empty
+        $0.categories.contains(allOf: ["solar-system", "mars"])  // [categories][all_in_array]=solar-system,mars
+        $0.categories.contains(anyOf: ["moon", "mars"])          // [categories][any_in_array]=moon,mars
+        $0.categories.isNotEmpty                                 // [categories][is]=not_empty_array
+        $0.stock > 10                                            // [stock][gt_int]=10
+        $0.rating < 4.5                                          // [rating][lt_float]=4.5
+        $0.releaseDate > since                                   // [release_date][gt_date]=2024-01-01T00:00:00Z
+        $0.price.asWholeNumber > 100                             // [price][gt_int]=100
+        $0.price.asDecimal < 99.5                                // [price][lt_float]=99.5
+    }
+}
+```
+
+The field's Swift type decides which operations are offered, so one the field cannot support doesn't compile:
+
+- Text has `like(_:)`, `notLike(_:)`, `in(_:)` and `notIn(_:)`.
+- An array of text has `contains(allOf:)`, `contains(anyOf:)`, `isEmpty` and `isNotEmpty`.
+- A whole number, decimal or date has `>` and `<`, which send the matching `_int`, `_float` or `_date` operation.
+- Any field has `is(_:)`, which takes a ``Presence``: `.empty`, `.notEmpty`, `.isTrue`, `.isFalse`, `.null` or `.notNull`.
+- Text holding a number is compared numerically once you say how, with `asWholeNumber` or `asDecimal`.
+
+Every condition must hold. A field takes one value per operation, so a second condition with the same field and operation replaces the first, as the API would keep only the last.
+
+The ``BlockLibrary()`` macro makes key paths work by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
+
+### Parameters without an entry point
+
+``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, such as a filter on one of the [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields) a key path cannot address, conditions any one of which may hold with [`__or`](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries), or a parameter the API has gained since this version:
+
+```swift
+client.stories { (query: inout StoriesQuery<Content.Article>) in
+    query.parameter("filter_query[seo.description][is]", "not_empty")
+    query.parameter("filter_query[__or][][category][in]", "news")
+    query.parameter("filter_query[__or][][author][in]", "jane")
+    query.parameter("some_future_param", "value")
+}
+```
+
+> Warning: A parameter is added rather than replacing one, so don't add one the client already sends: `page`, `per_page`, `resolve_relations` and `resolve_level`, or `content_type` and `sort_by` when the query sets them. It would go out twice, leaving the API to choose between the two.
+
+### Paging through the results
+
+Each value is a ``/URLSessionExtension/Page``: a collection of that page's stories, along with the ``/URLSessionExtension/Page/total`` the API reports and whether there is a page after it. Fetch the next page with `page + 1` while ``/URLSessionExtension/Page/hasNextPage`` is `true`, and join each page onto the ones before it with `+`, which leaves out any story already on an earlier page:
+
+```swift
+var articles: Page<Story<Content.Article>> = []
+var number = 1
+repeat {
+    let stories: AnyPublisher<Page<Story<Content.Article>>, _> = client.stories(page: number)
+    var page: Page<Story<Content.Article>> = []
+    for try await copy in stories.values { page = copy }  // the latest copy arrives last
+    articles = articles + page
+    number += 1
+} while articles.hasNextPage
+```
+
+The page size defaults to 25 and can be raised to 100 with `pageSize`.
+
+> Tip: To render the stories in SwiftUI, fetching the next page as the user scrolls, use the `Stories` view from the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui) library.
+
 ## Story relations
 
-The client automatically resolves [story relations](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations) declared on your block library. Whenever a case (or one of its nested struct fields) has a ``Story``-typed associated value, the macro records it in ``BlockLibrary/relations``, and the client will:
+The client automatically resolves story relations declared on your block library. Whenever a case (or one of its nested struct fields) has a ``Story``-typed associated value, the macro records it in ``BlockLibrary/relations``, and the client will:
 
 1. Include the appropriate `resolve_relations` query parameter in API requests.
 2. Replace the referenced UUID string in the response with the matching object from the `rels` array.
@@ -305,7 +458,7 @@ enum Content {
 
 ### Controlling resolution depth
 
-The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:)-(String,_)`` controls how deeply relations are followed:
+The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` controls how deeply relations are followed:
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
@@ -340,6 +493,8 @@ enum Content {
     }
 }
 ```
+
+> Tip: To render rich text as native SwiftUI views, use the [StoryblokUI](https://storyblok.github.io/storyblok-swift/documentation/storyblokui/renderingrichtext) library, which makes a `RichText` value a `View`.
 
 ### Supported rich text nodes
 
@@ -428,6 +583,8 @@ The client leverages ``/URLSessionExtension``'s caching for the configured [`URL
 2. It then makes a network request to get the latest version, retrying transient failures.
 3. Duplicates are filtered so the cached and fresh responses are only emitted once when identical.
 
+Stories and pages of stories are both fetched this way, through ``/URLSessionExtension``'s ``/URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher``, which you can also use directly for requests the client does not cover.
+
 ## Error handling
 
 API errors and decoding failures are reported as ``StoryblokClient/Error``. Use Combine's [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) operator to handle them:
@@ -466,6 +623,6 @@ The error's case suggests how to respond:
 ## See Also
 
 - [URLSessionExtension User Guide](doc:/URLSessionExtension/UserGuide)
-- [Storyblok Content Delivery API reference](https://www.storyblok.com/docs/api/content-delivery/v2)
+- [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2)
 - [Resolving relations](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations)
 - [Storyblok rich text](https://www.storyblok.com/docs/richtext-field)

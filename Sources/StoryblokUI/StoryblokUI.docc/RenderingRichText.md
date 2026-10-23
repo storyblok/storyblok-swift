@@ -1,4 +1,4 @@
-# Rendering Storyblok rich text with RichTextView
+# Rendering rich text
 
 How to render `RichText` content as native SwiftUI views, customize individual node types, and handle internal story links.
 
@@ -6,30 +6,7 @@ How to render `RichText` content as native SwiftUI views, customize individual n
 
 ### Add package dependency
 
-In an Xcode project, select **File** → **Add Package Dependencies…**, enter the following package URL into the search field, select **Add Package**, and add the `RichTextView` library to the target in which you wish to use it:
-
-```
-https://github.com/storyblok/storyblok-swift.git
-```
-
-Alternatively, in a Swift package, add the *storyblok-swift* repository as a package to your `Package.swift` file and specify `RichTextView` as a dependency of the target:
-
-```swift
-dependencies: [
-    …
-    .package(url: "https://github.com/storyblok/storyblok-swift.git", .upToNextMajor(from: "1.0.0"))
-]
-targets: [
-    .target(
-        …
-        dependencies: [
-            .product(name: "RichTextView", package: "storyblok-swift")
-        ]
-    )
-]
-```
-
-> Note: `RichTextView` builds on ``/StoryblokClient``. See the [StoryblokClient User Guide](https://storyblok.github.io/storyblok-swift/documentation/storyblokclient/userguide) for how to define a block library and fetch stories.
+Add the `StoryblokUI` library to your target, as described in <doc:UserGuide#Add-package-dependency>.
 
 ### Make your block library a `View`
 
@@ -54,12 +31,12 @@ extension Content: View {
 
 ### Render rich text
 
-With the conformance in place, import `RichTextView` and place a `RichText` value anywhere a `View` is expected:
+With the conformance in place, import `StoryblokUI` and place a `RichText` value anywhere a `View` is expected:
 
 ```swift
 import SwiftUI
 import StoryblokClient
-import RichTextView
+import StoryblokUI
 
 struct ArticleBody: View {
     let content: RichText<Content>
@@ -99,7 +76,7 @@ Formatting marks on a text run — bold, italic, underline, strikethrough, inlin
 
 ## Customizing node rendering
 
-To override how specific node types render, conform a type to ``RichTextViewDelegate`` and install it with ``RichTextView/SwiftUICore/View/richTextViewDelegate(_:)``. Every requirement has a default implementation matching the built-in renderer, so you implement only the node types you want to change:
+To override how specific node types render, conform a type to ``RichTextViewDelegate`` and install it with ``StoryblokUI/SwiftUICore/View/richTextViewDelegate(_:)``. Every requirement has a default implementation matching the built-in renderer, so you implement only the node types you want to change:
 
 ```swift
 struct MyDelegate: RichTextViewDelegate {
@@ -127,7 +104,7 @@ The delegate's `BlockLibrary` associated type must match the rich text being ren
 
 ## Handling story links
 
-Rich-text links that point at another Storyblok story are rendered with a `storyblok-story://<uuid>` URL rather than a web address. Use ``RichTextView/SwiftUICore/View/onStoryLink(_:)`` to intercept taps on those links and navigate within your app, while ordinary web and email links continue to open through the system:
+Rich-text links that point at another Storyblok story are rendered with a `storyblok-story://<uuid>` URL rather than a web address. Use ``StoryblokUI/SwiftUICore/View/onStoryLink(_:)`` to intercept taps on those links and navigate within your app, while ordinary web and email links continue to open through the system:
 
 ```swift
 ScrollView { article.content }

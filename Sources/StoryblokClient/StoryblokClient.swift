@@ -7,8 +7,7 @@ private let log = Logger(label: "com.storyblok.StoryblokClient")
 
 /// A client for the Storyblok [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2).
 ///
-/// Provides type-safe access to stories with automatic JSON decoding and [relation
-/// resolution](https://www.storyblok.com/docs/api/content-delivery/v2/stories/examples/retrieving-stories-with-resolved-relations).
+/// Provides type-safe access to stories with automatic JSON decoding and relation resolution.
 ///
 /// The client is generic over a ``BlockLibrary`` — a type (typically an `enum` annotated with
 /// the ``BlockLibrary()`` macro) that enumerates the Storyblok components your space uses. The
@@ -72,6 +71,22 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
 
         public var errorDescription: String? {
             message ?? underlyingError?.localizedDescription
+        }
+
+        /// Maps a failure from the request or the decode onto this client's own error.
+        ///
+        /// A decoding failure stays a decoding failure: content that does not match your types is a
+        /// modelling error rather than a transient one, and retrying cannot resolve it.
+        static func from(_ error: any Swift.Error) -> Self {
+            if let error = error as? DecodingError { return .decoding(error) }
+            if let error = error as? Self { return error }
+            if let error = error as? Api.ResponseError {
+                switch error {
+                    case let .client(_, data, _), let .server(_, data, _):
+                        return .api(message: String(data: data, encoding: .utf8), underlyingError: error)
+                }
+            }
+            return .api(message: error.localizedDescription, underlyingError: error)
         }
     }
 
@@ -154,12 +169,17 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
     ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
+    ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
-    public func story<Content>(_ slug: String, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel)
+    public func story<Content>(
+        _ slug: String,
+        resolveLevel: Int = 1,
+        query: (inout StoryQuery) -> Void = { _ in }
+    ) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(slug)", resolveLevel: resolveLevel, query: StoryQuery(query))
     }
 
     /// Retrieves a story by its UUID.
@@ -176,80 +196,114 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     decode as `nil` and non-optional ``Story`` fields fail decoding — model relation
     ///     fields as `UUID` (or `String`) to receive the raw UUIDs instead. See
     ///     <doc:UserGuide#Story-relations>.
+    ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
     ///   when one is available locally, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
-    public func story<Content>(_ uuid: UUID, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel)
+    public func story<Content>(
+        _ uuid: UUID,
+        resolveLevel: Int = 1,
+        query: (inout StoryQuery) -> Void = { _ in }
+    ) -> AnyPublisher<Story<Content>, Error> {
+        storyPublisher(path: "stories/\(uuid.uuidString.lowercased())", findByUuid: true, resolveLevel: resolveLevel, query: StoryQuery(query))
+    }
+
+    private func storyPublisher<Content : Decodable>(
+        path: String,
+        findByUuid: Bool = false,
+        resolveLevel: Int = 1,
+        query: StoryQuery
+    ) -> AnyPublisher<Story<Content>, Error> {
+        session.cachedDataTaskPublisher(for: buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel, queryItems: query.queryItems))
+            .tryMap { data, _ in
+                try Self.decoder(resolveLevel: resolveLevel).decode(ContentResponse<Story<Content>>.self, from: data).payload
+            }
+            .mapError { .from($0) }
+            .eraseToAnyPublisher()
+    }
+
+    /// One page of the stories matching `query`.
+    ///
+    /// As ``story(_:resolveLevel:query:)-(String,_,_)`` does, the publisher sends the copy of the page the
+    /// URL cache holds, if any, then the fresh one, and finishes. The ``/URLSessionExtension/Page`` says whether there
+    /// is a page after it; fetch that with `page + 1`, and join it onto the ones before with
+    /// ``/URLSessionExtension/Page/+(_:_:)``, which leaves out stories already on an earlier page:
+    ///
+    /// ```swift
+    /// var posts: Page<Story<Block.Post>> = []
+    /// var number = 1
+    /// repeat {
+    ///     let stories: AnyPublisher<Page<Story<Block.Post>>, _> = client.stories(page: number)
+    ///     var page: Page<Story<Block.Post>> = []
+    ///     for try await copy in stories.values { page = copy }  // the fresh copy arrives last
+    ///     posts = posts + page
+    ///     number += 1
+    /// } while posts.hasNextPage
+    /// ```
+    ///
+    /// `StoryblokUI`'s `Stories` view does this for a SwiftUI list, fetching each page as its
+    /// last row appears.
+    ///
+    /// `Content` fixes which component the query addresses: its
+    /// ``QueryableContent/technicalName`` becomes `content_type`, so a query typed to one of your
+    /// content structs asks only for that component's stories, and one typed to your whole
+    /// ``BlockLibrary`` asks for all of them.
+    ///
+    /// - Parameters:
+    ///   - page: The page to fetch, counting from 1.
+    ///   - pageSize: Stories per page, sent as `per_page`. The endpoint caps this at 100 and
+    ///     refuses a larger value rather than quietly reducing it.
+    ///   - resolveLevel: How deeply nested ``Story`` relations are resolved, as for
+    ///     ``story(_:resolveLevel:query:)-(String,_,_)``.
+    ///   - query: Configures the query parameters.
+    public func stories<Content : QueryableContent>(
+        page: Int = 1,
+        pageSize: Int = 25,
+        resolveLevel: Int = 1,
+        query: (inout StoriesQuery<Content>) -> Void = { _ in }
+    ) -> AnyPublisher<Page<Story<Content>>, Error> {
+        let queryItems = relationParameters(resolveLevel: resolveLevel) + StoriesQuery(query).queryItems
+
+        var request = URLRequest(storyblok: session, path: "stories")
+        request.url!.append(queryItems: queryItems)
+
+        return session.pagePublisher(for: request, page: page, perPage: pageSize, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+            try Self.decoder(resolveLevel: resolveLevel)
+                .decode(ContentResponse<[Story<Content>]>.self, from: body)
+                .payload
+        }
+        .mapError { .from($0) }
+        .eraseToAnyPublisher()
     }
 
     // MARK: -
 
-    private func storyPublisher<Content : Decodable>(path: String, findByUuid: Bool = false, resolveLevel: Int = 1) -> AnyPublisher<Story<Content>, Error> {
-        let request = buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel)
-
-        var cachedRequest = request
-        cachedRequest.cachePolicy = .returnCacheDataDontLoad
-
-        let cached = session.dataTaskPublisher(for: cachedRequest)
-            .map { $0.data }
-            .catch { _ in Empty<Data, URLError>() }
-            .mapError { $0 as any Swift.Error }
-
-        let fresh = session.dataTaskPublisher(for: request)
-            .failOnErrorResponse(.recoverable)
-            .retry(3)
-            .failOnErrorResponse(.all)
-            .tryMap { (data, _) in data }
-
-        return cached
-            .append(fresh)
-            .removeDuplicates()
-            .tryMap { data in
-                let decoder: JSONDecoder
-                if resolveLevel > 0 {
-                    let store = RelationStore()
-                    store.resolveLevel = resolveLevel
-                    decoder = Self.makeDecoder(relStore: store)
-                } else {
-                    decoder = Self.makeDecoder()
-                }
-                return try decoder.decode(StoryResponse<Content>.self, from: data).story
-            }
-            .mapError { error -> Error in
-                if let error = error as? DecodingError { return .decoding(error) }
-                if let error = error as? Error { return error }
-                if let error = error as? Api.ResponseError {
-                    switch error {
-                        case let .client(_, data, _), let .server(_, data, _):
-                            let message = String(data: data, encoding: .utf8)
-                            return .api(message: message, underlyingError: error)
-                    }
-                }
-                return .api(message: error.localizedDescription, underlyingError: error)
-            }
-            .eraseToAnyPublisher()
-    }
-
-    internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int) -> URLRequest {
+    internal func buildRequest(path: String, findByUuid: Bool, resolveLevel: Int, queryItems: [URLQueryItem] = []) -> URLRequest {
         var request = URLRequest(storyblok: session, path: path)
-        var queryItems: [URLQueryItem] = []
-        if resolveLevel > 0 && !relations.isEmpty {
-            queryItems.append(URLQueryItem(name: "resolve_relations", value: relations))
-        }
-        if resolveLevel >= 2 {
-            queryItems.append(URLQueryItem(name: "resolve_level", value: String(resolveLevel)))
-        }
-        if findByUuid {
-            queryItems.append(URLQueryItem(name: "find_by", value: "uuid"))
-        }
-        if !queryItems.isEmpty {
-            request.url!.append(queryItems: queryItems)
-        }
-        //one spelling per request, so the cache probe finds what the previous fetch stored
+        request.url!.append(queryItems: relationParameters(resolveLevel: resolveLevel))
+        if findByUuid { request.url!.append(queryItems: [URLQueryItem(name: "find_by", value: "uuid")]) }
+        request.url!.append(queryItems: queryItems)
+        // One spelling per request, so the cache probe finds what the previous fetch stored.
         request.url = request.url!.sortingQueryItems()
         return request
+    }
+
+    /// The relation-resolution parameters a story request sends for `resolveLevel`. They come from
+    /// the block library rather than from a query.
+    func relationParameters(resolveLevel: Int) -> [URLQueryItem] {
+        guard resolveLevel > 0, !relations.isEmpty else { return [] }
+        var parameters = [URLQueryItem(name: "resolve_relations", value: relations)]
+        if resolveLevel >= 2 { parameters.append(URLQueryItem(name: "resolve_level", value: String(resolveLevel))) }
+        return parameters
+    }
+
+    /// A decoder for one response, resolving relations `resolveLevel` deep from the response's `rels`.
+    static func decoder(resolveLevel: Int) -> JSONDecoder {
+        guard resolveLevel > 0 else { return makeDecoder() }
+        let store = RelationStore()
+        store.resolveLevel = resolveLevel
+        return makeDecoder(relStore: store)
     }
 
     /// Returns a `JSONDecoder` configured with Storyblok's date formats and an optional relation store.
@@ -270,40 +324,6 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             decoder.userInfo[.storyblokRelations] = relStore
         }
         return decoder
-    }
-}
-
-// MARK: - Stable cache keys
-
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-internal extension URL {
-    /// Returns the URL with its query items ordered by name, and their percent encoding normalized.
-    ///
-    /// `URLCache` keys an entry on the request URL exactly as written, so two spellings of one request are two
-    /// cache entries, and the cached value the story publisher looks for first is never found. They arise
-    /// readily: the Content Delivery API returns the `Location` it redirects a published request to with its
-    /// query items sorted by name and their values escaped.
-    func sortingQueryItems() -> URL {
-        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false) else { return self }
-        // Percent decoding is unambiguous, so any two spellings of a value decode alike and re-encode alike —
-        // except `+`, which the API writes for a space while `queryItems` reads it as a literal plus. Restoring
-        // the shared meaning first is what lets the two sides meet. A plus the API meant literally arrives as
-        // `%2B`, so it is left alone.
-        if let query = components.percentEncodedQuery {
-            components.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%20")
-        }
-        guard let items = components.queryItems, items.count > 1 else { return components.url ?? self }
-        // Sorted on (name, position) so repeated names keep the order their values were given in:
-        // `sorted(by:)` is not itself a stable sort.
-        components.queryItems = items.enumerated()
-            .sorted { ($0.element.name, $0.offset) < ($1.element.name, $1.offset) }
-            .map(\.element)
-        // Re-encoding writes a plus literally, which the API would read back as a space. Every `+` that meant a
-        // space became `%20` above, so whatever is left is a plus someone meant, and has to say so.
-        if let query = components.percentEncodedQuery {
-            components.percentEncodedQuery = query.replacingOccurrences(of: "+", with: "%2B")
-        }
-        return components.url ?? self
     }
 }
 
@@ -329,7 +349,7 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
         completionHandler: @Sendable @escaping (URLRequest?) -> Void
     ) {
         var request = request
-        request.url = request.url?.sortingQueryItems()
+        request.url = request.url?.sortingQueryItems(readingPlusAsSpace: true)
         (delegate as? URLSessionTaskDelegate)?.urlSession?(session, task: task, willPerformHTTPRedirection: response, newRequest: request, completionHandler: completionHandler) ?? completionHandler(request)
     }
 

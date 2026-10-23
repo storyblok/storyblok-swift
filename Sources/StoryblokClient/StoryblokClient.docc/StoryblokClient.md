@@ -2,9 +2,9 @@
 
 A Swift client for Storyblok's [Content Delivery API](https://www.storyblok.com/docs/api/content-delivery/v2) built on top of ``/URLSessionExtension``.
 
-With out-of-the-box support for reactive and `async` story fetching, automatic relation resolution, rich text parsing, and macro-driven component decoding.
-
 ## Overview
+
+The client supports reactive and `async` story fetching, automatic relation resolution, rich text parsing, and macro-driven component decoding out of the box.
 
 You describe your space's components once as a ``BlockLibrary`` — typically an `enum` annotated with the ``BlockLibrary()`` macro — and create a ``StoryblokClient`` generic over it. The library drives both how story content is decoded and which relations the client resolves.
 
@@ -58,9 +58,33 @@ Read <doc:UserGuide> to get started.
 
 ### Fetching stories
 
-- ``StoryblokClient/story(_:resolveLevel:)-(String,_)``
-- ``StoryblokClient/story(_:resolveLevel:)-(UUID,_)``
+- ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)``
+- ``StoryblokClient/story(_:resolveLevel:query:)-(UUID,_,_)``
+- ``StoryQuery``
 - ``StoryblokClient/Error``
+
+### Fetching multiple stories
+
+- ``StoryblokClient/stories(page:pageSize:resolveLevel:query:)``
+- ``StoriesQuery``
+- ``StoryAttribute``
+- ``SortDirection``
+- ``SortAs``
+
+### Filtering stories
+
+- ``Fields``
+- ``QueryField``
+- ``Filter``
+- ``FilterBuilder``
+- ``Presence``
+- ``WholeNumberText``
+- ``DecimalText``
+
+### Querying your content
+
+- ``QueryableContent``
+- ``StoryblokContent(_:)``
 
 ### Stories
 

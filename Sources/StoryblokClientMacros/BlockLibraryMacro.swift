@@ -1,6 +1,8 @@
 import SwiftCompilerPlugin
 import SwiftDiagnostics
+import SwiftParser
 import SwiftSyntax
+import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 public struct BlockLibraryMacro {}
@@ -60,8 +62,12 @@ extension BlockLibraryMacro: ExtensionMacro {
 
         var extensions: [ExtensionDeclSyntax] = []
 
+        // `BlockLibrary`, and `QueryableContent` so that a `StoriesQuery` typed to the whole library
+        // asks for every component: the protocol's defaults send no `content_type`. Only those the
+        // type does not already declare are listed.
         if !protocols.isEmpty {
-            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): BlockLibrary {}")
+            let names = protocols.map(\.trimmedDescription).joined(separator: ", ")
+            let ext = try ExtensionDeclSyntax("nonisolated extension \(type.trimmed): \(raw: names) {}")
             extensions.append(ext)
         }
 
@@ -217,7 +223,7 @@ private func generateDecoding(
 
     var switchCases = ""
     for c in knownCases {
-        switchCases += "    case \"\(c.componentName)\":\n"
+        switchCases += "    case \(literalString(c.componentName)):\n"
         if c.params.isEmpty {
             switchCases += "        self = .\(c.caseName)\n"
         } else {
@@ -312,16 +318,17 @@ private func computeRelations(cases: [CaseInfo]) -> String {
 
 /// Parses a `CodingKeys`-style enum into a Swift-name → JSON-key map. Cases without a string
 /// raw value map to themselves.
+///
+/// A raw value is read as the string it denotes, with escapes such as `\u{2D}` resolved, not as
+/// it is spelled, so the key matches the one decoding uses wherever the macro writes it out.
 private func parseCodingKeys(from enumDecl: EnumDeclSyntax) -> [String: String] {
     var result: [String: String] = [:]
     for caseMember in enumDecl.memberBlock.members {
         guard let caseDecl = caseMember.decl.as(EnumCaseDeclSyntax.self) else { continue }
         for element in caseDecl.elements {
             let name = strippingBackticks(element.name.text)
-            if let literal = element.rawValue?.value.as(StringLiteralExprSyntax.self),
-               literal.segments.count == 1,
-               let segment = literal.segments.first?.as(StringSegmentSyntax.self) {
-                result[name] = segment.content.text
+            if let value = element.rawValue?.value.as(StringLiteralExprSyntax.self)?.representedLiteralValue {
+                result[name] = value
             } else {
                 result[name] = name
             }
@@ -532,7 +539,198 @@ struct BlockLibraryMacroDiagnostic: DiagnosticMessage {
     }
 }
 
+// MARK: - Queryable content
+
+extension BlockLibraryMacro: MemberAttributeMacro {
+
+    /// Marks each nested content struct with `@StoryblokContent("<case name>")`.
+    ///
+    /// An `ExtensionMacro` may only extend the type it is attached to, so the conformance that
+    /// lets a `StoriesQuery` address the struct's fields by key path cannot be emitted from here.
+    /// Attaching a macro to the struct itself puts that expansion in the one place allowed to
+    /// extend it.
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingAttributesFor member: some DeclSyntaxProtocol,
+        in context: some MacroExpansionContext
+    ) throws -> [AttributeSyntax] {
+        guard let structDecl = member.as(StructDeclSyntax.self) else { return [] }
+
+        let cases = collectCases(
+            in: declaration,
+            codingKeyMap: findCodingKeys(in: declaration),
+            nestedStructs: collectNestedStructs(in: declaration),
+            nestedStructCodingKeys: collectNestedStructCodingKeys(in: declaration)
+        )
+
+        // The component's technical name is the name of the case that carries this struct.
+        guard let info = cases.first(where: { info in
+            info.params.count == 1 && info.params[0].unlabeled
+                && info.params[0].type.trimmedDescription == structDecl.name.text
+        }) else { return [] }
+
+        return ["@StoryblokContent(\(raw: literalString(info.componentName)))"]
+    }
+}
+
+/// Conforms one content struct to `QueryableContent`, naming its fields as Storyblok knows them.
+public struct StoryblokContentMacro: ExtensionMacro {
+
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else { return [] }
+
+        // The argument is returned as written, so Swift evaluates it: an escaped literal, such as
+        // "landing\u{2D}page", or a constant naming the component means what it says.
+        let technicalName = node.arguments?
+            .as(LabeledExprListSyntax.self)?
+            .first?
+            .expression
+            .trimmedDescription ?? literalString(structDecl.name.text)
+
+        // A field whose Storyblok name differs from the property is named by CodingKeys. When the
+        // struct declares them, they are also the only properties decoding fills in.
+        var codingKeys: Set<String>?
+        for member in structDecl.memberBlock.members {
+            guard let enumDecl = member.decl.as(EnumDeclSyntax.self), enumDecl.name.text == "CodingKeys" else { continue }
+            codingKeys = codingKeyCaseNames(in: enumDecl.memberBlock.members)
+        }
+
+        let entries = fieldEntries(in: structDecl.memberBlock.members, codingKeys: codingKeys)
+        let fields = entries.compactMap { entry -> String? in
+            guard case let .field(keyPath, name) = entry else { return nil }
+            return "\\\(type.trimmed).\(keyPath): \(name),"
+        }
+        let literal = fields.isEmpty ? "[:]" : "[\n" + fields.joined(separator: "\n") + "\n]"
+
+        // A field declared under `#if` is named under the same condition: its key path may not
+        // compile elsewhere, and two branches declaring one field would repeat a literal's key.
+        let conditionals = entries.filter { if case .conditional = $0 { true } else { false } }
+        let table = conditionals.isEmpty ? literal : """
+            {
+            var fieldNames: [AnyKeyPath: String] = \(literal)
+            \(renderAssignments(conditionals, of: type.trimmedDescription).joined(separator: "\n"))
+            return fieldNames
+            }()
+            """
+
+        // `AnyKeyPath` is not `Sendable`, so a static table of them needs `nonisolated(unsafe)`. The
+        // comment that says why that is safe goes in the generated code, next to it.
+        return [try ExtensionDeclSyntax(
+            """
+            nonisolated extension \(type.trimmed): QueryableContent {
+                public static var technicalName: String? { \(raw: technicalName) }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = \(raw: table)
+            }
+            """
+        )]
+    }
+}
+
+/// A property `@StoryblokContent` names, or a `#if` whose clauses declare some.
+private indirect enum FieldEntry {
+    /// The property's identifier as written, for its key path, and an expression for the name
+    /// Storyblok knows it by.
+    case field(keyPath: String, name: String)
+    /// Each clause's directive (`#if os(iOS)`, `#else`) with the entries it declares.
+    case conditional([(directive: String, entries: [FieldEntry])])
+}
+
+/// The properties among `members` that decoding fills in, keeping any `#if` around them.
+///
+/// When the struct declares `CodingKeys`, `codingKeys` holds the names of its cases, and a
+/// property is named by its case's `stringValue`: the name decoding uses, however its raw value
+/// is written and whichever `#if` branch declares it.
+private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: Set<String>?) -> [FieldEntry] {
+    var entries: [FieldEntry] = []
+    for member in members {
+        if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+            let clauses = ifConfig.clauses.map { clause -> (directive: String, entries: [FieldEntry]) in
+                let directive = [clause.poundKeyword.text, clause.condition?.trimmedDescription]
+                    .compactMap { $0 }
+                    .joined(separator: " ")
+                guard case let .decls(decls) = clause.elements else { return (directive, []) }
+                return (directive, fieldEntries(in: decls, codingKeys: codingKeys))
+            }
+            if clauses.contains(where: { !$0.entries.isEmpty }) { entries.append(.conditional(clauses)) }
+            continue
+        }
+
+        // A static property is not part of the content, nor is a lazy one, which is derived from
+        // it; and a key path can refer to neither.
+        guard let varDecl = member.decl.as(VariableDeclSyntax.self),
+              !varDecl.modifiers.contains(where: { ["static", "class", "lazy"].contains($0.name.text) })
+        else { continue }
+        let isConstant = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
+        for binding in varDecl.bindings {
+            guard let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                  isStored(binding),
+                  // Decoding leaves a constant that already has a value alone.
+                  !(isConstant && binding.initializer != nil)
+            else { continue }
+            let name = strippingBackticks(identifier)
+            if let codingKeys {
+                // Not among the declared CodingKeys, so not decoded.
+                guard codingKeys.contains(name) else { continue }
+                entries.append(.field(keyPath: identifier, name: "CodingKeys.\(identifier).stringValue"))
+            } else {
+                entries.append(.field(keyPath: identifier, name: literalString(name)))
+            }
+        }
+    }
+    return entries
+}
+
+/// Statements adding `entries` to a `fieldNames` table of `type`, under their `#if` directives.
+private func renderAssignments(_ entries: [FieldEntry], of type: String) -> [String] {
+    entries.flatMap { entry -> [String] in
+        switch entry {
+            case let .field(keyPath, name):
+                return ["fieldNames[\\\(type).\(keyPath)] = \(name)"]
+            case let .conditional(clauses):
+                return clauses.flatMap { [$0.directive] + renderAssignments($0.entries, of: type) } + ["#endif"]
+        }
+    }
+}
+
+/// The names of the `CodingKeys` cases among `members`, including those declared under `#if`.
+private func codingKeyCaseNames(in members: MemberBlockItemListSyntax) -> Set<String> {
+    var names = Set<String>()
+    for member in members {
+        if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+            for clause in ifConfig.clauses {
+                guard case let .decls(decls) = clause.elements else { continue }
+                names.formUnion(codingKeyCaseNames(in: decls))
+            }
+        } else if let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) {
+            names.formUnion(caseDecl.elements.map { strippingBackticks($0.name.text) })
+        }
+    }
+    return names
+}
+
+/// Whether `binding` stores its value: it has no accessors, or only `willSet` and `didSet`.
+private func isStored(_ binding: PatternBindingSyntax) -> Bool {
+    guard let accessors = binding.accessorBlock?.accessors else { return true }
+    guard case let .accessors(list) = accessors else { return false }
+    return list.allSatisfy {
+        $0.accessorSpecifier.tokenKind == .keyword(.willSet) || $0.accessorSpecifier.tokenKind == .keyword(.didSet)
+    }
+}
+
 @main
 struct StoryblokClientPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self]
+    let providingMacros: [Macro.Type] = [BlockLibraryMacro.self, StoryblokContentMacro.self]
+}
+
+/// Renders a Swift string literal that denotes `value`, escaping whatever it needs.
+private func literalString(_ value: String) -> String {
+    StringLiteralExprSyntax(content: value).trimmedDescription
 }

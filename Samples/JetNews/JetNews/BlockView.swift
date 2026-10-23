@@ -1,6 +1,6 @@
 import Foundation
 import StoryblokClient
-import RichTextView
+import StoryblokUI
 import SwiftUI
 
 extension Block: View {

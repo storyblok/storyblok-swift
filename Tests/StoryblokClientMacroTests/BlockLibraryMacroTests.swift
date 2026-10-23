@@ -1,3 +1,4 @@
+import SwiftSyntaxMacroExpansion
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
 import XCTest
@@ -129,6 +130,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             expandedSource: """
             enum Wrapper {
                 case author(Author)
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
@@ -883,10 +885,12 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(Article)
                 case popular(articles: [Story<Article>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
                 }
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -945,6 +949,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             expandedSource: """
             indirect enum Block {
                 case article(Article)
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -1088,6 +1093,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             enum Block {
                 case author(Author)
                 case article(headline: String, author: [Story<Author>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
@@ -1150,10 +1156,12 @@ final class BlockLibraryMacroTests: XCTestCase {
                 case author(Author)
                 case article(Article)
                 case popular(articles: [Story<Article>])
+                @StoryblokContent("author")
 
                 struct Author: Decodable {
                     let name: String
                 }
+                @StoryblokContent("article")
 
                 struct Article: Decodable {
                     let headline: String
@@ -1208,6 +1216,7 @@ final class BlockLibraryMacroTests: XCTestCase {
             indirect enum MyBlock {
                 case page(Page)
                 case highlighted(title: String, post: Story<Page>)
+                @StoryblokContent("page")
 
                 struct Page {
                     let title: String
@@ -1515,6 +1524,370 @@ final class BlockLibraryMacroTests: XCTestCase {
 
                 enum PopularCodingKeys: String, CodingKey {
                     case articles
+                }
+            }
+            """,
+            diagnostics: [],
+            macros: macros
+        )
+    }
+
+    // MARK: - StoryblokContent
+
+    func test_storyblokContent_namesEveryDecodedPropertyAndNothingElse() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                static let shared: String = ""
+                let `hero-image`: String
+                let title: String
+                let kind: String = "product"
+                var stock = 0
+                var price: Int {
+                    didSet {}
+                }
+                var label: String { title }
+
+                enum CodingKeys: String, CodingKey {
+                    case `hero-image`, title = "headline", stock, price
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                static let shared: String = ""
+                let `hero-image`: String
+                let title: String
+                let kind: String = "product"
+                var stock = 0
+                var price: Int {
+                    didSet {}
+                }
+                var label: String { title }
+
+                enum CodingKeys: String, CodingKey {
+                    case `hero-image`, title = "headline", stock, price
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.`hero-image`: CodingKeys.`hero-image`.stringValue,
+                    \\Product.title: CodingKeys.title.stringValue,
+                    \\Product.stock: CodingKeys.stock.stringValue,
+                    \\Product.price: CodingKeys.price.stringValue,
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_namesFieldsUnderTheirIfConfig() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                #if os(iOS)
+                let haptics: Bool
+                let layout: String
+                #else
+                let layout: String
+                #endif
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                #if os(iOS)
+                let haptics: Bool
+                let layout: String
+                #else
+                let layout: String
+                #endif
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = {
+                    var fieldNames: [AnyKeyPath: String] = [
+                        \\Product.title: "title",
+                    ]
+                    #if os(iOS)
+                    fieldNames[\\Product.haptics] = "haptics"
+                    fieldNames[\\Product.layout] = "layout"
+                    #else
+                    fieldNames[\\Product.layout] = "layout"
+                    #endif
+                    return fieldNames
+                }()
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_leavesOutPropertiesCodingKeysDoNotList() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                var isFavourite = false
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "headline"
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                var isFavourite = false
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "headline"
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.title: CodingKeys.title.stringValue,
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    // MARK: - Conformances
+
+    func test_conformsToBlockLibraryAndQueryableContent() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case divider
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case divider
+
+                nonisolated static let relations: String = ""
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "divider":
+                        self = .divider
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+
+            nonisolated extension Content: BlockLibrary, QueryableContent {
+            }
+            """,
+            diagnostics: [],
+            macroSpecs: ["BlockLibrary": MacroSpec(type: BlockLibraryMacro.self, conformances: ["BlockLibrary", "QueryableContent"])]
+        )
+    }
+
+    func test_storyblokContent_leavesOutLazyProperties() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("note")
+            struct Note {
+                let title: String
+                lazy var normalized: String = title.lowercased()
+            }
+            """,
+            expandedSource: """
+            struct Note {
+                let title: String
+                lazy var normalized: String = title.lowercased()
+            }
+
+            nonisolated extension Note: QueryableContent {
+                public static var technicalName: String? {
+                    "note"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Note.title: "title",
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_returnsItsArgumentAsWritten() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("landing\\u{2D}page")
+            struct Landing {
+            }
+            @StoryblokContent(promoComponent)
+            struct Promo {
+            }
+            """,
+            expandedSource: """
+            struct Landing {
+            }
+            struct Promo {
+            }
+
+            nonisolated extension Landing: QueryableContent {
+                public static var technicalName: String? {
+                    "landing\\u{2D}page"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [:]
+            }
+
+            nonisolated extension Promo: QueryableContent {
+                public static var technicalName: String? {
+                    promoComponent
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [:]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_namesFieldsByTheirCodingKeysCase() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                let platformTitle: String
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "hero\\u{2D}title"
+                    #if os(iOS)
+                    case platformTitle = "ios_title"
+                    #else
+                    case platformTitle = "other_title"
+                    #endif
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                let platformTitle: String
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "hero\\u{2D}title"
+                    #if os(iOS)
+                    case platformTitle = "ios_title"
+                    #else
+                    case platformTitle = "other_title"
+                    #endif
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.title: CodingKeys.title.stringValue,
+                    \\Product.platformTitle: CodingKeys.platformTitle.stringValue,
+                ]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_escapedRawValuesAreWrittenAsTheirValues() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Content {
+                case landing(Landing)
+                case unknown
+
+                enum CodingKeys: String, CodingKey {
+                    case landing = "landing\\u{2D}page"
+                    case unknown
+                }
+
+                struct Landing: Decodable {
+                    let author: Story<Content>
+
+                    enum CodingKeys: String, CodingKey {
+                        case author = "main\\u{2D}author"
+                    }
+                }
+            }
+            """,
+            expandedSource: """
+            enum Content {
+                case landing(Landing)
+                case unknown
+
+                enum CodingKeys: String, CodingKey {
+                    case landing = "landing\\u{2D}page"
+                    case unknown
+                }
+                @StoryblokContent("landing-page")
+
+                struct Landing: Decodable {
+                    let author: Story<Content>
+
+                    enum CodingKeys: String, CodingKey {
+                        case author = "main\\u{2D}author"
+                    }
+                }
+
+                nonisolated static let relations: String = "landing-page.main-author"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: ContentCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "landing-page":
+                        self = .landing(try Landing(from: decoder))
+                    default:
+                        self = .unknown
+                    }
+                }
+
+                enum ContentCodingKeys: String, CodingKey {
+                    case component
                 }
             }
             """,

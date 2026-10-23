@@ -1,6 +1,6 @@
 # Calling Storyblok's APIs with URLSession
 
-How to use the Storyblok [URLSession](https://developer.apple.com/documentation/foundation/urlsession) extension to call the Content Delivery and Management APIs.
+How to use the Storyblok [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) extension to call the Content Delivery and Management APIs.
 
 ## Getting Started
 
@@ -96,7 +96,7 @@ let storyblok = URLSession(storyblok: .cdn(accessToken: "YOUR_ACCESS_TOKEN", reg
 
 ### Rate limit handling
 
-The Content Delivery and Management APIs have different rate limits depending on the [type of request](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit) and your [pricing plan](https://www.storyblok.com/pricing/technical-limits), these are expressed in requests per second.
+The Content Delivery and Management APIs have different [rate limits](https://www.storyblok.com/docs/api/content-delivery/v2/getting-started/rate-limit) depending on the type of request and your [pricing plan](https://www.storyblok.com/pricing/technical-limits), these are expressed in requests per second.
 
 The plugin implements *API throttling* to slow down the API requests by introducing intermediate delays. You can specify the maximum number of requests per second allowed:
 
@@ -168,7 +168,7 @@ storyblok.dataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "spaces/
 The pattern in the example above can be used as a robust way to handle failed requests:
 - The initial [`dataTaskPublisher(for:)`](https://developer.apple.com/documentation/foundation/urlsession/datataskpublisher(for:)-61v3e) returns a publisher that will publish a [URLError](https://developer.apple.com/documentation/foundation/urlerror/) on network failure.
 - While [`failOnErrorResponse(.recoverable)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving a transient error response from the API.
-- [`retry(5)`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
+- [`retry`](https://developer.apple.com/documentation/combine/publisher/retry(_:)) will reattempt the request up to five times on any errors published by `dataTaskPublisher(for:)` and `failOnErrorResponse(.recoverable)`.
 - For unrecoverable error responses, [`failOnErrorResponse(.all)`](doc:URLSessionExtension/Combine/Publisher/failOnErrorResponse(_:)) will publish a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError) on receiving any other error response from the API.
 - Finally, [`catch`](https://developer.apple.com/documentation/combine/publisher/catch(_:)) will handle any errors published by the preceding `failOnErrorResponse(.all)`, in addition to errors thrown by the preceding `retry(5)` in the case the fifth and final retry also resulted in failure.
 
@@ -181,6 +181,73 @@ Sessions created with the Storyblok `URLSession` [convenience initializer](doc:U
 The delay is automatically applied before retries and all other pending requests made with the same `URLSession` instance.
 
 > Tip: Depending on your scenario it could also be beneficial to enable  [waitsForConnectivity](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/waitsforconnectivity) on the [`URLSessionConfiguration`](https://developer.apple.com/documentation/foundation/urlsessionconfiguration) when [creating](doc:URLSessionExtension/Foundation/URLSession/init(storyblok:configuration:)) your session.
+
+### Showing cached responses while revalidating
+
+To show what a request last returned straight away and then update it with the latest version, use ``URLSessionExtension/Foundation/URLSession/cachedDataTaskPublisher(for:)-(URLRequest)`` in place of `dataTaskPublisher(for:)`. Its ``URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher`` publishes up to two responses, following a *stale-while-revalidate* pattern:
+
+```swift
+storyblok.cachedDataTaskPublisher(for: URLRequest(storyblok: storyblok, path: "stories/home"))
+    .receive(on: DispatchQueue.main)
+    .sink { completion in
+        if case let .failure(error) = completion { print(error.localizedDescription) }
+    } receiveValue: { data, response in
+        render(data)
+    }
+```
+
+1. The response the URL cache holds for the request, read with [`returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload) so that it never touches the network. When the cache holds none, or holds an error response, the publisher moves straight on.
+2. The response the request loads with its own cache policy. Transient failures are retried up to three times, and any error response then fails the publisher with a [`ResponseError`](doc:URLSessionExtension/Api/ResponseError), as in <doc:UserGuide#Retrying-failed-requests>. When this response has the same data and `total` header as the cached one, it is not published again.
+
+A failure ends the publisher after the cached response, if there was one, so keep the last value received to go on showing it.
+
+> Note: The publisher retries the request itself, so don't follow it with your own `retry`: that would subscribe again from the start and publish the cached response a second time.
+
+For published content the Storyblok `URLRequest` [convenience initializer](doc:Foundation/URLRequest/init(storyblok:path:cachePolicy:timeoutInterval:)) sets [`returnCacheDataElseLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedataelseload), so the request is also answered from the cache when it holds a response, and only one response is published. A new `cv` changes the URL of every request and so starts them on a fresh cache entry, as described in <doc:UserGuide#Configuring-default-parameters-for-all-requests>.
+
+### Paging through results
+
+The Content Delivery and Management APIs return long lists, such as stories, assets or datasource entries, a page at a time: the `page` and `per_page` query parameters choose the page, and the `total` response header counts the entries across all pages. ``URLSessionExtension/Foundation/URLSession/pagePublisher(for:page:perPage:upstream:elements:)`` adds the parameters to a request and publishes the page as a ``Page``, which says whether there is another:
+
+```swift
+struct Asset: Decodable, Identifiable {
+    let id: Int
+    let filename: String
+}
+
+var assets: Page<Asset> = []
+var number = 1
+repeat {
+    let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/assets")
+    let page = try await storyblok
+        .pagePublisher(for: request, page: number, perPage: 100) { body in
+            try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
+        }
+        .values
+        .first { _ in true }!
+    assets = assets + page
+    number += 1
+} while assets.hasNextPage
+```
+
+Joining pages with `+` leaves out an element already on an earlier page, since page-number paging shifts when content changes between requests.
+
+By default each page is fetched fresh, pass [`URLSession.CachedDataTaskPublisher.init`](doc:URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher/init(request:session:)) as the `upstream` to receive the cached page, if present, then the fresh one (see <doc:UserGuide#Showing-cached-responses-while-revalidating>):
+
+```swift
+let pages = storyblok.pagePublisher(for: request, page: 1, perPage: 100, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+    try JSONDecoder().decode([String: [Asset]].self, from: body)["assets"] ?? []
+}
+for try await page in pages.values {
+    assets = page  // the cached copy at once, then the fresh one
+}
+```
+
+The `upstream` can be any function that creates a publisher of a request's data and response, so a script can retry transient failures, for example:
+
+```swift
+upstream: { URLSession.DataTaskPublisher(request: $0, session: $1).failOnErrorResponse(.recoverable).retry(3) }
+```
 
 ### Working with JSON 
 

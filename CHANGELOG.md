@@ -1,5 +1,35 @@
 ### Changelog
 
+**main**
+
+- Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
+  page asked for as a `Page<Story<Content>>`, sending its cached copy first and then the fresh one, as `story()` does.
+- Added `StoriesQuery` for the endpoint's parameters, addressing your content's fields by key path for sorting and
+  filter queries, and created inline with `StoriesQuery { … }`. The `@BlockLibrary` macro conforms each nested
+  content struct to the new `QueryableContent` protocol that makes this possible, by attaching the new
+  `@StoryblokContent(_:)` macro to it. Apply `@StoryblokContent(_:)` yourself to a content struct declared outside a
+  block library.
+- Added `StoryQuery` for the story endpoint's parameters, `excludingFields` and `fromRelease`, configured in a new
+  trailing `query` closure on both `story(_:resolveLevel:query:)` overloads. It defaults to none, so existing calls
+  are unchanged.
+- Added `Page<Element>` to URLSessionExtension, a page of a paginated endpoint's elements: a collection carrying the
+  `total`, page `number`, page `size` and `hasNextPage`. Join a later page onto earlier ones with `+`, which leaves out
+  elements already present.
+- Added `URLSession.PagePublisher`, created with `pagePublisher(for:page:perPage:upstream:elements:)`, which fetches a
+  page of any paginated Content Delivery or Management API endpoint as a `Page`. It fetches the page fresh by default;
+  pass `upstream: URLSession.CachedDataTaskPublisher.init` to publish the cached copy first.
+- StoryblokClient now re-exports URLSessionExtension, so `import StoryblokClient` alone makes `Page`, `Api` and the
+  session helpers available.
+- Added the `StoryblokUI` library, whose `Stories` view produces rows for the stories matching a query, loads the
+  next page as its last row appears, starts again when the query changes, and shows replaceable loading, empty and
+  failure views. It also holds rich text rendering, moved from `RichTextView`.
+- Deprecated the `RichTextView` library, whose rich text rendering is now part of `StoryblokUI`. The `RichTextView`
+  product and module still work, re-exporting `StoryblokUI`, until the next major release. Depend on `StoryblokUI`
+  and `import StoryblokUI` instead; nothing else changes.
+- Added `URLSession.CachedDataTaskPublisher`, created with `cachedDataTaskPublisher(for:)`, which publishes the
+  response the URL cache holds for a request and then the response the request loads.
+- `Story` now conforms to `Identifiable` via its `id`, so stories can be passed directly to `List` and `ForEach`.
+
 **1.0.0**
 
 - BREAKING CHANGE: `StoryblokClient.Error` is now an enum with `api(message:underlyingError:)` and

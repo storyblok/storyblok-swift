@@ -46,7 +46,11 @@ extension BlockLibrary {
 ///   the `resolve_relations` API parameter.
 /// - Synthesizes an `init(from:)` decoder that dispatches on the `component` field, plus the
 ///   `CodingKeys` enums it needs.
-/// - Adds a conformance to ``BlockLibrary`` if the type does not already declare it.
+/// - Attaches ``StoryblokContent(_:)`` to each nested content struct, so that a ``StoriesQuery``
+///   can be typed to it and address its fields by key path. A component carried in labeled
+///   values has no type of its own, so model one you query by its fields with a nested struct.
+/// - Adds conformances to ``BlockLibrary`` and ``QueryableContent`` if the type does not already
+///   declare them, so a ``StoriesQuery`` typed to the whole library asks for every component.
 ///
 /// ```swift
 /// @BlockLibrary
@@ -68,7 +72,8 @@ extension BlockLibrary {
 /// nonisolated extension Content: BlockLibrary {}
 /// ```
 @attached(member, names: named(relations), named(init), named(CodingKeys), arbitrary)
-@attached(extension, conformances: BlockLibrary)
+@attached(memberAttribute)
+@attached(extension, conformances: BlockLibrary, QueryableContent)
 public macro BlockLibrary() = #externalMacro(
     module: "StoryblokClientMacros",
     type: "BlockLibraryMacro"
@@ -84,4 +89,14 @@ internal extension CodingUserInfoKey {
     static let storyblokRelations = CodingUserInfoKey(rawValue: "com.storyblok.relations")!
 }
 
-
+/// Conforms one content `struct` to ``QueryableContent``, so a ``StoriesQuery`` can address its
+/// fields by key path.
+///
+/// Applied for you by ``BlockLibrary()`` to each nested content struct, carrying the technical
+/// name of the enum case that holds it. Apply it yourself only to a content type declared outside
+/// a block library.
+@attached(extension, conformances: QueryableContent, names: named(technicalName), named(fieldNames))
+public macro StoryblokContent(_ technicalName: String) = #externalMacro(
+    module: "StoryblokClientMacros",
+    type: "StoryblokContentMacro"
+)

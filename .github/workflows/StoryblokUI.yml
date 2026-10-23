@@ -1,26 +1,30 @@
-name: RichTextView
+name: StoryblokUI
 
 on:
   push:
     branches: [ "main" ]
     paths:
       - 'Package.*'
+      - 'Sources/StoryblokUI/**.swift'
       - 'Sources/RichTextView/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
-      - 'Tests/RichTextViewTests/**.swift'
-      - '.github/workflows/RichTextView.yml'
-      - '.swiftpm/xcode/xcshareddata/xcschemes/RichTextViewTests.xcscheme'
+      - 'Tests/StoryblokUITests/**.swift'
+      - '.github/workflows/StoryblokUI.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokUITests.xcscheme'
   pull_request:
     branches: [ "main" ]
     paths:
       - 'Package.*'
+      - 'Sources/StoryblokUI/**.swift'
       - 'Sources/RichTextView/**.swift'
+      - 'Sources/URLSessionExtension/**.swift'
       - 'Sources/StoryblokClient/**.swift'
       - 'Sources/StoryblokClientMacros/**.swift'
-      - 'Tests/RichTextViewTests/**.swift'
-      - '.github/workflows/RichTextView.yml'
-      - '.swiftpm/xcode/xcshareddata/xcschemes/RichTextViewTests.xcscheme'
+      - 'Tests/StoryblokUITests/**.swift'
+      - '.github/workflows/StoryblokUI.yml'
+      - '.swiftpm/xcode/xcshareddata/xcschemes/StoryblokUITests.xcscheme'
   workflow_call:
   workflow_dispatch:
 concurrency:
@@ -39,17 +43,17 @@ jobs:
       matrix:
         include:
           - platform: macOS
-            build: swift build --target RichTextViewTests
-            test: swift test --filter RichTextViewTests
+            build: swift build --target StoryblokUITests
+            test: swift test --filter StoryblokUITests
           - platform: iOS
-            build: xcodebuild build -scheme RichTextViewTests -destination 'platform=iOS Simulator,name=iPhone 17'
-            test: xcodebuild test -scheme RichTextViewTests -destination 'platform=iOS Simulator,name=iPhone 17'
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=iOS Simulator,name=iPhone 17'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=iOS Simulator,name=iPhone 17'
           - platform: watchOS
-            build: xcodebuild build -scheme RichTextViewTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
-            test: xcodebuild test -scheme RichTextViewTests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=watchOS Simulator,name=Apple Watch SE 3 (40mm)'
           - platform: tvOS
-            build: xcodebuild build -scheme RichTextViewTests -destination 'platform=tvOS Simulator,name=Apple TV'
-            test: xcodebuild test -scheme RichTextViewTests -destination 'platform=tvOS Simulator,name=Apple TV'
+            build: xcodebuild build -scheme StoryblokUITests -destination 'platform=tvOS Simulator,name=Apple TV'
+            test: xcodebuild test -scheme StoryblokUITests -destination 'platform=tvOS Simulator,name=Apple TV'
     steps:
       - uses: actions/checkout@v4
         with:

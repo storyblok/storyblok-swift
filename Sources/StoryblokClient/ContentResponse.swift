@@ -3,7 +3,7 @@ import Foundation
 /// Mutable store of per-rel subdecoders, keyed by lowercase UUID string.
 ///
 /// An instance is created per request and placed in a `JSONDecoder`'s `userInfo` before
-/// decoding. `StoryResponse` populates it from the `rels` array first, and then
+/// decoding. `ContentResponse` populates it from the `rels` array first, and then
 /// `Story.init(from:)` draws from it when it encounters a UUID string in a relation field.
 final class RelationStore: @unchecked Sendable {
     var decoders: [String: any Decoder] = [:]
@@ -11,7 +11,7 @@ final class RelationStore: @unchecked Sendable {
     /// and depth-limit circular references.
     var decoding: [String: Int] = [:]
     /// Maximum number of times the same UUID may appear in the decoding call stack before the
-    /// relation is treated as circular. Mirrors the `resolveLevel` passed to `story(…)`.
+    /// relation is treated as circular. Mirrors the `resolveLevel` passed to `story(…)` or `stories(…)`.
     var resolveLevel: Int = 1
 }
 
@@ -20,16 +20,20 @@ private struct RelUUID: Decodable {
     let uuid: UUID
 }
 
-/// The top-level shape of a Storyblok [story endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-one-story) response.
+/// The top-level shape of a Storyblok content response: a single story from the [story
+/// endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-one-story), or
+/// a page of stories from the [stories
+/// endpoint](https://www.storyblok.com/docs/api/content-delivery/v2/stories/retrieve-multiple-stories).
 ///
 /// - Parameters:
-///   - Content: The ``Block`` type of the primary story's content.
+///   - Payload: What the response carries: `Story<Content>` for a single story, or
+///     `[Story<Content>]` for a page of them.
 ///
-/// `StoryResponse` registers a subdecoder for each rel in the `rels` array **before** decoding
-/// `story`, so that `Story.init(from:)` can lazily resolve UUID-string placeholders on demand.
-struct StoryResponse<Content: Decodable>: Decodable {
+/// `ContentResponse` registers a subdecoder for each rel in the `rels` array **before** decoding
+/// the payload, so that `Story.init(from:)` can lazily resolve UUID-string placeholders on demand.
+struct ContentResponse<Payload: Decodable>: Decodable {
 
-    let story: Story<Content>
+    let payload: Payload
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -44,11 +48,13 @@ struct StoryResponse<Content: Decodable>: Decodable {
             }
         }
 
-        story = try container.decode(Story<Content>.self, forKey: .story)
+        // A response carries one or the other, never both.
+        payload = try container.decode(Payload.self, forKey: container.contains(.story) ? .story : .stories)
     }
 
     private enum CodingKeys: String, CodingKey {
         case story
+        case stories
         case rels
     }
 }
