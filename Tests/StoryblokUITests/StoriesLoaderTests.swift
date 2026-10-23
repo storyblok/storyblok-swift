@@ -223,4 +223,22 @@ struct StoriesLoaderTests {
         #expect(loader.failure == nil)
         #expect(server.requested == [1, 2, 1, 2], "both failed pages are fetched again")
     }
+
+    @Test
+    func `a later total from an earlier page reveals the next page`() async {
+        let server = Server()
+        let loader = await loaded(from: server, total: 4)  // page 1's cached copy
+        loader.load(page: 2)
+        await settle()
+        server.send([3, 4], total: 4, as: 2)
+        await settle()
+        #expect(loader.page?.hasNextPage == false, "four of four loaded")
+
+        server.send([1, 2], total: 6, as: 1)  // page 1's fresh copy: two stories published since
+        await settle()
+
+        #expect(loader.page?.total == 6)
+        #expect(loader.page?.hasNextPage == true, "the stories loaded now stop short of the total")
+        #expect(loader.page?.map(\.name) == ["Story 1", "Story 2", "Story 3", "Story 4"])
+    }
 }
