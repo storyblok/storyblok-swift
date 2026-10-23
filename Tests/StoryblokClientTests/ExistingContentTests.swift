@@ -63,6 +63,27 @@ struct Renamed : Decodable {
     }
 }
 
+/// A block library whose `CodingKeys` raw values use escapes, for its component's name and for a
+/// relation field's key, which the macro must write out as the values they denote.
+@BlockLibrary
+indirect enum EscapedLibrary : Decodable {
+    case landing(Landing)
+    case unknown
+
+    enum CodingKeys: String, CodingKey {
+        case landing = "landing\u{2D}page"
+        case unknown
+    }
+
+    struct Landing : Decodable {
+        let author: Story<EscapedLibrary>?
+
+        enum CodingKeys: String, CodingKey {
+            case author = "main\u{2D}author"
+        }
+    }
+}
+
 @Suite
 struct ExistingContentTests {
 
@@ -82,6 +103,18 @@ struct ExistingContentTests {
     func `a field is named as its CodingKeys case decodes it`() {
         #expect(Renamed.fieldNames[\Renamed.title] == "hero-title")
         #expect(Renamed.fieldNames[\Renamed.summary] == "teaser")
+    }
+
+    @Test
+    func `escaped raw values name components and relations by their values`() throws {
+        #expect(EscapedLibrary.relations == "landing-page.main-author")
+        #expect(EscapedLibrary.Landing.technicalName == "landing-page")
+
+        let content = try JSONDecoder().decode(EscapedLibrary.self, from: Data(#"{ "_uid": "a", "component": "landing-page" }"#.utf8))
+        guard case .landing = content else {
+            Issue.record("expected the landing-page component to decode as .landing, got \(content)")
+            return
+        }
     }
 
     @Test
