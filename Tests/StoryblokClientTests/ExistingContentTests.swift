@@ -46,6 +46,23 @@ struct Promo : Decodable {
     let title: String
 }
 
+/// Content whose `CodingKeys` are private, escape a raw value and declare a case under `#if`, which
+/// the field table must name as decoding does.
+@StoryblokContent("article")
+struct Renamed : Decodable {
+    let title: String
+    let summary: String
+
+    private enum CodingKeys: String, CodingKey {
+        case title = "hero\u{2D}title"
+        #if swift(>=5)
+        case summary = "teaser"
+        #else
+        case summary = "abstract"
+        #endif
+    }
+}
+
 @Suite
 struct ExistingContentTests {
 
@@ -59,6 +76,12 @@ struct ExistingContentTests {
     func `a technical name is the argument's value, however it is written`() {
         #expect(Landing.technicalName == "landing-page")
         #expect(Promo.technicalName == "promo-banner")
+    }
+
+    @Test
+    func `a field is named as its CodingKeys case decodes it`() {
+        #expect(Renamed.fieldNames[\Renamed.title] == "hero-title")
+        #expect(Renamed.fieldNames[\Renamed.summary] == "teaser")
     }
 
     @Test
