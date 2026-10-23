@@ -593,16 +593,16 @@ public struct StoryblokContentMacro: ExtensionMacro {
 
         // A field whose Storyblok name differs from the property is named by CodingKeys. When the
         // struct declares them, they are also the only properties decoding fills in.
-        var codingKeys: [String: String]?
+        var codingKeys: Set<String>?
         for member in structDecl.memberBlock.members {
             guard let enumDecl = member.decl.as(EnumDeclSyntax.self), enumDecl.name.text == "CodingKeys" else { continue }
-            codingKeys = parseCodingKeys(from: enumDecl)
+            codingKeys = codingKeyCaseNames(in: enumDecl.memberBlock.members)
         }
 
         let entries = fieldEntries(in: structDecl.memberBlock.members, codingKeys: codingKeys)
         let fields = entries.compactMap { entry -> String? in
             guard case let .field(keyPath, name) = entry else { return nil }
-            return "\\\(type.trimmed).\(keyPath): \(literalString(name)),"
+            return "\\\(type.trimmed).\(keyPath): \(name),"
         }
         let literal = fields.isEmpty ? "[:]" : "[\n" + fields.joined(separator: "\n") + "\n]"
 
@@ -633,14 +633,19 @@ public struct StoryblokContentMacro: ExtensionMacro {
 
 /// A property `@StoryblokContent` names, or a `#if` whose clauses declare some.
 private indirect enum FieldEntry {
-    /// The property's identifier as written, for its key path, and the name Storyblok knows it by.
+    /// The property's identifier as written, for its key path, and an expression for the name
+    /// Storyblok knows it by.
     case field(keyPath: String, name: String)
     /// Each clause's directive (`#if os(iOS)`, `#else`) with the entries it declares.
     case conditional([(directive: String, entries: [FieldEntry])])
 }
 
 /// The properties among `members` that decoding fills in, keeping any `#if` around them.
-private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: [String: String]?) -> [FieldEntry] {
+///
+/// When the struct declares `CodingKeys`, `codingKeys` holds the names of its cases, and a
+/// property is named by its case's `stringValue`: the name decoding uses, however its raw value
+/// is written and whichever `#if` branch declares it.
+private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: Set<String>?) -> [FieldEntry] {
     var entries: [FieldEntry] = []
     for member in members {
         if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
@@ -670,10 +675,10 @@ private func fieldEntries(in members: MemberBlockItemListSyntax, codingKeys: [St
             let name = strippingBackticks(identifier)
             if let codingKeys {
                 // Not among the declared CodingKeys, so not decoded.
-                guard let key = codingKeys[name] else { continue }
-                entries.append(.field(keyPath: identifier, name: key))
+                guard codingKeys.contains(name) else { continue }
+                entries.append(.field(keyPath: identifier, name: "CodingKeys.\(identifier).stringValue"))
             } else {
-                entries.append(.field(keyPath: identifier, name: name))
+                entries.append(.field(keyPath: identifier, name: literalString(name)))
             }
         }
     }
@@ -685,11 +690,27 @@ private func renderAssignments(_ entries: [FieldEntry], of type: String) -> [Str
     entries.flatMap { entry -> [String] in
         switch entry {
             case let .field(keyPath, name):
-                return ["fieldNames[\\\(type).\(keyPath)] = \(literalString(name))"]
+                return ["fieldNames[\\\(type).\(keyPath)] = \(name)"]
             case let .conditional(clauses):
                 return clauses.flatMap { [$0.directive] + renderAssignments($0.entries, of: type) } + ["#endif"]
         }
     }
+}
+
+/// The names of the `CodingKeys` cases among `members`, including those declared under `#if`.
+private func codingKeyCaseNames(in members: MemberBlockItemListSyntax) -> Set<String> {
+    var names = Set<String>()
+    for member in members {
+        if let ifConfig = member.decl.as(IfConfigDeclSyntax.self) {
+            for clause in ifConfig.clauses {
+                guard case let .decls(decls) = clause.elements else { continue }
+                names.formUnion(codingKeyCaseNames(in: decls))
+            }
+        } else if let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) {
+            names.formUnion(caseDecl.elements.map { strippingBackticks($0.name.text) })
+        }
+    }
+    return names
 }
 
 /// Whether `binding` stores its value: it has no accessors, or only `willSet` and `didSet`.

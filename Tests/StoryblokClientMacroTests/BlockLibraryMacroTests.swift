@@ -1577,10 +1577,10 @@ final class BlockLibraryMacroTests: XCTestCase {
                 }
                 // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
                 nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
-                    \\Product.`hero-image`: "hero-image",
-                    \\Product.title: "headline",
-                    \\Product.stock: "stock",
-                    \\Product.price: "price",
+                    \\Product.`hero-image`: CodingKeys.`hero-image`.stringValue,
+                    \\Product.title: CodingKeys.title.stringValue,
+                    \\Product.stock: CodingKeys.stock.stringValue,
+                    \\Product.price: CodingKeys.price.stringValue,
                 ]
             }
             """,
@@ -1667,7 +1667,7 @@ final class BlockLibraryMacroTests: XCTestCase {
                 }
                 // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
                 nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
-                    \\Product.title: "headline",
+                    \\Product.title: CodingKeys.title.stringValue,
                 ]
             }
             """,
@@ -1776,6 +1776,55 @@ final class BlockLibraryMacroTests: XCTestCase {
                 }
                 // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
                 nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [:]
+            }
+            """,
+            diagnostics: [],
+            macros: ["StoryblokContent": StoryblokContentMacro.self]
+        )
+    }
+
+    func test_storyblokContent_namesFieldsByTheirCodingKeysCase() {
+        assertMacroExpansion(
+            """
+            @StoryblokContent("product")
+            struct Product {
+                let title: String
+                let platformTitle: String
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "hero\\u{2D}title"
+                    #if os(iOS)
+                    case platformTitle = "ios_title"
+                    #else
+                    case platformTitle = "other_title"
+                    #endif
+                }
+            }
+            """,
+            expandedSource: """
+            struct Product {
+                let title: String
+                let platformTitle: String
+
+                enum CodingKeys: String, CodingKey {
+                    case title = "hero\\u{2D}title"
+                    #if os(iOS)
+                    case platformTitle = "ios_title"
+                    #else
+                    case platformTitle = "other_title"
+                    #endif
+                }
+            }
+
+            nonisolated extension Product: QueryableContent {
+                public static var technicalName: String? {
+                    "product"
+                }
+                // Safe: a constant that is never mutated. Unchecked only because `AnyKeyPath` is not `Sendable`.
+                nonisolated(unsafe) public static let fieldNames: [AnyKeyPath: String] = [
+                    \\Product.title: CodingKeys.title.stringValue,
+                    \\Product.platformTitle: CodingKeys.platformTitle.stringValue,
+                ]
             }
             """,
             diagnostics: [],
