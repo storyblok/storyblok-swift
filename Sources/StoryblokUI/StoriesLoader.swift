@@ -108,10 +108,20 @@ final class StoriesLoader<Library : BlockLibrary, Content : QueryableContent> : 
         if let total = page.total { latestTotal = total }
 
         var ordered = pages.keys.sorted().map { pages[$0]! }
-        if let latestTotal, let last = ordered.last, last.total != latestTotal {
-            ordered[ordered.count - 1] = Page(Array(last), number: last.number, size: last.size, total: latestTotal)
+        var last = ordered.removeLast()
+        if let latestTotal, last.total != latestTotal {
+            last = Page(Array(last), number: last.number, size: last.size, total: latestTotal)
         }
-        self.page = ordered.reduce(Page([]), +)
+
+        // The earlier pages are flattened once, leaving out repeats, rather than joined one by one,
+        // which would rebuild the stories seen so far for every page. The last page is joined on,
+        // so the result takes its `total` and `hasNextPage`.
+        var seen = Set<Story<Content>.ID>()
+        var stories: [Story<Content>] = []
+        for page in ordered {
+            for story in page where seen.insert(story.id).inserted { stories.append(story) }
+        }
+        self.page = Page(stories) + last
     }
 
     private func reset() {
