@@ -241,4 +241,22 @@ struct StoriesLoaderTests {
         #expect(loader.page?.hasNextPage == true, "the stories loaded now stop short of the total")
         #expect(loader.page?.map(\.name) == ["Story 1", "Story 2", "Story 3", "Story 4"])
     }
+
+    @Test
+    func `pages join in order, leaving out repeats, with the last page's metadata`() async {
+        let server = Server()
+        let loader = await loaded(from: server, total: 6)
+        loader.load(page: 2)
+        await settle()
+        server.send([2, 3], total: 6, as: 2)  // story 2 shifted onto page 2 as well
+        await settle()
+        loader.load(page: 3)
+        await settle()
+        server.send([3, 4], total: 6, as: 3)
+        await settle()
+
+        #expect(loader.page?.map(\.name) == ["Story 1", "Story 2", "Story 3", "Story 4"])
+        #expect(loader.page?.number == 3)
+        #expect(loader.page?.hasNextPage == false, "pages 1 to 3 hold all six")
+    }
 }
