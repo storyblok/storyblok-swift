@@ -173,6 +173,28 @@ struct StoriesQueryTests {
     }
 
     @Test
+    func `a second condition on the same field and operation replaces the first`() {
+        var query = StoriesQuery<QueryLibrary.Product>()
+        query.filter {
+            $0.stock > 5
+            $0.stock > 10
+        }
+        #expect(query.queryItems.filter { $0.name == "filter_query[stock][gt_int]" }.map(\.value) == ["10"],
+                "the API keeps only the last value of a repeated parameter, so only that one is sent")
+    }
+
+    @Test
+    func `or conditions added as parameters are all sent`() {
+        var query = StoriesQuery<QueryLibrary.Product>()
+        query.parameter("filter_query[__or][][headline][in]", "Spaceship")
+        query.parameter("filter_query[__or][][headline][in]", "Rocket")
+
+        #expect(query.queryItems.filter { $0.name == "filter_query[__or][][headline][in]" }.map(\.value) == [
+            "Spaceship", "Rocket",
+        ])
+    }
+
+    @Test
     func `an added parameter goes out after the generated ones, replacing none of them`() {
         var query = StoriesQuery<QueryLibrary.Product>()
         query.parameter("filter_query[body.0.component][in]", "hero")
