@@ -392,15 +392,19 @@ The field's Swift type decides which operations are offered, so one the field ca
 - Any field has `is(_:)`, which takes a ``Presence``: `.empty`, `.notEmpty`, `.isTrue`, `.isFalse`, `.null` or `.notNull`.
 - Text holding a number is compared numerically once you say how, with `asWholeNumber` or `asDecimal`.
 
+Every condition must hold. A field takes one value per operation, so a second condition with the same field and operation replaces the first, as the API would keep only the last.
+
 The ``BlockLibrary()`` macro makes key paths work by conforming each nested content struct to ``QueryableContent``, which supplies the component's technical name and the name Storyblok knows each field by. For a content struct declared outside a block library, apply ``StoryblokContent(_:)`` with the component's technical name yourself.
 
 ### Parameters without an entry point
 
-``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, such as a filter on one of the [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields) a key path cannot address, or a parameter the API has gained since this version:
+``StoriesQuery/parameter(_:_:)`` adds any query parameter as written, such as a filter on one of the [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields) a key path cannot address, conditions any one of which may hold with [`__or`](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries), or a parameter the API has gained since this version:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Article>) in
     query.parameter("filter_query[seo.description][is]", "not_empty")
+    query.parameter("filter_query[__or][][category][in]", "news")
+    query.parameter("filter_query[__or][][author][in]", "jane")
     query.parameter("some_future_param", "value")
 }
 ```

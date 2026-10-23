@@ -185,9 +185,14 @@ extension StoriesQuery {
     /// Add [filter query](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries)
     /// conditions, addressing fields by key path.
     ///
+    /// Every condition must hold. A field takes one value per operation, so a second condition
+    /// with the same field and operation replaces the first, as the API would keep only the last.
+    ///
     /// A key path addresses one of `Content`'s own fields. The API addresses
     /// [nested blocks and fields](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries/nested-blocks-and-fields)
-    /// with a dotted path, which has no entry point — write those out with ``parameter(_:_:)``.
+    /// with a dotted path, and matches any one of several conditions with
+    /// [`__or`](https://www.storyblok.com/docs/api/content-delivery/v2/filter-queries).
+    /// Neither has an entry point — write those out with ``parameter(_:_:)``.
     public mutating func filter(@FilterBuilder<Content> _ conditions: (Fields<Content>) -> [Filter<Content>]) {
         filters.append(contentsOf: conditions(Fields()))
     }
@@ -198,7 +203,7 @@ extension StoriesQuery {
 extension StoriesQuery {
 
     /// Add a query parameter as given, for one this version has no entry point for — a parameter
-    /// the API has gained since, or a filter on a nested field.
+    /// the API has gained since, a filter on a nested field, or an `__or` condition.
     ///
     /// The parameter is added to the query string after those this query generates, in the order
     /// added, and adding a name more than once sends it more than once. It replaces nothing, so
