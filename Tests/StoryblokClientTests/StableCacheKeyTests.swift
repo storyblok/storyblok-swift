@@ -4,7 +4,7 @@ import URLSessionExtension
 @testable import StoryblokClient
 
 /// `URLCache` keys an entry on the request URL exactly as written, so every request for a resource has to be
-/// spelled the same way or the cached value ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` looks for
+/// spelled the same way or the cached value ``StoryblokClient/story(_:resolveLevel:)-(String,_)`` looks for
 /// first is stored somewhere it never reads.
 @Suite
 struct StableCacheKeys {

@@ -58,6 +58,8 @@ Read <doc:UserGuide> to get started.
 
 ### Fetching stories
 
+- ``StoryblokClient/story(_:resolveLevel:)-(String,_)``
+- ``StoryblokClient/story(_:resolveLevel:)-(UUID,_)``
 - ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)``
 - ``StoryblokClient/story(_:resolveLevel:query:)-(UUID,_,_)``
 - ``StoryQuery``
