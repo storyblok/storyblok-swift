@@ -1,6 +1,6 @@
 ### Changelog
 
-**main**
+**1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
   page asked for as a `Page<Story<Content>>`, sending its cached copy first and then the fresh one, as `story()` does.
