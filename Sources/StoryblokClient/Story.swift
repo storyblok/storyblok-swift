@@ -138,7 +138,7 @@ public struct Alternate: Decodable, Hashable, Sendable {
     }
 }
 
-private enum StoryRelationError: Error { case unresolved, circular, blank }
+private enum StoryRelationError: Error { case unresolved, circular }
 
 extension Story : Decodable {
     
@@ -169,13 +169,14 @@ extension Story : Decodable {
     }
 
     public init(from decoder: any Decoder) throws {
-        // A single-option field sourced from stories sends "" when no story is selected.
+        // A single-option field sourced from stories sends "" when no story is selected. The
+        // optional overload of `decodeIfPresent` returns nil for it before reaching here, so only
+        // a required field throws, and an enclosing optional story does not swallow the error.
         if let single = try? decoder.singleValueContainer(), (try? single.decode(String.self)) == "" {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "No story selected (model as optional (Story<T>?) to decode as nil)",
-                    underlyingError: StoryRelationError.blank
+                    debugDescription: "No story selected (model as optional (Story<T>?) to decode as nil)"
                 )
             )
         }
@@ -257,6 +258,7 @@ extension KeyedDecodingContainer {
     /// `decode`, which does not go through these overloads, so these errors still propagate for them.
     public func decodeIfPresent<T: Decodable>(_ type: Story<T>.Type, forKey key: Key) throws -> Story<T>? {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if (try? decode(String.self, forKey: key)) == "" { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
         } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
