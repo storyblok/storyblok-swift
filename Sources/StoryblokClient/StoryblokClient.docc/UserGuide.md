@@ -348,7 +348,7 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 }
 ```
 
-A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it:
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. A number field may still be modelled as a `String`, since that is how Storyblok serialises it (see <doc:UserGuide#Number-field>). Its type cannot settle the ordering, so `as:` states it:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Product>) in
@@ -574,6 +574,25 @@ enum Content {
 print(page.image.filename)
 print(page.image.alt ?? "")
 ```
+
+### Number field
+
+Storyblok serialises a number field's value as text, such as `"42"` or `"4.5"`. The client decodes that text into a number type: `Int` and the other integer types, `Double`, `Float` and `Decimal`. It decodes a JSON number into them as usual too. Text that is not a number of that type, such as `"4.5"` for an `Int`, throws a `DecodingError`. A blank number field, sent as `""`, decodes as `nil` for an optional property and throws for a required one.
+
+```swift
+@BlockLibrary
+enum Content {
+    case product(Product)
+
+    struct Product: Decodable {
+        let stock: Int        // "42"
+        let price: Decimal    // "4.5"
+        let weight: Double?   // "" decodes as nil
+    }
+}
+```
+
+This applies to content decoded by ``StoryblokClient``, from the story or stories it fetches and the stories their relations resolve to. Decode the field as a `String` instead to receive the text as sent.
 
 ## Caching
 
