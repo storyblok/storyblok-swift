@@ -169,6 +169,18 @@ extension Story : Decodable {
     }
 
     public init(from decoder: any Decoder) throws {
+        // A single-option field sourced from stories sends "" when no story is selected. The
+        // optional overload of `decodeIfPresent` returns nil for it before reaching here, so only
+        // a required field throws, and an enclosing optional story does not swallow the error.
+        if let single = try? decoder.singleValueContainer(), (try? single.decode(String.self)) == "" {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "No story selected (model as optional (Story<T>?) to decode as nil)"
+                )
+            )
+        }
+
         // When a Story field carries a UUID placeholder string instead of an inline
         // story object, resolve it from the RelationStore in userInfo.
         if let single = try? decoder.singleValueContainer(),
@@ -241,11 +253,12 @@ extension Story: Identifiable {}
 
 extension KeyedDecodingContainer {
     /// Specialised overloads for optional story-relation fields. When a UUID placeholder cannot
-    /// be resolved (no store, missing rels) or a circular reference hits the depth limit, the
-    /// field decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does
-    /// not go through these overloads, so unresolved/circular errors still propagate for them.
+    /// be resolved (no store, missing rels), a circular reference hits the depth limit, or no story
+    /// is selected (`""`), the field decodes as `nil` instead of throwing. Non-optional fields use
+    /// `decode`, which does not go through these overloads, so these errors still propagate for them.
     public func decodeIfPresent<T: Decodable>(_ type: Story<T>.Type, forKey key: Key) throws -> Story<T>? {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if (try? decode(String.self, forKey: key)) == "" { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
         } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
