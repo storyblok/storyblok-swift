@@ -575,6 +575,24 @@ print(page.image.filename)
 print(page.image.alt ?? "")
 ```
 
+### Date field
+
+A date field decodes as a `Date`. The client reads ISO 8601, with or without fractional seconds, as well as the `yyyy-MM-dd` and `yyyy-MM-dd HH:mm` forms a Date/Time field sends, in UTC. Decode it as a `String` instead to receive the text exactly as sent.
+
+Storyblok sends a date field left blank as `""` rather than `null`, so model one an editor may leave blank as `Date?`, which decodes it as `nil`. A blank `Date` throws a `DecodingError`.
+
+```swift
+@BlockLibrary
+enum Content {
+    case event(Event)
+
+    struct Event: Decodable {
+        let startsAt: Date
+        let endsAt: Date?
+    }
+}
+```
+
 ## Caching
 
 The client leverages ``/URLSessionExtension``'s caching for the configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession). When fetching stories the client emits values using a *stale-while-revalidate* pattern:

@@ -1,5 +1,11 @@
 ### Changelog
 
+**main**
+
+- Fixed a date field left blank, which Storyblok sends as `""`, failing the whole response. A `Date?` property now
+  decodes it as `nil`, through a new `KeyedDecodingContainer.decodeIfPresent(_:forKey:)` overload for `Date`. A blank
+  non-optional `Date` still throws.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
