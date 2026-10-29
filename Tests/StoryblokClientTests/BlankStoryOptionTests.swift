@@ -8,6 +8,9 @@ enum CatalogBlock: Decodable {
     case product(Product)
     case promo(title: String, category: Story<Category>?)
     case feature(category: Story<Category>)
+    case collection(Collection)
+    case spotlight(collection: Story<Collection>?)
+    case shelf(collections: [Story<Collection>]?)
 
     struct Category: Decodable {
         let name: String
@@ -17,11 +20,17 @@ enum CatalogBlock: Decodable {
         let name: String
         let category: Story<Category>?
     }
+
+    struct Collection: Decodable {
+        let name: String
+        let lead: Story<Category>
+    }
 }
 
 @Suite struct BlankStoryOptionTests {
 
     private let categoryUuid = "11111111-1111-1111-1111-111111111111"
+    private let collectionUuid = "44444444-4444-4444-4444-444444444444"
 
     private func storyJSON(id: Int, uuid: String, content: String) -> String {
         """
@@ -36,11 +45,14 @@ enum CatalogBlock: Decodable {
         """
     }
 
-    /// Decodes `content` as a story's content, with the category story in `rels`.
-    private func decode(_ content: String) throws -> CatalogBlock {
+    /// Decodes `content` as a story's content. `rels` holds the category story, and a collection story whose required
+    /// `lead` is the JSON `collectionLead`.
+    private func decode(_ content: String, collectionLead: String? = nil) throws -> CatalogBlock {
         let category = storyJSON(id: 2, uuid: categoryUuid, content: #"{"component": "category", "name": "Shoes"}"#)
+        let lead = collectionLead ?? #""\#(categoryUuid)""#
+        let collection = storyJSON(id: 3, uuid: collectionUuid, content: #"{"component": "collection", "name": "Autumn", "lead": \#(lead)}"#)
         let json = """
-        {"story": \(storyJSON(id: 1, uuid: "22222222-2222-2222-2222-222222222222", content: content)), "rels": [\(category)]}
+        {"story": \(storyJSON(id: 1, uuid: "22222222-2222-2222-2222-222222222222", content: content)), "rels": [\(category), \(collection)]}
         """
         return try StoryblokClient<CatalogBlock>.makeDecoder(relStore: RelationStore())
             .decode(ContentResponse<Story<CatalogBlock>>.self, from: Data(json.utf8)).payload.content
@@ -84,5 +96,25 @@ enum CatalogBlock: Decodable {
         #expect(throws: DecodingError.self) {
             try decode(#"{"component": "promo", "title": "Sale", "category": "shoes"}"#)
         }
+    }
+
+    @Test
+    func `A blank required story inside an optional related story throws`() throws {
+        let content = #"{"component": "spotlight", "collection": "\#(collectionUuid)"}"#
+        guard case .spotlight(let collection) = try decode(content) else {
+            Issue.record("Expected .spotlight"); return
+        }
+        #expect(collection?.content.lead.content.name == "Shoes")
+        #expect(throws: DecodingError.self) { try decode(content, collectionLead: #""""#) }
+    }
+
+    @Test
+    func `A blank required story inside an optional list of related stories throws`() throws {
+        let content = #"{"component": "shelf", "collections": ["\#(collectionUuid)"]}"#
+        guard case .shelf(let collections) = try decode(content) else {
+            Issue.record("Expected .shelf"); return
+        }
+        #expect(collections?.first?.content.lead.content.name == "Shoes")
+        #expect(throws: DecodingError.self) { try decode(content, collectionLead: #""""#) }
     }
 }
