@@ -311,6 +311,13 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let string = try decoder.singleValueContainer().decode(String.self)
+            if string.isEmpty {
+                throw DecodingError.dataCorrupted(DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Cannot decode date from an empty string",
+                    underlyingError: EmptyDateError()
+                ))
+            }
             if let date = isoFormatterFractional.date(from: string) { return date }
             if let date = isoFormatter.date(from: string) { return date }
             if let date = localDateFormatter.date(from: string) { return date }
@@ -361,6 +368,26 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
 
     override func forwardingTarget(for aSelector: Selector!) -> Any? {
         delegate?.responds(to: aSelector) == true ? delegate : nil
+    }
+}
+
+// MARK: - Empty dates
+
+/// Thrown by ``StoryblokClient``'s date decoding strategy for `""`, which is how Storyblok sends a date field left blank.
+private struct EmptyDateError: Error {}
+
+extension KeyedDecodingContainer {
+    /// Specialised overload for optional dates. A blank date field, which Storyblok sends as `""` rather than `null`,
+    /// decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does not go through this overload,
+    /// so a blank date still throws for them. Decoders other than ``StoryblokClient``'s never throw `EmptyDateError`,
+    /// so they are unaffected.
+    public func decodeIfPresent(_ type: Date.Type, forKey key: Key) throws -> Date? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        do {
+            return try decode(Date.self, forKey: key)
+        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is EmptyDateError {
+            return nil
+        }
     }
 }
 
