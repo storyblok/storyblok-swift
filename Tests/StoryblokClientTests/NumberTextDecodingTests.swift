@@ -7,6 +7,7 @@ enum ShopBlock: Decodable {
     case product(Product)
     case discount(percent: Int?, label: String)
     case bundle(Bundle)
+    case listing(Listing)
 
     struct Product: Decodable {
         let sku: String
@@ -22,6 +23,32 @@ enum ShopBlock: Decodable {
     struct Bundle: Decodable {
         let title: String
         let product: Story<Product>?
+    }
+
+    struct Listing: Decodable {
+        let manual: URL
+        let images: [URL]?
+        let codes: Codes
+    }
+}
+
+/// Decodes each element of an array as a whole number if it can, and as text if not, as a custom `init(from:)` may
+/// try one type and then another.
+struct Codes: Decodable {
+    enum Code: Equatable { case number(Int), text(String) }
+    let values: [Code]
+
+    init(from decoder: any Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var values: [Code] = []
+        while !container.isAtEnd {
+            if let number = try? container.decode(Int.self) {
+                values.append(.number(number))
+            } else {
+                values.append(.text(try container.decode(String.self)))
+            }
+        }
+        self.values = values
     }
 }
 
@@ -132,10 +159,41 @@ enum ShopBlock: Decodable {
         #expect(throws: DecodingError.self) { try decodeProduct(product(stock: stock)) }
     }
 
-    @Test(arguments: [#""4.5abc""#, #""inf""#, #""0x10""#, #""4,5""#])
+    @Test(arguments: [#""+12""#, #""012""#, #""-012""#, #""1e2""#])
+    func `Text outside the JSON number grammar throws for a whole number`(stock: String) {
+        #expect(throws: DecodingError.self) { try decodeProduct(product(stock: stock)) }
+    }
+
+    @Test(arguments: [#""4.5abc""#, #""inf""#, #""0x10""#, #""4,5""#, #""+4.5""#, #""04.5""#, #"".5""#, #""5.""#])
     func `Text that is not a JSON number throws for a decimal`(tax: String) {
         #expect(throws: DecodingError.self) { try decodeProduct(product(tax: tax)) }
         #expect(throws: DecodingError.self) { try decodeProduct(product(price: tax)) }
+    }
+
+    @Test
+    func `A number out of range throws rather than decoding as infinity`() {
+        #expect(throws: DecodingError.self) { try decodeProduct(product(price: #""1e999""#)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: #""1e50""#)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(tax: #""1e999""#)) }
+    }
+
+    @Test
+    func `URLs decode from text as JSONDecoder reads them`() throws {
+        let block = try decode("""
+            {"component": "listing", "manual": "https://a.storyblok.com/f/1/manual.pdf", "images": ["https://a.storyblok.com/f/1/a.jpg"], "codes": []}
+            """)
+        guard case .listing(let listing) = block else { Issue.record("Expected .listing"); return }
+        #expect(listing.manual == URL(string: "https://a.storyblok.com/f/1/manual.pdf"))
+        #expect(listing.images == [URL(string: "https://a.storyblok.com/f/1/a.jpg")!])
+    }
+
+    @Test
+    func `An array element that fails to decode can be decoded again as another type`() throws {
+        let block = try decode("""
+            {"component": "listing", "manual": "https://example.com", "codes": ["A1", "7", 8, "B2"]}
+            """)
+        guard case .listing(let listing) = block else { Issue.record("Expected .listing"); return }
+        #expect(listing.codes.values == [.text("A1"), .number(7), .number(8), .text("B2")])
     }
 
     @Test
