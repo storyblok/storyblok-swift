@@ -466,6 +466,7 @@ struct Page {
 ```
 
 A page that relates to itself is a cycle, so model the field as optional, as <doc:UserGuide#Circular-relations> explains.
+An Option field, single or multi, whose source is stories also sends story UUIDs, so model it as `Story<T>?` or `[Story<T>]?` in the same way. A single option with no story selected sends `""`, which an optional `Story<T>?` decodes as `nil` and a non-optional `Story<T>` fails to decode.
 
 ### Controlling resolution depth
 
