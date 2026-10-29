@@ -2,12 +2,15 @@ import Foundation
 
 /// A number type that can be decoded from the text Storyblok sends for a Number field, such as `"42"` or `"4.5"`.
 private protocol NumberText: Decodable {
+    /// Reads `numberText`, which ``numberTextPattern`` has matched, or returns `nil` if it is not a value of this
+    /// type, such as a fraction for an integer type or a number out of its range.
     init?(numberText: String)
 }
 
-/// The text of a JSON number, so that `Decimal(string:)`, which reads whatever number the text starts with, and
-/// `Double`, which also reads `"inf"` and hexadecimal, take nothing a Number field would not send.
-nonisolated(unsafe) private let numberTextPattern = /-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?/
+/// The grammar of a JSON number, which number text must match before a type reads it: number types' own
+/// initializers take more, such as `"+12"`, `"inf"` or hexadecimal, and `Decimal(string:)` reads whatever number the
+/// text starts with.
+nonisolated(unsafe) private let numberTextPattern = /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/
 
 extension Int: NumberText { init?(numberText: String) { self.init(numberText) } }
 extension Int8: NumberText { init?(numberText: String) { self.init(numberText) } }
@@ -20,24 +23,26 @@ extension UInt16: NumberText { init?(numberText: String) { self.init(numberText)
 extension UInt32: NumberText { init?(numberText: String) { self.init(numberText) } }
 extension UInt64: NumberText { init?(numberText: String) { self.init(numberText) } }
 
+// A floating-point initializer reads a number out of range as infinity, which decoding a JSON number would reject.
+
 extension Double: NumberText {
     init?(numberText: String) {
-        guard numberText.wholeMatch(of: numberTextPattern) != nil else { return nil }
-        self.init(numberText)
+        guard let value = Double(numberText), value.isFinite else { return nil }
+        self = value
     }
 }
 
 extension Float: NumberText {
     init?(numberText: String) {
-        guard numberText.wholeMatch(of: numberTextPattern) != nil else { return nil }
-        self.init(numberText)
+        guard let value = Float(numberText), value.isFinite else { return nil }
+        self = value
     }
 }
 
 extension Decimal: NumberText {
     init?(numberText: String) {
-        guard numberText.wholeMatch(of: numberTextPattern) != nil else { return nil }
-        self.init(string: numberText, locale: Locale(identifier: "en_US_POSIX"))
+        guard let value = Decimal(string: numberText, locale: Locale(identifier: "en_US_POSIX")), value.isFinite else { return nil }
+        self = value
     }
 }
 
@@ -45,8 +50,8 @@ extension Decimal: NumberText {
 /// sends for a Number field (`"42"`) as well as from a JSON number. A blank Number field, sent as `""`, decodes as
 /// `nil` for an optional property.
 ///
-/// Everything else is passed to the wrapped decoder. `Date` and `Data` are decoded by it directly, under its decoding
-/// strategies; any other type is decoded from a wrapper around the decoder for its value, so that number text is read
+/// Everything else is passed to the wrapped decoder. `Date`, `Data` and `URL` are decoded by it directly, as it would
+/// without this wrapper; any other type is decoded from a wrapper around the decoder for its value, so that number text is read
 /// the same way at any depth, including in the stories a relation resolves to.
 struct NumberTextDecoder: Decoder {
 
@@ -68,9 +73,10 @@ struct NumberTextDecoder: Decoder {
     }
 }
 
-/// Whether the wrapped decoder must decode `type` itself, to apply its decoding strategy.
+/// Whether the wrapped decoder must decode `type` itself: `Date` and `Data` to apply its decoding strategies, and
+/// `URL`, which it reads from a string, where `URL`'s own `init(from:)` expects a keyed representation.
 private func decodedByBase<T>(_ type: T.Type) -> Bool {
-    type == Date.self || type == Data.self
+    type == Date.self || type == Data.self || type == URL.self
 }
 
 /// Decodes `type` from `container`, from a JSON number or from number text.
@@ -79,7 +85,7 @@ private func decodeNumber<N: NumberText>(_ type: N.Type, from container: any Sin
         return try container.decode(type)
     } catch DecodingError.typeMismatch(_, _) where (try? container.decode(String.self)) != nil {
         let text = try container.decode(String.self)
-        guard let value = N(numberText: text) else {
+        guard text.wholeMatch(of: numberTextPattern) != nil, let value = N(numberText: text) else {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode \(N.self) from \"\(text)\"")
         }
         return value
@@ -201,7 +207,7 @@ private struct Unkeyed: UnkeyedDecodingContainer {
             return try number(type) as! T
         }
         guard !isAtEnd, !decodedByBase(type) else { return try base.decode(type) }
-        return try T(from: NumberTextDecoder(base: base.superDecoder()))
+        return try advancingOnSuccess { try T(from: NumberTextDecoder(base: $0.superDecoder())) }
     }
 
     mutating func nestedContainer<NestedKey: CodingKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> {
@@ -214,11 +220,20 @@ private struct Unkeyed: UnkeyedDecodingContainer {
 
     mutating func superDecoder() throws -> any Decoder { NumberTextDecoder(base: try base.superDecoder()) }
 
-    /// Decodes the next element through a decoder of its own, so that a failed attempt does not leave the index
-    /// somewhere the next one does not expect.
+    /// Decodes the next element through a decoder of its own.
     private mutating func number<N: NumberText>(_ type: N.Type) throws -> N {
         guard !isAtEnd else { return try base.decode(type) }
-        return try decodeNumber(type, from: base.superDecoder().singleValueContainer())
+        return try advancingOnSuccess { try decodeNumber(type, from: $0.superDecoder().singleValueContainer()) }
+    }
+
+    /// Runs `decode` on a copy of the wrapped container, keeping the copy only if it succeeds. `superDecoder()`
+    /// moves past the element whether or not decoding it then succeeds, where the wrapped container's own `decode`
+    /// stays on an element it fails to decode, so that a caller can try another type.
+    private mutating func advancingOnSuccess<T>(_ decode: (inout any UnkeyedDecodingContainer) throws -> T) throws -> T {
+        var attempt = base
+        let value = try decode(&attempt)
+        base = attempt
+        return value
     }
 }
 
