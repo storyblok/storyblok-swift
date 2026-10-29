@@ -348,7 +348,7 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 }
 ```
 
-A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it:
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. A number field may still be modelled as a `String`, since that is how Storyblok serialises it (see <doc:UserGuide#Number-field>). Its type cannot settle the ordering, so `as:` states it:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Product>) in
@@ -588,26 +588,24 @@ print(page.image.filename)
 print(page.image.alt ?? "")
 ```
 
-### Date/Time field
+### Number field
 
-A Date/Time field decodes into `Date`. The client reads ISO 8601 dates, with or without fractional seconds, and the `yyyy-MM-dd HH:mm` and `yyyy-MM-dd` formats the field sends, in UTC.
-
-An editor can leave the field blank, which Storyblok sends as `""`. Model it as `Date?`, so a blank field decodes as `nil`: a non-optional `Date` fails to decode it, and with it the whole story. Model a required field as `Date?` too. A draft can still have it blank: content written through the Management API isn't checked for required fields until it's published, and stories saved before the field was made required keep their blank value.
+Storyblok serialises a number field's value as text, such as `"42"` or `"4.5"`. The client decodes that text into a number type: `Int` and the other integer types, `Double`, `Float` and `Decimal`. It decodes a JSON number into them as usual too. Text that is not a number of that type, such as `"4.5"` for an `Int`, throws a `DecodingError`. A blank number field, sent as `""`, decodes as `nil` for an optional property and throws for a required one.
 
 ```swift
-struct Event: Decodable {
-    let title: String
-    let startsAt: Date?
+@BlockLibrary
+enum Content {
+    case product(Product)
+
+    struct Product: Decodable {
+        let stock: Int        // "42"
+        let price: Decimal    // "4.5"
+        let weight: Double?   // "" decodes as nil
+    }
 }
 ```
 
-> Note: A blank value decodes as `nil` into any `Date?` or `UUID?` in a response ``StoryblokClient`` decodes. A decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy, still fails to decode it.
-
-### Single-Option field
-
-A Single-Option field sends the selected option's value as a string, or `""` when nothing is selected, so a `String` receives `""`.
-
-With stories as its source, it sends the selected story's UUID. Model it as `Story<T>?` to resolve the story (see Story relations above), or as `UUID?` to receive the UUID. Either one decodes a blank field as `nil`.
+This applies to content decoded by ``StoryblokClient``, from the story or stories it fetches and the stories their relations resolve to. Decode the field as a `String` instead to receive the text as sent.
 
 ## Caching
 
