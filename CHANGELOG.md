@@ -1,5 +1,11 @@
 ### Changelog
 
+**main**
+
+- Number fields, which Storyblok sends as text such as `"42"`, now decode into `Int` and the other integer types,
+  `Double`, `Float` and `Decimal`, as well as `String`. A blank number field decodes as `nil` for an optional
+  property.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
