@@ -1,5 +1,10 @@
 ### Changelog
 
+**main**
+
+- Fixed a single Option field sourced from stories with no story selected, which Storyblok sends as `""`, failing
+  the whole response. An optional `Story<T>?` property now decodes it as `nil`.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the

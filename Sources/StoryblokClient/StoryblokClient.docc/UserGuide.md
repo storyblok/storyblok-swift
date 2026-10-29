@@ -456,6 +456,8 @@ enum Content {
 
 > Important: A `Story<T>` relation field's type argument `T` must be the enclosing block library `enum` or one of its nested structs, so the macro can discover its relation fields.
 
+An Option field, single or multi, whose source is stories also sends story UUIDs, so model it as `Story<T>?` or `[Story<T>]?` in the same way. A single option with no story selected sends `""`, which an optional `Story<T>?` decodes as `nil` and a non-optional `Story<T>` fails to decode.
+
 ### Controlling resolution depth
 
 The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` controls how deeply relations are followed:
