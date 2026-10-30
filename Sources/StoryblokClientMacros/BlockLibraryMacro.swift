@@ -366,7 +366,7 @@ private func isStoryType(_ type: TypeSyntax) -> Bool {
         return true
     }
     if let array = type.as(ArrayTypeSyntax.self),
-       let element = array.element.as(IdentifierTypeSyntax.self),
+       let element = unwrapOptional(array.element).as(IdentifierTypeSyntax.self),
        element.name.text == "Story" {
         return true
     }
@@ -387,14 +387,14 @@ private func unwrapOptional(_ type: TypeSyntax) -> TypeSyntax {
     return type
 }
 
-/// Returns the type argument `T` from a `Story<T>`, `[Story<T>]`, or `Story<T>?` type.
+/// Returns the type argument `T` from a `Story<T>`, `[Story<T>]`, or `[Story<T>?]` type, or an optional of one.
 private func storyTypeArgument(_ type: TypeSyntax) -> String? {
     if let id = type.as(IdentifierTypeSyntax.self), id.name.text == "Story",
        let arg = id.genericArgumentClause?.arguments.first {
         return arg.argument.as(TypeSyntax.self)?.trimmedDescription
     }
     if let array = type.as(ArrayTypeSyntax.self),
-       let element = array.element.as(IdentifierTypeSyntax.self),
+       let element = unwrapOptional(array.element).as(IdentifierTypeSyntax.self),
        element.name.text == "Story",
        let arg = element.genericArgumentClause?.arguments.first {
         return arg.argument.as(TypeSyntax.self)?.trimmedDescription

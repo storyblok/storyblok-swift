@@ -1,5 +1,13 @@
 ### Changelog
 
+**main**
+
+- A `[Story<T>?]` field is now a story relation. Each story in it that can't be resolved, or that closes a cycle at
+  the `resolveLevel` depth, decodes as `nil` in its place, so the stories that can be resolved are kept. A
+  `[Story<T>]?` field now fails decoding when one of its stories can't be resolved, as a `[Story<T>]` field does,
+  rather than decoding as `nil`, which could not be told apart from an absent field. It is `nil` only when the field
+  is absent or `null`. Model the field as `[Story<T>?]` to keep the stories that can be resolved.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
