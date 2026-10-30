@@ -575,6 +575,23 @@ print(page.image.filename)
 print(page.image.alt ?? "")
 ```
 
+### Story option field
+
+A single-option field sourced from stories holds the selected story's UUID, so it decodes as a `UUID`, or as a `Story<T>` to have the client resolve it (see <doc:UserGuide#Story-relations>). Storyblok sends the field with no story selected as `""` rather than `null`, so model one an editor may leave empty as `UUID?`, which decodes it as `nil`. A blank `UUID` throws a `DecodingError`.
+
+```swift
+import Foundation
+
+@BlockLibrary
+enum Content {
+    case promo(Promo)
+
+    struct Promo: Decodable {
+        let category: UUID?
+    }
+}
+```
+
 ## Caching
 
 The client leverages ``/URLSessionExtension``'s caching for the configured [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession). When fetching stories the client emits values using a *stale-while-revalidate* pattern:
