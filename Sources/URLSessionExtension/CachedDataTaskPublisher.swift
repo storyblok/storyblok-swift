@@ -35,6 +35,9 @@ extension URLSession {
         /// The session that performs the request.
         public let session: URLSession
 
+        /// Whether a cached response's body is published. One it rejects is passed over as a cache miss is.
+        private var isUsable: (Data) -> Bool = { _ in true }
+
         /// Creates a publisher that delivers the cached response for `request`, then the response
         /// `session` loads for it.
         public init(request: URLRequest, session: URLSession) {
@@ -42,14 +45,24 @@ extension URLSession {
             self.session = session
         }
 
+        /// This publisher, passing over a cached response whose body `isUsable` rejects as though the cache held
+        /// none, so that a cached copy its reader can no longer read gives way to the one the request loads.
+        package func acceptingCachedResponses(where isUsable: @escaping (Data) -> Bool) -> Self {
+            var publisher = self
+            publisher.isUsable = isUsable
+            return publisher
+        }
+
         public func receive<S : Subscriber>(subscriber: S) where S.Input == Output, S.Failure == Failure {
             var cachedRequest = request
             cachedRequest.cachePolicy = .returnCacheDataDontLoad
 
             // A cache miss fails the cached request, which here means there is nothing to publish yet.
-            // A cached error response is passed over as well, rather than published as content.
+            // A cached error response is passed over as well, rather than published as content, and so is one
+            // whose body is no longer usable.
+            let isUsable = isUsable
             let cached = session.dataTaskPublisher(for: cachedRequest)
-                .filter { isSuccess($0.response) }
+                .filter { isSuccess($0.response) && isUsable($0.data) }
                 .map { (data: $0.data, response: $0.response) }
                 .catch { _ in Empty<Output, URLError>() }
                 .mapError { $0 as any Error }

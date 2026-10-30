@@ -171,7 +171,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     <doc:UserGuide#Story-relations>.
     ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
-    ///   when one is available locally, followed by a fresh value from the network, and ignores
+    ///   when one is available locally and still decodes, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
     public func story<Content>(
@@ -198,7 +198,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
     ///     <doc:UserGuide#Story-relations>.
     ///   - query: Configures the query parameters, such as ``StoryQuery/fromRelease``.
     /// - Returns: A publisher emitting the story. The publisher may emit a cached value first
-    ///   when one is available locally, followed by a fresh value from the network, and ignores
+    ///   when one is available locally and still decodes, followed by a fresh value from the network, and ignores
     ///   the fresh value when it matches the cached value. Failures are reported as an ``Error``,
     ///   whose case distinguishes a failed request from content that does not match your types.
     public func story<Content>(
@@ -215,10 +215,13 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         resolveLevel: Int = 1,
         query: StoryQuery
     ) -> AnyPublisher<Story<Content>, Error> {
-        session.cachedDataTaskPublisher(for: buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel, queryItems: query.queryItems))
-            .tryMap { data, _ in
-                try Self.decoder(resolveLevel: resolveLevel).decode(ContentResponse<Story<Content>>.self, from: data).payload
-            }
+        let request = buildRequest(path: path, findByUuid: findByUuid, resolveLevel: resolveLevel, queryItems: query.queryItems)
+        let decode = { (data: Data) in
+            try Self.decoder(resolveLevel: resolveLevel).decode(ContentResponse<Story<Content>>.self, from: data).payload
+        }
+        return session.cachedDataTaskPublisher(for: request)
+            .acceptingCachedResponses { Self.decodes($0, of: request, with: decode) }
+            .tryMap { data, _ in try decode(data) }
             .mapError { .from($0) }
             .eraseToAnyPublisher()
     }
@@ -268,13 +271,31 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         var request = URLRequest(storyblok: session, path: "stories")
         request.url!.append(queryItems: queryItems)
 
-        return session.pagePublisher(for: request, page: page, perPage: pageSize, upstream: URLSession.CachedDataTaskPublisher.init) { body in
+        let decode = { (body: Data) in
             try Self.decoder(resolveLevel: resolveLevel)
                 .decode(ContentResponse<[Story<Content>]>.self, from: body)
                 .payload
         }
-        .mapError { .from($0) }
-        .eraseToAnyPublisher()
+        let upstream = { (request: URLRequest, session: URLSession) in
+            URLSession.CachedDataTaskPublisher(request: request, session: session)
+                .acceptingCachedResponses { Self.decodes($0, of: request, with: decode) }
+        }
+        return session.pagePublisher(for: request, page: page, perPage: pageSize, upstream: upstream, elements: decode)
+            .mapError { .from($0) }
+            .eraseToAnyPublisher()
+    }
+
+    /// Whether `decode` reads the cached copy `data` of `request`'s response. One it cannot read was cached before
+    /// the content changed shape, such as a field added since, and is passed over for the response the request
+    /// loads rather than failing the publisher before that response arrives.
+    private static func decodes<T>(_ data: Data, of request: URLRequest, with decode: (Data) throws -> T) -> Bool {
+        do {
+            _ = try decode(data)
+            return true
+        } catch {
+            log.debug("Passing over the cached copy of \(request.url?.path() ?? ""), which no longer decodes: \(error)")
+            return false
+        }
     }
 
     // MARK: -

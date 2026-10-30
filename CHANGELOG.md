@@ -1,5 +1,11 @@
 ### Changelog
 
+**main**
+
+- Fixed `story()` and `stories()` failing with `.decoding` when the copy in the URL cache no longer decoded, for
+  example after a required field was added to a block, before the fresh copy arrived. A cached copy that does not
+  decode is now passed over, and only the fresh copy failing to decode is reported.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
