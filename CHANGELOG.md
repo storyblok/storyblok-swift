@@ -8,6 +8,10 @@
 - Fixed `StoryblokClient.Error.decoding` describing every failure as "The data couldn't be read because it isn't in
   the correct format." Its `message` and `localizedDescription` now say what did not match, where in the response, and
   why, such as a circular or unresolved story relation or a missing key.
+- A content struct can now hold a `Story` of its own type, such as a page whose `related: Story<Page>?` field picks
+  another page. `Story` keeps its `content` behind a reference, so the struct no longer contains itself, which Swift
+  rejected, and a block library enum holding a `Story` of itself no longer needs to be `indirect`. `content` is now a
+  read-only computed property, so reading it is unchanged.
 
 **1.1.0**
 

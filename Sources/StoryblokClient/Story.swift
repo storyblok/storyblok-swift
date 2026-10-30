@@ -14,7 +14,11 @@ public struct Story<Content : Decodable> {
 
     /// An object containing the field data associated with the content type's specific structure.
     /// Also includes a `component` property with the content type's technical name.
-    public let content: Content
+    public var content: Content { storedContent.value }
+
+    /// Kept behind a reference, so that a content type can hold a `Story` of itself, as a field relating a page to
+    /// another page does: a struct cannot otherwise contain a value of its own type.
+    private let storedContent: Indirect<Content>
 
     /// Story slug.
     public let slug: String
@@ -74,6 +78,57 @@ public struct Story<Content : Decodable> {
     /// Array of translated slug objects (if the Translatable Slugs app is installed).
     public let translatedSlugs: [TranslatedSlug]?
 
+    /// The memberwise initializer Swift would synthesize if `content` were stored, for tests that build a story
+    /// without decoding one.
+    internal init(
+        id: Int64,
+        uuid: UUID,
+        name: String,
+        content: Content,
+        slug: String,
+        fullSlug: String,
+        createdAt: Date,
+        publishedAt: Date?,
+        firstPublishedAt: Date?,
+        updatedAt: Date?,
+        sortByDate: Date?,
+        position: Int,
+        tagList: [String],
+        isStartPage: Bool,
+        parentId: Int64?,
+        metadata: [String: String]?,
+        groupId: UUID,
+        releaseId: Int64?,
+        language: String,
+        path: String?,
+        alternates: [Alternate],
+        defaultFullSlug: String?,
+        translatedSlugs: [TranslatedSlug]?
+    ) {
+        self.id = id
+        self.uuid = uuid
+        self.name = name
+        storedContent = Indirect(value: content)
+        self.slug = slug
+        self.fullSlug = fullSlug
+        self.createdAt = createdAt
+        self.publishedAt = publishedAt
+        self.firstPublishedAt = firstPublishedAt
+        self.updatedAt = updatedAt
+        self.sortByDate = sortByDate
+        self.position = position
+        self.tagList = tagList
+        self.isStartPage = isStartPage
+        self.parentId = parentId
+        self.metadata = metadata
+        self.groupId = groupId
+        self.releaseId = releaseId
+        self.language = language
+        self.path = path
+        self.alternates = alternates
+        self.defaultFullSlug = defaultFullSlug
+        self.translatedSlugs = translatedSlugs
+    }
 }
 
 /// Translated slug information for localized story variants.
@@ -211,7 +266,7 @@ extension Story : Decodable {
         id = try container.decode(Int64.self, forKey: .id)
         uuid = try container.decode(UUID.self, forKey: .uuid)
         name = try container.decode(String.self, forKey: .name)
-        content = try container.decode(Content.self, forKey: .content)
+        storedContent = Indirect(value: try container.decode(Content.self, forKey: .content))
         slug = try container.decode(String.self, forKey: .slug)
         fullSlug = try container.decode(String.self, forKey: .fullSlug)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -233,6 +288,23 @@ extension Story : Decodable {
         translatedSlugs = try container.decodeIfPresent([TranslatedSlug].self, forKey: .translatedSlugs)
     }
 }
+
+/// A value held behind a reference, as an `indirect` enum case holds its payload.
+private indirect enum Indirect<Value> {
+    case wrapped(Value)
+
+    init(value: Value) { self = .wrapped(value) }
+
+    var value: Value {
+        switch self {
+            case let .wrapped(value): value
+        }
+    }
+}
+
+extension Indirect: Hashable where Value: Hashable {}
+extension Indirect: Equatable where Value: Equatable {}
+extension Indirect: Sendable where Value: Sendable {}
 
 extension Story: Hashable where Content: Hashable {}
 extension Story: Equatable where Content: Equatable {}
