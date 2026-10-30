@@ -53,11 +53,13 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
         /// Retrying cannot resolve this — correct your ``BlockLibrary`` or the story's model instead.
         case decoding(DecodingError)
 
-        /// A message describing the error, typically the body of the API response.
+        /// A message describing the error: typically the body of the API response for ``api(message:underlyingError:)``,
+        /// and for ``decoding(_:)`` what did not match, where in the response, and why, such as
+        /// `Invalid data at rels[0].content.related[0]: Circular story relation: …`.
         public var message: String? {
             switch self {
                 case let .api(message, _): message
-                case let .decoding(error): error.localizedDescription
+                case let .decoding(error): error.details
             }
         }
 
@@ -393,3 +395,24 @@ private let localDateTimeFormatter: DateFormatter = {
     formatter.locale = Locale(identifier: "en_US_POSIX")
     return formatter
 }()
+
+private extension DecodingError {
+
+    /// What did not match, where, and the decoder's own description of why. `localizedDescription` is the same generic
+    /// sentence for every decoding error, so it would hide all three.
+    var details: String {
+        let problem: String, context: Context
+        switch self {
+            case let .typeMismatch(type, c): (problem, context) = ("Type mismatch for \(type)", c)
+            case let .valueNotFound(type, c): (problem, context) = ("Missing value of type \(type)", c)
+            case let .keyNotFound(key, c): (problem, context) = ("Missing key \"\(key.stringValue)\"", c)
+            case let .dataCorrupted(c): (problem, context) = ("Invalid data", c)
+            @unknown default: return localizedDescription
+        }
+        let path = context.codingPath
+            .map { key in key.intValue.map { "[\($0)]" } ?? ".\(key.stringValue)" }
+            .joined()
+            .trimmingPrefix(".")
+        return path.isEmpty ? "\(problem): \(context.debugDescription)" : "\(problem) at \(path): \(context.debugDescription)"
+    }
+}
