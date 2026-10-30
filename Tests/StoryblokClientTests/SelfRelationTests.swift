@@ -2,11 +2,13 @@ import Foundation
 import Testing
 @testable import StoryblokClient
 
-// Not `indirect`: a story keeps its content behind a reference, so a page can relate to a page without one.
+// Not `indirect`: a story keeps its content behind a reference, so a page can relate to a page, and a case can hold
+// a story of the library, without one.
 @BlockLibrary
 enum SelfRelationBlock {
     case page(Page)
     case article(Article)
+    case featured(article: Story<SelfRelationBlock>?)
 
     struct Page: Hashable, Sendable {
         let title: String
@@ -25,11 +27,11 @@ struct SelfRelationTests {
 
     private static let home = "11111111-1111-1111-1111-111111111111"
 
-    /// A response for a story of `component` titled Home whose `related` field is Home itself.
-    private func relatedToItself(_ component: String) -> Data {
+    /// A response for a story of `component` titled Home whose `field` is Home itself.
+    private func relatedToItself(_ component: String, field: String = "related") -> Data {
         let story = """
             {"id": 1, "uuid": "\(Self.home)", "name": "Home",
-             "content": {"component": "\(component)", "title": "Home", "related": "\(Self.home)"},
+             "content": {"component": "\(component)", "title": "Home", "\(field)": "\(Self.home)"},
              "slug": "home", "full_slug": "home", "created_at": "2025-07-09T14:35:26.851Z", "published_at": null,
              "first_published_at": null, "updated_at": null, "sort_by_date": null, "position": 0, "tag_list": [],
              "is_startpage": false, "parent_id": null, "meta_data": null,
@@ -47,7 +49,19 @@ struct SelfRelationTests {
 
     @Test
     func `a story of the content's own type is a relation`() {
-        #expect(SelfRelationBlock.relations == "article.related,page.related")
+        #expect(SelfRelationBlock.relations == "article.related,featured.article,page.related")
+    }
+
+    @Test
+    func `a case holding an optional story of the library resolves to the relation depth`() throws {
+        let story = try decode(relatedToItself("featured", field: "article"), as: SelfRelationBlock.self)
+
+        guard case let .featured(article?) = story.content, case let .featured(nested) = article.content else {
+            Issue.record("expected a featured story holding a featured story, got \(story.content)")
+            return
+        }
+        #expect(article.uuid == UUID(uuidString: Self.home))
+        #expect(nested == nil)
     }
 
     @Test
