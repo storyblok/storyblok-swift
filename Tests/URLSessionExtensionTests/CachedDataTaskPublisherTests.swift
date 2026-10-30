@@ -50,12 +50,13 @@ struct CachedDataTaskPublisherTests {
     }
 
     /// Publishes for a request with `cached` in the cache, stored with `cachedStatus`, and `loaded`
-    /// as the responses to it, returning the bodies published, the failure that ended it, if any, and how many times the
-    /// request was attempted.
+    /// as the responses to it, accepting the cached response only when `isUsable`, returning the bodies published, the
+    /// failure that ended it, if any, and how many times the request was attempted.
     private func publish(
         cached: String?,
         cachedStatus: Int = 200,
-        loaded: [(status: Int, body: String)]
+        loaded: [(status: Int, body: String)],
+        isUsable: @escaping (Data) -> Bool = { _ in true }
     ) async -> (bodies: [String], failure: (any Error)?, attempts: Int) {
         Stub.lock.withLock {
             Stub.loaded = loaded
@@ -70,7 +71,7 @@ struct CachedDataTaskPublisherTests {
         var bodies: [String] = []
         var failure: (any Error)?
         do {
-            for try await output in session.cachedDataTaskPublisher(for: url).values {
+            for try await output in session.cachedDataTaskPublisher(for: url).acceptingCachedResponses(where: isUsable).values {
                 bodies.append(String(decoding: output.data, as: UTF8.self))
             }
         } catch {
@@ -141,5 +142,22 @@ struct CachedDataTaskPublisherTests {
             Issue.record("expected a client ResponseError, got \(String(describing: result.failure))")
             return
         }
+    }
+
+    @Test
+    func `a cached response its reader cannot use is passed over for the loaded one`() async {
+        let result = await publish(cached: "stale", loaded: [(200, "fresh")], isUsable: { $0 != Data("stale".utf8) })
+
+        #expect(result.bodies == ["fresh"])
+        #expect(result.failure == nil)
+    }
+
+    @Test
+    func `a loaded response the same as a passed over cached one is still published`() async {
+        // Otherwise the request would publish nothing at all: the cached copy was never published to be repeated.
+        let result = await publish(cached: "same", loaded: [(200, "same")], isUsable: { _ in false })
+
+        #expect(result.bodies == ["same"])
+        #expect(result.failure == nil)
     }
 }

@@ -74,7 +74,7 @@ API requests must be authenticated by providing an API access token. Learn more 
 
 ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` returns a Combine [`Publisher`](https://developer.apple.com/documentation/combine/publisher) which may emit up to two values for a given request:
 
-- The cached version of the story if one is available locally.
+- The cached version of the story if one is available locally and still decodes into your types.
 - The latest version from the API, unless it matches the cached version already emitted.
 
 The decoded content type is inferred from the value you bind. Most often that is the block library itself, giving you a `Story<Content>` you can switch over:
@@ -582,6 +582,8 @@ The client leverages ``/URLSessionExtension``'s caching for the configured [`URL
 1. The client first attempts to retrieve the story from cache (using [`.returnCacheDataDontLoad`](https://developer.apple.com/documentation/foundation/nsurlrequest/cachepolicy-swift.enum/returncachedatadontload)).
 2. It then makes a network request to get the latest version, retrying transient failures.
 3. Duplicates are filtered so the cached and fresh responses are only emitted once when identical.
+
+A cached copy that no longer decodes into your types is passed over, as though the cache held none, rather than failing the publisher. This happens when a copy was cached before the content changed shape, such as a required field added to a block since. Only the latest version failing to decode is reported, as ``StoryblokClient/Error/decoding(_:)``.
 
 Stories and pages of stories are both fetched this way, through ``/URLSessionExtension``'s ``/URLSessionExtension/Foundation/URLSession/CachedDataTaskPublisher``, which you can also use directly for requests the client does not cover.
 
