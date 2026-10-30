@@ -321,7 +321,50 @@ final class BlockLibraryMacroTests: XCTestCase {
             macros: macros
         )
     }
-    
+
+    func test_arrayOfOptionalStoryTypeIsRecognised() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Popular {
+                case list(articles: [Story<Popular>?], extra: [Story<Popular>?]?)
+            }
+            """,
+            expandedSource: """
+            enum Popular {
+                case list(articles: [Story<Popular>?], extra: [Story<Popular>?]?)
+
+                nonisolated static let relations: String = "list.articles,list.extra"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: PopularCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "list":
+                        let caseContainer = try decoder.container(keyedBy: ListCodingKeys.self)
+                        self = .list(
+                            articles: try caseContainer.decode([Story<Popular>?].self, forKey: .articles),
+                            extra: try caseContainer.decodeIfPresent([Story<Popular>?].self, forKey: .extra)
+                        )
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum PopularCodingKeys: String, CodingKey {
+                    case component
+                }
+
+                enum ListCodingKeys: String, CodingKey {
+                    case articles
+                    case extra
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     // MARK: - Backtick-escaped case names
 
     /// Storyblok component technical names can collide with Swift keywords (e.g. `default`),

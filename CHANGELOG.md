@@ -21,6 +21,9 @@
 - Added decoding of a Number field's text, such as `"42"`, into `Int` and the other integer types, `Double`, `Float`
   and `Decimal`, and sorting and filtering by a `Float` or `Decimal` field as a decimal. A blank Number field decodes
   as `nil` for an optional property.
+- A `[Story<T>?]` field is now a story relation. Each story in it that can't be resolved, or that closes a cycle at
+  the `resolveLevel` depth, decodes as `nil` in its place, so the stories that can be resolved are kept. A
+  `[Story<T>]?` field still decodes as `nil` as a whole when any of its stories can't be resolved.
 
 **1.1.0**
 
