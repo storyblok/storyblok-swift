@@ -6,6 +6,7 @@ import Testing
 enum ElementsBlock {
     case page(Page)
     case list(articles: [Story<Page>?])
+    case shelf(articles: [Story<Page>?]?)
 
     struct Page {
         let title: String
@@ -50,7 +51,7 @@ struct OptionalStoryElementsTests {
 
     @Test
     func `a list of optional stories is a relation`() {
-        #expect(ElementsBlock.relations == "list.articles,page.related")
+        #expect(ElementsBlock.relations == "list.articles,page.related,shelf.articles")
     }
 
     @Test
@@ -103,6 +104,25 @@ struct OptionalStoryElementsTests {
             return
         }
         #expect(titles(articles) == ["Other", nil])
+    }
+
+    @Test(arguments: [
+        (#""#, nil),
+        (#", "articles": null"#, nil),
+        (#", "articles": []"#, []),
+        (#", "articles": ["\#(OptionalStoryElementsTests.other)", "\#(OptionalStoryElementsTests.missing)"]"#, ["Other", nil]),
+    ] as [(String, [String?]?)])
+    func `an optional list of optional stories is nil only when absent or null`(field: String, expected: [String?]?) throws {
+        let shelf = story(Self.home, #"{"component": "shelf"\#(field)}"#)
+        let other = page(Self.other, title: "Other", related: [])
+
+        let result: Story<ElementsBlock> = try decode(shelf, rels: [other])
+
+        guard case .shelf(let articles) = result.content else {
+            Issue.record("expected .shelf, got \(result.content)")
+            return
+        }
+        #expect(articles.map(titles) == expected)
     }
 
     @Test
