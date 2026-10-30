@@ -21,8 +21,8 @@ enum CacheBlock: Decodable {
 @Suite(.serialized)
 struct StaleCacheTests {
 
-    /// Answers a cache-only request with the cached response URLSession hands it, and every other request with
-    /// `loaded`, recording the URL it was asked for.
+    /// Answers a request that may be answered from the cache with the cached response URLSession hands it, as
+    /// URLSession's own HTTP loading does, and every other request with `loaded`, recording the URL it was asked for.
     final class Stub: URLProtocol {
 
         nonisolated(unsafe) static var loaded = ""
@@ -34,7 +34,7 @@ struct StaleCacheTests {
         override func stopLoading() {}
 
         override func startLoading() {
-            if request.cachePolicy == .returnCacheDataDontLoad, let cachedResponse {
+            if [.returnCacheDataDontLoad, .returnCacheDataElseLoad].contains(request.cachePolicy), let cachedResponse {
                 client?.urlProtocol(self, cachedResponseIsValid: cachedResponse)
                 return
             }
@@ -51,12 +51,15 @@ struct StaleCacheTests {
 
     private let cache = URLCache(memoryCapacity: 1_000_000, diskCapacity: 0)
     private let client: StoryblokClient<CacheBlock>
+    /// Knows the space's cache version, so its requests for published content may be answered from the cache.
+    private let cvClient: StoryblokClient<CacheBlock>
 
     init() {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [Stub.self]
         configuration.urlCache = cache
         client = StoryblokClient(library: CacheBlock.self, accessToken: "mock-api-key", configuration: configuration)
+        cvClient = StoryblokClient(library: CacheBlock.self, accessToken: "mock-api-key", cv: "123", configuration: configuration)
     }
 
     private static let before = #"{"_uid": "c", "component": "page", "title": "Before"}"#
@@ -104,6 +107,10 @@ struct StaleCacheTests {
         client.story("home")
     }
 
+    private func cvHome() -> AnyPublisher<Story<CacheBlock>, StoryblokClient<CacheBlock>.Error> {
+        cvClient.story("home")
+    }
+
     private func pages() -> AnyPublisher<Page<Story<CacheBlock.Page>>, StoryblokClient<CacheBlock>.Error> {
         client.stories()
     }
@@ -149,5 +156,15 @@ struct StaleCacheTests {
 
         #expect(result.failure == nil)
         #expect(result.values.map { $0.map(\.content.title) } == [["After"]])
+    }
+
+    @Test
+    func `a cached story that no longer decodes is not read again by a request the cache may answer`() async {
+        // With a cv, the request for published content is answered from the cache when it holds a response, so the
+        // passed over copy has to be gone by then.
+        let result = await collect(cached: #"{"story": \#(story(Self.before))}"#, loaded: #"{"story": \#(story(Self.after))}"#, cvHome)
+
+        #expect(result.failure == nil)
+        #expect(titles(result.values) == ["After"])
     }
 }
