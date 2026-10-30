@@ -1,5 +1,11 @@
 ### Changelog
 
+**main**
+
+- Fixed a single-option field sourced from stories with no story selected, which Storyblok sends as `""`, failing the
+  whole response. A `UUID?` property now decodes it as `nil`, through a new
+  `KeyedDecodingContainer.decodeIfPresent(_:forKey:)` overload for `UUID`. A blank non-optional `UUID` still throws.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the

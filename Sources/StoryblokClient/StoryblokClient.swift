@@ -320,6 +320,7 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
                 debugDescription: "Cannot decode date from string: \(string)"
             )
         }
+        decoder.userInfo[.storyblokContent] = true
         if let relStore {
             decoder.userInfo[.storyblokRelations] = relStore
         }
@@ -361,6 +362,23 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
 
     override func forwardingTarget(for aSelector: Selector!) -> Any? {
         delegate?.responds(to: aSelector) == true ? delegate : nil
+    }
+}
+
+// MARK: - Blank UUIDs
+
+extension KeyedDecodingContainer {
+    /// Specialised overload for optional UUIDs. A single-option field sourced from stories with no story selected,
+    /// which Storyblok sends as `""` rather than `null`, decodes as `nil` instead of throwing. Non-optional fields use
+    /// `decode`, which does not go through this overload, so a blank UUID still throws for them. Only decoding by
+    /// ``StoryblokClient`` is affected: any other decoder reads `""` as Foundation does, and throws.
+    public func decodeIfPresent(_ type: UUID.Type, forKey key: Key) throws -> UUID? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if (try? decode(String.self, forKey: key)) == "",
+           try superDecoder(forKey: key).userInfo[.storyblokContent] as? Bool == true {
+            return nil
+        }
+        return try decode(UUID.self, forKey: key)
     }
 }
 

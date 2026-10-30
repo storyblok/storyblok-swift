@@ -87,6 +87,10 @@ internal extension CodingUserInfoKey {
     ///
     /// The stored value is a ``RelationStore`` instance.
     static let storyblokRelations = CodingUserInfoKey(rawValue: "com.storyblok.relations")!
+
+    /// Marks a `JSONDecoder` as ``StoryblokClient``'s, so that decoding a blank field as `nil` applies only to the
+    /// responses it decodes. The stored value is `true`.
+    static let storyblokContent = CodingUserInfoKey(rawValue: "com.storyblok.content")!
 }
 
 /// Conforms one content `struct` to ``QueryableContent``, so a ``StoriesQuery`` can address its
