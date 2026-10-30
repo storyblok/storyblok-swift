@@ -7,6 +7,7 @@ enum ElementsBlock {
     case page(Page)
     case list(articles: [Story<Page>?])
     case shelf(articles: [Story<Page>?]?)
+    case rack(articles: [Story<Page>]?)
 
     struct Page {
         let title: String
@@ -51,7 +52,7 @@ struct OptionalStoryElementsTests {
 
     @Test
     func `a list of optional stories is a relation`() {
-        #expect(ElementsBlock.relations == "list.articles,page.related,shelf.articles")
+        #expect(ElementsBlock.relations == "list.articles,page.related,rack.articles,shelf.articles")
     }
 
     @Test
@@ -123,6 +124,27 @@ struct OptionalStoryElementsTests {
             return
         }
         #expect(articles.map(titles) == expected)
+    }
+
+    @Test
+    func `an optional list of stories fails on a story it cannot resolve rather than decoding as nil`() {
+        let rack = story(Self.home, #"{"component": "rack", "articles": ["\#(Self.other)", "\#(Self.missing)"]}"#)
+        let other = page(Self.other, title: "Other", related: [])
+
+        #expect(throws: DecodingError.self) {
+            let _: Story<ElementsBlock> = try decode(rack, rels: [other])
+        }
+    }
+
+    @Test
+    func `an absent optional list of stories decodes as nil`() throws {
+        let result: Story<ElementsBlock> = try decode(story(Self.home, #"{"component": "rack"}"#), rels: [])
+
+        guard case .rack(let articles) = result.content else {
+            Issue.record("expected .rack, got \(result.content)")
+            return
+        }
+        #expect(articles == nil)
     }
 
     @Test

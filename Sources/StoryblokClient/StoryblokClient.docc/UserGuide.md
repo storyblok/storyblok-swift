@@ -463,7 +463,7 @@ The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
-- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID` (or `String`) to receive the raw UUIDs instead.
+- `0` disables relation resolution. `Story<T>?` fields and the stories in `[Story<T>?]` fields then decode as `nil`, and other `Story<T>` fields fail decoding — model relation fields as `UUID` (or `String`) to receive the raw UUIDs instead.
 
 ```swift
 client.story("home", resolveLevel: 2)
@@ -473,9 +473,9 @@ client.story("home", resolveLevel: 2)
 
 When relations form a cycle, resolution stops at the configured depth. How the boundary is handled depends on whether the field is optional:
 
-- An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully. For `[Story<T>]?` that is the whole list, even when only one of its stories closes the cycle.
+- An **optional** relation (`Story<T>?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully.
 - A list of **optional stories** (`[Story<T>?]`) decodes each story that closes the cycle as `nil` in its place, keeping the others. A story that is not resolved at all, such as one beyond `resolveLevel`, decodes as `nil` the same way.
-- A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected.
+- A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected. So does a story in a list of non-optional stories, even when the list itself is optional (`[Story<T>]?`): the list is `nil` only when the field is absent or `null`.
 
 Model fields that may participate in cycles as optional, or as a `UUID` (or `String`), to avoid decoding failures.
 

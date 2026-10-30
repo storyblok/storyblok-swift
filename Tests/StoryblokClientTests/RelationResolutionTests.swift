@@ -471,7 +471,7 @@ import Testing
     }
 
     @Test
-    func `optional story array field decodes as nil when no relation store is present`() throws {
+    func `optional story array field fails when no relation store is present`() throws {
         let data = """
         {
             "story": {
@@ -490,8 +490,9 @@ import Testing
         """.data(using: .utf8)!
 
         let decoder = makePlainDecoder()
-        let response = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthorArray>>.self, from: data)
-        #expect(response.payload.content.authors == nil)
+        #expect(throws: DecodingError.self) {
+            _ = try decoder.decode(ContentResponse<Story<ArticleWithOptionalAuthorArray>>.self, from: data)
+        }
     }
 
     @Test

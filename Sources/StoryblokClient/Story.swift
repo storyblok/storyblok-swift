@@ -240,23 +240,15 @@ extension Story: Sendable where Content: Sendable {}
 extension Story: Identifiable {}
 
 extension KeyedDecodingContainer {
-    /// Specialised overloads for optional story-relation fields. When a UUID placeholder cannot
-    /// be resolved (no store, missing rels) or a circular reference hits the depth limit, the
-    /// field decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does
-    /// not go through these overloads, so unresolved/circular errors still propagate for them.
+    /// Decodes an optional story relation. When its UUID placeholder cannot be resolved (no store,
+    /// missing rels) or a circular reference hits the depth limit, the field decodes as `nil`
+    /// instead of throwing. A non-optional field uses `decode`, which does not go through this
+    /// overload, so unresolved/circular errors still propagate for it, as they do for a story in
+    /// a `[Story<T>]?` list: model a list as `[Story<T>?]` to keep the stories it can resolve.
     public func decodeIfPresent<T: Decodable>(_ type: Story<T>.Type, forKey key: Key) throws -> Story<T>? {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
-        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
-            return nil
-        }
-    }
-
-    public func decodeIfPresent<T: Decodable>(_ type: [Story<T>].Type, forKey key: Key) throws -> [Story<T>]? {
-        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
-        do {
-            return try decode([Story<T>].self, forKey: key)
         } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
             return nil
         }
