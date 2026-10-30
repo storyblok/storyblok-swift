@@ -444,6 +444,7 @@ The client automatically resolves story relations declared on your block library
 enum Content {
     case featured(article: Story<Content>)      // resolved automatically
     case popular(articles: [Story<Content>])    // lists are also supported
+    case related(articles: [Story<Content>?])   // nil in place of a story that can't be resolved
     case article(Article)
 
     struct Article: Decodable {
@@ -451,7 +452,7 @@ enum Content {
         let author: Story<Content>               // nested-struct relations too
     }
 }
-// Content.relations == "article.author,featured.article,popular.articles"
+// Content.relations == "article.author,featured.article,popular.articles,related.articles"
 ```
 
 > Important: A `Story<T>` relation field's type argument `T` must be the enclosing block library `enum` or one of its nested structs, so the macro can discover its relation fields.
@@ -472,7 +473,8 @@ client.story("home", resolveLevel: 2)
 
 When relations form a cycle, resolution stops at the configured depth. How the boundary is handled depends on whether the field is optional:
 
-- An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully.
+- An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully. For `[Story<T>]?` that is the whole list, even when only one of its stories closes the cycle.
+- A list of **optional stories** (`[Story<T>?]`) decodes each story that closes the cycle as `nil` in its place, keeping the others. A story that is not resolved at all, such as one beyond `resolveLevel`, decodes as `nil` the same way.
 - A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected.
 
 Model fields that may participate in cycles as optional, or as a `UUID` (or `String`), to avoid decoding failures.

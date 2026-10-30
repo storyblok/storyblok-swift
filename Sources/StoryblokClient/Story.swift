@@ -190,7 +190,7 @@ extension Story : Decodable {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
                         codingPath: decoder.codingPath,
-                        debugDescription: "Circular story relation: \(uuidString) (model as optional (Story<T>?) or String (UUID) rather than Story<T>)",
+                        debugDescription: "Circular story relation: \(uuidString) (model as optional (Story<T>? or [Story<T>?]) or as UUID rather than Story<T>)",
                         underlyingError: StoryRelationError.circular
                     )
                 )
@@ -257,6 +257,39 @@ extension KeyedDecodingContainer {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
         do {
             return try decode([Story<T>].self, forKey: key)
+        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
+            return nil
+        }
+    }
+
+    /// Decodes a list of story relations, each story that cannot be resolved (no store, missing rels) or that
+    /// closes a cycle at the depth limit decoding as `nil` in its place, so the stories that can be resolved are
+    /// kept. Any other failure still throws.
+    public func decode<T: Decodable>(_ type: [Story<T>?].Type, forKey key: Key) throws -> [Story<T>?] {
+        var container = try nestedUnkeyedContainer(forKey: key)
+        var stories: [Story<T>?] = []
+        while !container.isAtEnd {
+            stories.append(try container.decodeRelation(Story<T>.self))
+        }
+        return stories
+    }
+
+    /// Decodes a list of story relations as ``decode(_:forKey:)-(_,_)`` does, or `nil` when the field is
+    /// absent or `null`.
+    public func decodeIfPresent<T: Decodable>(_ type: [Story<T>?].Type, forKey key: Key) throws -> [Story<T>?]? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        return try decode([Story<T>?].self, forKey: key)
+    }
+}
+
+private extension UnkeyedDecodingContainer {
+    /// The next element as a story relation, or `nil` when it is `null` or a relation that cannot be resolved.
+    mutating func decodeRelation<T: Decodable>(_ type: Story<T>.Type) throws -> Story<T>? {
+        if try decodeNil() { return nil }
+        // A decoder of its own moves past the element even when decoding it fails.
+        let decoder = try superDecoder()
+        do {
+            return try Story<T>(from: decoder)
         } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
             return nil
         }
