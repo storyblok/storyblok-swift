@@ -604,7 +604,7 @@ When consuming the publisher with `async`/`await`, the same error is thrown from
 The error's case suggests how to respond:
 
 - ``StoryblokClient/Error/api(message:underlyingError:)`` — the request failed. Transient failures (`5xx` and `429`) have already been retried up to three times, so rather than retrying again, consider alerting the user and offering a manual retry.
-- ``StoryblokClient/Error/decoding(_:)`` — the content does not match the types it was decoded into, which a retry cannot change. Consider failing loudly during development, and reporting to a crash reporting service in production.
+- ``StoryblokClient/Error/decoding(_:)`` — the content does not match the types it was decoded into, which a retry cannot change. Consider failing loudly during development, and reporting to a crash reporting service in production. Its `localizedDescription` says what did not match, where in the response, and why, for example `Invalid data at rels[0].content.related[0]: Circular story relation: …`.
 
 ```swift
 .catch { error -> Empty<Story<Content>, Never> in

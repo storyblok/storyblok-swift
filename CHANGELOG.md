@@ -1,5 +1,11 @@
 ### Changelog
 
+**main**
+
+- Fixed `StoryblokClient.Error.decoding` describing every failure as "The data couldn't be read because it isn't in
+  the correct format." Its `message` and `localizedDescription` now say what did not match, where in the response, and
+  why, such as a circular or unresolved story relation or a missing key.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the
