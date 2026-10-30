@@ -269,7 +269,7 @@ import Testing
 
     /// A minimal block type whose `ref` field can point to another `CircularBlock` story,
     /// enabling direct and indirect circular relation graphs.
-    indirect enum CircularBlock: Decodable {
+    enum CircularBlock: Decodable {
         case node(name: String, ref: Story<CircularBlock>?)
 
         init(from decoder: any Decoder) throws {
@@ -357,7 +357,7 @@ import Testing
         #expect(cyclicRef == nil)
     }
 
-    indirect enum NonOptionalCircularBlock: Decodable {
+    enum NonOptionalCircularBlock: Decodable {
         case node(name: String, ref: Story<NonOptionalCircularBlock>)
 
         init(from decoder: any Decoder) throws {
