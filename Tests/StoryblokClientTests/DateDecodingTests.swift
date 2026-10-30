@@ -58,6 +58,17 @@ enum EventBlock: Decodable {
     }
 
     @Test
+    func `A decoder other than the client's is unaffected`() {
+        struct Plain: Decodable { let endsAt: Date? }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        #expect(throws: DecodingError.self) {
+            try decoder.decode(Plain.self, from: Data(#"{"endsAt": ""}"#.utf8))
+        }
+    }
+
+    @Test
     func `A blank sort_by_date decodes as nil`() throws {
         let story = try decode(Story<EventBlock>.self, """
         {

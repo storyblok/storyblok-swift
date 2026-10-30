@@ -15,6 +15,8 @@
 - Fixed a date field left blank, which Storyblok sends as `""`, failing the whole response. A `Date?` property now
   decodes it as `nil`, through a new `KeyedDecodingContainer.decodeIfPresent(_:forKey:)` overload for `Date`. A blank
   non-optional `Date` still throws.
+- Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
+  `UUID?` and `Story<T>?` now decode it as `nil`.
 
 **1.1.0**
 
