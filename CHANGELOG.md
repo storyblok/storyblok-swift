@@ -1,5 +1,12 @@
 ### Changelog
 
+**main**
+
+- A content struct can now hold a `Story` of its own type, such as a page whose `related: Story<Page>?` field picks
+  another page. `Story` keeps its `content` behind a reference, so the struct no longer contains itself, which Swift
+  rejected, and a block library enum holding a `Story` of itself no longer needs to be `indirect`. `content` is now a
+  read-only computed property, so reading it is unchanged.
+
 **1.1.0**
 
 - Added `StoryblokClient.stories(page:pageSize:resolveLevel:query:)` to retrieve multiple stories. It publishes the

@@ -456,6 +456,17 @@ enum Content {
 
 > Important: A `Story<T>` relation field's type argument `T` must be the enclosing block library `enum` or one of its nested structs, so the macro can discover its relation fields.
 
+A nested struct can relate to stories of its own type, such as a page whose `related` field picks another page. A ``Story`` keeps its content behind a reference, so neither the struct nor the enum needs to be `indirect`:
+
+```swift
+struct Page {
+    let title: String
+    let related: Story<Page>?   // optional, as a page may relate to itself
+}
+```
+
+A page that relates to itself is a cycle, so model the field as optional, as <doc:UserGuide#Circular-relations> explains.
+
 ### Controlling resolution depth
 
 The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(String,_,_)`` controls how deeply relations are followed:
