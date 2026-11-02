@@ -7,29 +7,10 @@ private protocol NumberText: Decodable {
 }
 
 extension Int: NumberText { fileprivate init?(numberText: String) { self.init(numberText) } }
-
-// A floating-point initializer reads a number out of range as infinity, which decoding a JSON number would reject.
-
-extension Double: NumberText {
-    fileprivate init?(numberText: String) {
-        guard let value = Double(numberText), value.isFinite else { return nil }
-        self = value
-    }
-}
-
-extension Float: NumberText {
-    fileprivate init?(numberText: String) {
-        guard let value = Float(numberText), value.isFinite else { return nil }
-        self = value
-    }
-}
-
+extension Double: NumberText { fileprivate init?(numberText: String) { self.init(numberText) } }
+extension Float: NumberText { fileprivate init?(numberText: String) { self.init(numberText) } }
 extension Decimal: NumberText {
-    fileprivate init?(numberText: String) {
-        // `Decimal(string:)` reads whatever number the text starts with, so the whole text must be a number first.
-        guard Double(numberText)?.isFinite == true else { return nil }
-        self.init(string: numberText, locale: Locale(identifier: "en_US_POSIX"))
-    }
+    fileprivate init?(numberText: String) { self.init(string: numberText, locale: Locale(identifier: "en_US_POSIX")) }
 }
 
 /// Decodes the number types from the text Storyblok sends for a Number field as well as from a JSON number, and a
