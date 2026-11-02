@@ -347,13 +347,16 @@ import Mocker
 
         @Test
         func `requests served from the cache are not subject to delays`() async throws {
+            let spy = SuspensionSpy()
             let storyblok = URLSession(
                 storyblok: .cdn(
                     accessToken: "mock-api-key",
                     cv: "mock-cv",
                     requestsPerSecond: 1
                 ),
-                configuration: mockConfiguration
+                configuration: mockConfiguration,
+                delegate: spy,
+                delegateQueue: nil
             )
             let request = URLRequest(storyblok: storyblok, path: "stories/mock-slug")
             let mock = Mock(
@@ -378,14 +381,13 @@ import Mocker
             }
             try #require(cache.cachedResponse(for: request) != nil)
 
-            // Measured from within the rate limit's one second, so a request it delayed would
-            // take at least the half second left.
-            let duration = try await ContinuousClock.continuous.measure {
-                let (data, _) = try await storyblok.data(for: request)
-                let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                #expect(json["story"] != nil)
-            }
-            #expect(duration < .milliseconds(500))
+            // The rate limit delays a request by suspending its task until the limit allows it.
+            // Checking for that, rather than timing the request, keeps a stalled simulator from
+            // failing the test.
+            let (data, _) = try await storyblok.data(for: request)
+            let json = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+            #expect(json["story"] != nil)
+            #expect(spy.suspendedTasks == 0)
         }
 
         @Test
@@ -490,6 +492,22 @@ final class SpyDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) { tasks += 1 }
     //implemented by nothing in the chain above it, so it can only arrive by forwarding
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) { completions += 1 }
+}
+
+/// Counts the tasks that were suspended after being resumed, which is how a session delays a request.
+final class SuspensionSpy: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    // Task state changes arrive on whichever thread made them, so the lock guards both properties.
+    private let lock = NSLock()
+    private var observers: [NSKeyValueObservation] = []
+    private var suspended: Set<ObjectIdentifier> = []
+    var suspendedTasks: Int { lock.withLock { suspended.count } }
+    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+        // A task is created suspended, so without `.initial` any suspended state seen is a suspension.
+        let observer = task.observe(\.state) { [self] task, _ in
+            if task.state == .suspended { lock.withLock { _ = suspended.insert(ObjectIdentifier(task)) } }
+        }
+        lock.withLock { observers.append(observer) }
+    }
 }
 
 final class CountingWrapper: NSObject, URLSessionDataDelegate, @unchecked Sendable {
