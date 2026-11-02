@@ -400,10 +400,15 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
 private struct EmptyDateError: Error {}
 
 extension KeyedDecodingContainer {
-    /// Specialised overload for optional dates. A blank date field, which Storyblok sends as `""` rather than `null`,
-    /// decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does not go through this overload,
-    /// so a blank date still throws for them. Decoders other than ``StoryblokClient``'s never throw `EmptyDateError`,
-    /// so they are unaffected.
+    /// Decodes an optional date, reading a blank date field, which Storyblok sends as `""` rather than `null`, as `nil`
+    /// instead of throwing.
+    ///
+    /// Nothing calls this by name. The `Decodable` conformance Swift synthesizes for a `Date?` property, and the
+    /// decoding ``BlockLibrary()`` generates for a `Date?` associated value, call `decodeIfPresent(Date.self, forKey:)`,
+    /// and Swift picks this overload over `KeyedDecodingContainer`'s generic one because it is more specific.
+    ///
+    /// A non-optional `Date` is decoded with `decode`, which does not come here, so a blank one still throws. Decoders
+    /// other than ``StoryblokClient``'s never throw `EmptyDateError`, so they are unaffected.
     public func decodeIfPresent(_ type: Date.Type, forKey key: Key) throws -> Date? {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
         do {
