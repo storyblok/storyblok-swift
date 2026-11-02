@@ -503,8 +503,10 @@ final class SuspensionSpy: NSObject, URLSessionTaskDelegate, @unchecked Sendable
     var suspendedTasks: Int { lock.withLock { suspended.count } }
     func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
         // A task is created suspended, so without `.initial` any suspended state seen is a suspension.
-        let observer = task.observe(\.state) { [self] task, _ in
-            if task.state == .suspended { lock.withLock { _ = suspended.insert(ObjectIdentifier(task)) } }
+        // Weak, as the spy holds the observation and the observation holds this closure.
+        let observer = task.observe(\.state) { [weak self] task, _ in
+            guard let self, task.state == .suspended else { return }
+            lock.withLock { _ = suspended.insert(ObjectIdentifier(task)) }
         }
         lock.withLock { observers.append(observer) }
     }
