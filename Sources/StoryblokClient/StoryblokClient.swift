@@ -389,6 +389,43 @@ internal final class RedirectNormalizer: NSObject, URLSessionDataDelegate, @unch
     }
 }
 
+// MARK: - Blank values
+
+extension KeyedDecodingContainer {
+    /// Decodes an optional date, reading a blank date field, which Storyblok sends as `""` rather than `null`, as `nil`
+    /// instead of throwing.
+    ///
+    /// Nothing calls this by name. The `Decodable` conformance Swift synthesizes for a `Date?` property, and the
+    /// decoding ``BlockLibrary()`` generates for a `Date?` associated value, call `decodeIfPresent(Date.self, forKey:)`,
+    /// and Swift picks this overload over `KeyedDecodingContainer`'s generic one because it is more specific.
+    ///
+    /// A non-optional `Date` is decoded with `decode`, which does not come here, so a blank one still throws. Only
+    /// decoding by ``StoryblokClient`` is affected: any other decoder reads `""` as Foundation does, and throws.
+    public func decodeIfPresent(_ type: Date.Type, forKey key: Key) throws -> Date? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if try isBlankStoryblokValue(forKey: key) { return nil }
+        return try decode(Date.self, forKey: key)
+    }
+
+    /// Decodes an optional UUID, reading a single-option field sourced from stories with no story selected, which
+    /// Storyblok sends as `""` rather than `null`, as `nil` instead of throwing.
+    ///
+    /// Reached as the `Date?` overload is, by the decoding Swift synthesizes and ``BlockLibrary()`` generates for a
+    /// `UUID?`. A non-optional `UUID` still throws for a blank value, and only decoding by ``StoryblokClient`` is affected.
+    public func decodeIfPresent(_ type: UUID.Type, forKey key: Key) throws -> UUID? {
+        guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if try isBlankStoryblokValue(forKey: key) { return nil }
+        return try decode(UUID.self, forKey: key)
+    }
+
+    /// Whether the value for `key` is `""`, decoded by ``StoryblokClient``, whose decoder marks itself with
+    /// `storyblokContent` so that other decoders keep Foundation's behaviour.
+    func isBlankStoryblokValue(forKey key: Key) throws -> Bool {
+        guard (try? decode(String.self, forKey: key)) == "" else { return false }
+        return try superDecoder(forKey: key).userInfo[.storyblokContent] as? Bool == true
+    }
+}
+
 // MARK: - Date formatters
 
 nonisolated(unsafe) private let isoFormatterFractional: ISO8601DateFormatter = {
