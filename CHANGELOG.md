@@ -2,9 +2,10 @@
 
 **main**
 
-- Number fields, which Storyblok sends as text such as `"42"`, now decode into `Int` and the other integer types,
-  `Double`, `Float` and `Decimal`, as well as `String`. A blank number field decodes as `nil` for an optional
-  property.
+- Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
+  `UUID?` and `Story<T>?` now decode it as `nil`.
+- Added decoding of a Number field's text, such as `"42"`, into `Int`, `Double`, `Float` and `Decimal`. A blank Number
+  field decodes as `nil` for an optional property.
 
 **1.1.0**
 

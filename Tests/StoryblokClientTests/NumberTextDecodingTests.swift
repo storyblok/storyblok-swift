@@ -14,7 +14,7 @@ enum ShopBlock: Decodable {
         let price: Double
         let weight: Float?
         let tax: Decimal
-        let reorderAt: Int64?
+        let reorderAt: Int?
         let launchedAt: Date?
     }
 
