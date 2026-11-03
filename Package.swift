@@ -103,5 +103,10 @@ let package = Package(
             dependencies: ["URLSessionExtension"],
             path: "Examples/URLSessionExtension",
         ),
+        .testTarget(
+            name: "StoryblokClientExamples",
+            dependencies: ["StoryblokClient"],
+            path: "Examples/StoryblokClient",
+        ),
     ]
 )
