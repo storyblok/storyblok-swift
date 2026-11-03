@@ -147,6 +147,26 @@ extension StoriesQuery {
         sort(field, direction, .decimal)
     }
 
+    /// Sort by a decimal content field, ordered numerically.
+    public mutating func sort(by field: KeyPath<Content, Float>, _ direction: SortDirection = .ascending) {
+        sort(field, direction, .decimal)
+    }
+
+    /// Sort by an optional decimal content field, ordered numerically like a present one.
+    public mutating func sort(by field: KeyPath<Content, Float?>, _ direction: SortDirection = .ascending) {
+        sort(field, direction, .decimal)
+    }
+
+    /// Sort by a decimal content field, ordered numerically.
+    public mutating func sort(by field: KeyPath<Content, Decimal>, _ direction: SortDirection = .ascending) {
+        sort(field, direction, .decimal)
+    }
+
+    /// Sort by an optional decimal content field, ordered numerically like a present one.
+    public mutating func sort(by field: KeyPath<Content, Decimal?>, _ direction: SortDirection = .ascending) {
+        sort(field, direction, .decimal)
+    }
+
     /// Sort by a content field, ordered as text.
     public mutating func sort<Value>(by field: KeyPath<Content, Value>, _ direction: SortDirection = .ascending) {
         sort(field, direction, .text)

@@ -19,9 +19,14 @@ enum QueryLibrary : Decodable, Hashable, Sendable {
         /// Optional numbers, which must sort and compare as numbers like present ones.
         let restock: Int?
         let weight: Double?
+        /// The other decimal types, which must sort and compare as decimals like a `Double`.
+        let height: Float
+        let depth: Float?
+        let tax: Decimal
+        let discount: Decimal?
 
         enum CodingKeys: String, CodingKey {
-            case headline, categories, stock, rating, price, restock, weight
+            case headline, categories, stock, rating, price, restock, weight, height, depth, tax, discount
             case releaseDate = "release_date"
         }
     }
@@ -170,6 +175,27 @@ struct StoriesQueryTests {
         #expect(query["sort_by"] == "content.restock:asc:int,content.weight:desc:float")
         #expect(query["filter_query[restock][gt_int]"] == "5")
         #expect(query["filter_query[weight][lt_float]"] == "2.5")
+    }
+
+    @Test
+    func `a Float or Decimal sorts and compares as a decimal`() {
+        let query = items {
+            $0.sort(by: \.height)
+            $0.sort(by: \.depth, .descending)
+            $0.sort(by: \.tax)
+            $0.sort(by: \.discount)
+            $0.filter {
+                $0.height > 0.1
+                $0.depth < 2
+                $0.tax > Decimal(string: "0.2")!
+                $0.discount < 15
+            }
+        }
+        #expect(query["sort_by"] == "content.height:asc:float,content.depth:desc:float,content.tax:asc:float,content.discount:asc:float")
+        #expect(query["filter_query[height][gt_float]"] == "0.1")
+        #expect(query["filter_query[depth][lt_float]"] == "2.0")
+        #expect(query["filter_query[tax][gt_float]"] == "0.2")
+        #expect(query["filter_query[discount][lt_float]"] == "15")
     }
 
     @Test

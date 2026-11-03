@@ -15,6 +15,7 @@ enum ShopBlock: Decodable {
         let weight: Float?
         let tax: Decimal
         let reorderAt: Int?
+        let views: Int64
         let launchedAt: Date?
     }
 
@@ -55,10 +56,11 @@ enum ShopBlock: Decodable {
         price: String = #""4.5""#,
         weight: String = #""0.25""#,
         tax: String = #""0.2""#,
-        reorderAt: String = #""3""#
+        reorderAt: String = #""3""#,
+        views: String = #""5000000000""#
     ) -> String {
         """
-        {"component": "product", "sku": "42", "stock": \(stock), "price": \(price), "weight": \(weight), "tax": \(tax), "reorderAt": \(reorderAt), "launchedAt": "2025-04-02 10:30"}
+        {"component": "product", "sku": "42", "stock": \(stock), "price": \(price), "weight": \(weight), "tax": \(tax), "reorderAt": \(reorderAt), "views": \(views), "launchedAt": "2025-04-02 10:30"}
         """
     }
 
@@ -79,17 +81,21 @@ enum ShopBlock: Decodable {
         #expect(product.weight == 0.25)
         #expect(product.tax == Decimal(string: "0.2"))
         #expect(product.reorderAt == 3)
+        #expect(product.views == 5_000_000_000)
         #expect(product.launchedAt == Date(timeIntervalSince1970: 1_743_589_800))
     }
 
     @Test
     func `JSON numbers still decode into number types`() throws {
-        let product = try decodeProduct(product(stock: "12", price: "4.5", weight: "0.25", tax: "0.2", reorderAt: "3"))
+        let product = try decodeProduct(
+            product(stock: "12", price: "4.5", weight: "0.25", tax: "0.2", reorderAt: "3", views: "5000000000")
+        )
         #expect(product.stock == 12)
         #expect(product.price == 4.5)
         #expect(product.weight == 0.25)
         #expect(product.tax == Decimal(string: "0.2"))
         #expect(product.reorderAt == 3)
+        #expect(product.views == 5_000_000_000)
     }
 
     @Test
@@ -128,11 +134,78 @@ enum ShopBlock: Decodable {
         #expect(throws: DecodingError.self) { try decodeProduct(product(stock: stock)) }
     }
 
+    @Test(arguments: [
+        #""four""#,
+        #""12abc""#,     // a number followed by text
+        #""1,5""#,       // a decimal comma
+        #""-""#,
+        #"" ""#,
+        #""nan""#,
+        #""inf""#,
+        #""0x10""#,
+        #""1e3""#,       // an exponent, which the Visual Editor never writes
+    ])
+    func `Text that is not a plain decimal throws for a decimal`(text: String) {
+        #expect(throws: DecodingError.self) { try decodeProduct(product(tax: text)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(price: text)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: text)) }
+    }
+
     @Test
-    func `Text that is not a number throws for a decimal`() {
-        #expect(throws: DecodingError.self) { try decodeProduct(product(tax: #""four""#)) }
-        #expect(throws: DecodingError.self) { try decodeProduct(product(price: #""four""#)) }
-        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: #""four""#)) }
+    func `A number too large for a Float throws rather than decoding as infinity`() {
+        let text = #""1\#(String(repeating: "0", count: 39))""#
+        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: text)) }
+    }
+
+    @Test
+    func `Negative and whole number text decodes into a decimal`() throws {
+        let product = try decodeProduct(product(price: #""-4""#, tax: #""-0.25""#))
+        #expect(product.price == -4)
+        #expect(product.tax == Decimal(string: "-0.25"))
+    }
+
+    @Test
+    func `A blank required Number field says to make it optional`() {
+        do {
+            _ = try decodeProduct(product(tax: #""""#))
+            Issue.record("Expected an error")
+        } catch DecodingError.dataCorrupted(let context) {
+            #expect(context.debugDescription.contains("Cannot decode Decimal from an empty string"))
+            #expect(context.debugDescription.contains("optional property"))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func `A value that is neither a number nor text keeps the number's type mismatch`() {
+        do {
+            _ = try decodeProduct(product(stock: "true"))
+            Issue.record("Expected an error")
+        } catch DecodingError.typeMismatch(let type, _) {
+            #expect(ObjectIdentifier(type) == ObjectIdentifier(Int.self))
+        } catch {
+            Issue.record("Unexpected error: \(error)")
+        }
+    }
+
+    @Test
+    func `A mismatch that is not text does not ask the decoder for a super decoder`() {
+        struct Plain: Decodable { let stock: Int }
+
+        #expect(throws: DecodingError.self) { try Plain(from: BoolsDecoder()) }
+    }
+
+    @Test
+    func `A model in a file that does not import StoryblokClient reads text only as a Decimal`() throws {
+        let decoder = StoryblokClient<ShopBlock>.decoder(resolveLevel: 1)
+
+        let model = try decoder.decode(ForeignProduct.self, from: Data(#"{"stock": 12, "tax": "0.2"}"#.utf8))
+        #expect(model.tax == Decimal(string: "0.2"))
+        // The standard library's `Int` overload wins in that file, as the UserGuide says.
+        #expect(throws: DecodingError.self) {
+            try decoder.decode(ForeignProduct.self, from: Data(#"{"stock": "12", "tax": 1}"#.utf8))
+        }
     }
 
     @Test
@@ -150,6 +223,45 @@ enum ShopBlock: Decodable {
 
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Plain.self, from: Data(#"{"stock": "12"}"#.utf8))
+        }
+    }
+}
+
+/// A decoder whose every value is `true`, and whose `superDecoder(forKey:)` must not be reached, since a custom
+/// decoder's may trap.
+private struct BoolsDecoder: Decoder {
+    struct Unsupported: Error {}
+
+    var codingPath: [any CodingKey] { [] }
+    var userInfo: [CodingUserInfoKey: Any] { [:] }
+
+    func container<Key: CodingKey>(keyedBy type: Key.Type) -> KeyedDecodingContainer<Key> {
+        KeyedDecodingContainer(Container())
+    }
+    func unkeyedContainer() throws -> any UnkeyedDecodingContainer { throw Unsupported() }
+    func singleValueContainer() throws -> any SingleValueDecodingContainer { throw Unsupported() }
+
+    struct Container<Key: CodingKey>: KeyedDecodingContainerProtocol {
+        var codingPath: [any CodingKey] { [] }
+        var allKeys: [Key] { [] }
+
+        func contains(_ key: Key) -> Bool { true }
+        func decodeNil(forKey key: Key) -> Bool { false }
+        func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
+            guard let value = true as? T else {
+                throw DecodingError.typeMismatch(T.self, .init(codingPath: [key], debugDescription: "Only true"))
+            }
+            return value
+        }
+        func nestedContainer<NestedKey: CodingKey>(
+            keyedBy type: NestedKey.Type,
+            forKey key: Key
+        ) throws -> KeyedDecodingContainer<NestedKey> { throw Unsupported() }
+        func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer { throw Unsupported() }
+        func superDecoder() throws -> any Decoder { throw Unsupported() }
+        func superDecoder(forKey key: Key) throws -> any Decoder {
+            Issue.record("superDecoder(forKey:) reached for a value that is not text")
+            throw Unsupported()
         }
     }
 }

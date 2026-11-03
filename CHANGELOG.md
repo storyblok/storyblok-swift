@@ -3,9 +3,11 @@
 **main**
 
 - Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
-  `UUID?` and `Story<T>?` now decode it as `nil`.
-- Added decoding of a Number field's text, such as `"42"`, into `Int`, `Double`, `Float` and `Decimal`. A blank Number
-  field decodes as `nil` for an optional property.
+  `UUID?` and `Story<T>?` now decode it as `nil`. A `@BlockLibrary` associated value spelled `Optional<T>` is now
+  decoded, and its relations resolved, as one spelled `T?` is.
+- Added decoding of a Number field's text, such as `"42"`, into `Int`, `Int64`, `Double`, `Float` and `Decimal`, and
+  sorting and filtering by a `Float` or `Decimal` field as a decimal. A blank Number field decodes as `nil` for an
+  optional property.
 
 **1.1.0**
 

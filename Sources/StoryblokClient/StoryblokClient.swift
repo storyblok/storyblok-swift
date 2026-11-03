@@ -420,7 +420,11 @@ extension KeyedDecodingContainer {
 
     /// Whether the value for `key` is `""`, decoded by ``StoryblokClient``, whose decoder marks itself with
     /// `storyblokContent` so that other decoders keep Foundation's behaviour.
-    func isBlankStoryblokValue(forKey key: Key) throws -> Bool {
+    ///
+    /// The mark is read through `superDecoder(forKey:)`, since a container doesn't expose its decoder's `userInfo`. A
+    /// decoder whose `superDecoder(forKey:)` throws reads `""` as Foundation does, but one that leaves it unimplemented
+    /// and traps will trap here, for a blank value only.
+    private func isBlankStoryblokValue(forKey key: Key) throws -> Bool {
         guard (try? decode(String.self, forKey: key)) == "" else { return false }
         return try superDecoder(forKey: key).userInfo[.storyblokContent] as? Bool == true
     }
