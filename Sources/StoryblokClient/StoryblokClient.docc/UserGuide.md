@@ -605,7 +605,24 @@ enum Content {
 }
 ```
 
-This applies to content decoded by ``StoryblokClient``, from the story or stories it fetches and the stories their relations resolve to. Decode the field as a `String` instead to receive the text as sent.
+> Note: A blank value decodes as `nil` where Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
+> - an element of an array, such as `[Date?]`
+> - a generic property, such as `T?` where `T` is `Date`
+> - a custom `init(from:)` that calls `decode(Date?.self, forKey:)` rather than `decodeIfPresent(Date.self, forKey:)`
+> - a type in a module that doesn't import StoryblokClient, or, with `MemberImportVisibility`, in a file that doesn't
+> - a ``BlockLibrary()`` associated value whose optional type is a typealias
+
+### Number field
+
+A Number field sends its value as text, such as `"42"` or `"4.5"`, or `""` when it is blank. Model it as `Int`, `Int64`, `Double`, `Float` or `Decimal`, and as an optional to decode a blank field as `nil`. Text that isn't a plain decimal, such as `"1e3"` or `"12abc"`, fails to decode.
+
+> Important: Declare a model with an `Int`, `Int64`, `Double` or `Float` property in a file that imports StoryblokClient. In a file that doesn't, the standard library's decoding of those types wins, and a Number field fails to decode.
+
+### Single-Option field
+
+A Single-Option field sends the selected option's value as a string, or `""` when nothing is selected, so a `String` receives `""`.
+
+With stories as its source, it sends the selected story's UUID. Model it as `Story<T>?` to resolve the story (see Story relations above), or as `UUID?` to receive the UUID. Either one decodes a blank field as `nil`.
 
 ## Caching
 

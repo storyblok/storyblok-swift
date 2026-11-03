@@ -171,6 +171,12 @@ func decimalOperand(_ value: Double) -> String {
         : String(value)
 }
 
+/// Formats a `Float` as the `Double` its shortest text reads as, so `0.1` is sent as `0.1` rather than as the
+/// `Double` nearest the `Float`.
+func decimalOperand(_ value: Float) -> String {
+    decimalOperand(Double(value.description) ?? Double(value))
+}
+
 /// `gt_int` — the whole-number field is greater than `value`.
 public func > <Content, Value : BinaryInteger>(field: QueryField<Content, Value>, value: Value) -> Filter<Content> {
     field.filter("gt_int", String(describing: value))
@@ -209,6 +215,46 @@ public func > <Content>(field: QueryField<Content, Double?>, value: Double) -> F
 /// `lt_float` — the optional decimal field is less than `value`.
 public func < <Content>(field: QueryField<Content, Double?>, value: Double) -> Filter<Content> {
     field.filter("lt_float", decimalOperand(value))
+}
+
+/// `gt_float` — the decimal field is greater than `value`.
+public func > <Content>(field: QueryField<Content, Float>, value: Float) -> Filter<Content> {
+    field.filter("gt_float", decimalOperand(value))
+}
+
+/// `lt_float` — the decimal field is less than `value`.
+public func < <Content>(field: QueryField<Content, Float>, value: Float) -> Filter<Content> {
+    field.filter("lt_float", decimalOperand(value))
+}
+
+/// `gt_float` — the optional decimal field is greater than `value`.
+public func > <Content>(field: QueryField<Content, Float?>, value: Float) -> Filter<Content> {
+    field.filter("gt_float", decimalOperand(value))
+}
+
+/// `lt_float` — the optional decimal field is less than `value`.
+public func < <Content>(field: QueryField<Content, Float?>, value: Float) -> Filter<Content> {
+    field.filter("lt_float", decimalOperand(value))
+}
+
+/// `gt_float` — the decimal field is greater than `value`.
+public func > <Content>(field: QueryField<Content, Decimal>, value: Decimal) -> Filter<Content> {
+    field.filter("gt_float", value.description)
+}
+
+/// `lt_float` — the decimal field is less than `value`.
+public func < <Content>(field: QueryField<Content, Decimal>, value: Decimal) -> Filter<Content> {
+    field.filter("lt_float", value.description)
+}
+
+/// `gt_float` — the optional decimal field is greater than `value`.
+public func > <Content>(field: QueryField<Content, Decimal?>, value: Decimal) -> Filter<Content> {
+    field.filter("gt_float", value.description)
+}
+
+/// `lt_float` — the optional decimal field is less than `value`.
+public func < <Content>(field: QueryField<Content, Decimal?>, value: Decimal) -> Filter<Content> {
+    field.filter("lt_float", value.description)
 }
 
 /// `gt_date` — the date field is after `value`.
