@@ -68,4 +68,50 @@ struct BlankUUIDOptionTests {
             try JSONDecoder().decode(Plain.self, from: Data(#"{"category": ""}"#.utf8))
         }
     }
+
+    @Test
+    func `a decoder whose superDecoder throws still throws a decoding error`() {
+        struct Plain: Decodable { let category: UUID? }
+
+        #expect(throws: DecodingError.self) {
+            try Plain(from: StringsDecoder(values: ["category": ""]))
+        }
+    }
+}
+
+/// A decoder over string values whose `superDecoder(forKey:)` throws, as a custom decoder's may.
+private struct StringsDecoder: Decoder {
+    struct Unsupported: Error {}
+
+    let values: [String: String]
+    var codingPath: [any CodingKey] { [] }
+    var userInfo: [CodingUserInfoKey: Any] { [:] }
+
+    func container<Key: CodingKey>(keyedBy type: Key.Type) -> KeyedDecodingContainer<Key> {
+        KeyedDecodingContainer(Container(values: values))
+    }
+    func unkeyedContainer() throws -> any UnkeyedDecodingContainer { throw Unsupported() }
+    func singleValueContainer() throws -> any SingleValueDecodingContainer { throw Unsupported() }
+
+    struct Container<Key: CodingKey>: KeyedDecodingContainerProtocol {
+        let values: [String: String]
+        var codingPath: [any CodingKey] { [] }
+        var allKeys: [Key] { values.keys.compactMap(Key.init(stringValue:)) }
+
+        func contains(_ key: Key) -> Bool { values[key.stringValue] != nil }
+        func decodeNil(forKey key: Key) -> Bool { false }
+        func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
+            guard let value = values[key.stringValue] as? T else {
+                throw DecodingError.typeMismatch(T.self, .init(codingPath: [key], debugDescription: "Only strings"))
+            }
+            return value
+        }
+        func nestedContainer<NestedKey: CodingKey>(
+            keyedBy type: NestedKey.Type,
+            forKey key: Key
+        ) throws -> KeyedDecodingContainer<NestedKey> { throw Unsupported() }
+        func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer { throw Unsupported() }
+        func superDecoder() throws -> any Decoder { throw Unsupported() }
+        func superDecoder(forKey key: Key) throws -> any Decoder { throw Unsupported() }
+    }
 }

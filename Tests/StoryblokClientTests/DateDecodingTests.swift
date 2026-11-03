@@ -6,6 +6,7 @@ import Testing
 enum EventBlock: Decodable {
     case event(Event)
     case reminder(title: String, due: Date?)
+    case deadline(title: String, due: Optional<Date>)
 
     struct Event: Decodable {
         let title: String
@@ -32,6 +33,13 @@ enum EventBlock: Decodable {
     func `A blank optional date in a case's associated value decodes as nil`() throws {
         let block = try decode(EventBlock.self, #"{"component": "reminder", "title": "Renew", "due": ""}"#)
         guard case .reminder(_, let due) = block else { Issue.record("Expected .reminder, got \(block)"); return }
+        #expect(due == nil)
+    }
+
+    @Test
+    func `A blank date in an associated value spelled Optional<Date> decodes as nil`() throws {
+        let block = try decode(EventBlock.self, #"{"component": "deadline", "title": "Renew", "due": ""}"#)
+        guard case .deadline(_, let due) = block else { Issue.record("Expected .deadline, got \(block)"); return }
         #expect(due == nil)
     }
 

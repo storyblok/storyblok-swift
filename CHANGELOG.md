@@ -16,7 +16,8 @@
   decodes it as `nil`, through a new `KeyedDecodingContainer.decodeIfPresent(_:forKey:)` overload for `Date`. A blank
   non-optional `Date` still throws.
 - Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
-  `UUID?` and `Story<T>?` now decode it as `nil`.
+  `UUID?` and `Story<T>?` now decode it as `nil`. A `@BlockLibrary` associated value spelled `Optional<T>` is now
+  decoded, and its relations resolved, as one spelled `T?` is.
 
 **1.1.0**
 

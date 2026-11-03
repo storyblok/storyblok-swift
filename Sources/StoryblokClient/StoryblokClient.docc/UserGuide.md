@@ -193,6 +193,8 @@ struct PageContent: BlockLibrary {
 }
 ```
 
+A hand-written `init(from:)` should decode an optional date or UUID with `decodeIfPresent(Date.self, forKey:)`, so that a blank one decodes as `nil`, as described under Date/Time field.
+
 ## Creating a client
 
 The ``StoryblokClient`` type has a single initializer, ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:delegate:delegateQueue:)``, which builds the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) it uses. Pass it a `configuration`, a `delegate` and a `delegateQueue` to control that session.
@@ -474,7 +476,7 @@ The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
-- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID` (or `String`) to receive the raw UUIDs instead.
+- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID?` (or `String`) to receive the raw UUIDs instead.
 
 ```swift
 client.story("home", resolveLevel: 2)
@@ -487,7 +489,7 @@ When relations form a cycle, resolution stops at the configured depth. How the b
 - An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully.
 - A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected.
 
-Model fields that may participate in cycles as optional, or as a `UUID` (or `String`), to avoid decoding failures.
+Model fields that may participate in cycles as optional, or as a `UUID?` (or `String`), to avoid decoding failures.
 
 > Tip: The maximum number of relations that can be resolved is 50 stories per request. This is a Storyblok API limitation.
 
@@ -586,6 +588,32 @@ enum Content {
 print(page.image.filename)
 print(page.image.alt ?? "")
 ```
+
+### Date/Time field
+
+A Date/Time field decodes into `Date`. The client reads ISO 8601 dates, with or without fractional seconds, and the `yyyy-MM-dd HH:mm` and `yyyy-MM-dd` formats the field sends, in UTC.
+
+An editor can leave the field blank, which Storyblok sends as `""`. Model it as `Date?`, so a blank field decodes as `nil`: a non-optional `Date` fails to decode it, and with it the whole story. Model a required field as `Date?` too. A draft can still have it blank: content written through the Management API isn't checked for required fields until it's published, and stories saved before the field was made required keep their blank value.
+
+```swift
+struct Event: Decodable {
+    let title: String
+    let startsAt: Date?
+}
+```
+
+> Note: A blank value decodes as `nil` where Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
+> - an element of an array, such as `[Date?]`
+> - a generic property, such as `T?` where `T` is `Date`
+> - a custom `init(from:)` that calls `decode(Date?.self, forKey:)` rather than `decodeIfPresent(Date.self, forKey:)`
+> - a type in a module that doesn't import StoryblokClient, or, with `MemberImportVisibility`, in a file that doesn't
+> - a ``BlockLibrary()`` associated value whose optional type is a typealias
+
+### Single-Option field
+
+A Single-Option field sends the selected option's value as a string, or `""` when nothing is selected, so a `String` receives `""`.
+
+With stories as its source, it sends the selected story's UUID. Model it as `Story<T>?` to resolve the story (see Story relations above), or as `UUID?` to receive the UUID. Either one decodes a blank field as `nil`.
 
 ## Caching
 
