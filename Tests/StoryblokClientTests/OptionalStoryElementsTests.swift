@@ -8,10 +8,16 @@ enum ElementsBlock {
     case list(articles: [Story<Page>?])
     case shelf(articles: [Story<Page>?]?)
     case rack(articles: [Story<Page>]?)
+    case article(Article)
+    case feature(articles: [Story<Article>?], lead: Story<Article>?)
 
     struct Page {
         let title: String
         let related: [Story<Page>?]
+    }
+
+    struct Article {
+        let author: Story<Page>
     }
 }
 
@@ -52,7 +58,7 @@ struct OptionalStoryElementsTests {
 
     @Test
     func `a list of optional stories is a relation`() {
-        #expect(ElementsBlock.relations == "list.articles,page.related,rack.articles,shelf.articles")
+        #expect(ElementsBlock.relations == "article.author,feature.articles,feature.lead,list.articles,page.related,rack.articles,shelf.articles")
     }
 
     @Test
@@ -145,6 +151,19 @@ struct OptionalStoryElementsTests {
             return
         }
         #expect(articles == nil)
+    }
+
+    @Test(arguments: [
+        #""articles": ["\#(OptionalStoryElementsTests.other)"]"#,
+        #""articles": [], "lead": "\#(OptionalStoryElementsTests.other)""#,
+    ])
+    func `a resolved story whose required relation cannot be resolved still fails`(fields: String) {
+        let feature = story(Self.home, #"{"component": "feature", \#(fields)}"#)
+        let article = story(Self.other, #"{"component": "article", "author": "\#(Self.missing)"}"#)
+
+        #expect(throws: DecodingError.self) {
+            let _: Story<ElementsBlock> = try decode(feature, rels: [article])
+        }
     }
 
     @Test

@@ -5,6 +5,13 @@
 - BREAKING CHANGE: `Story.releaseId` is now a `String?` instead of an `Int64?`, matching `fromRelease` in
   `StoryQuery` and `StoriesQuery`. The Content Delivery API sends a story's `release_id` as a string, such as
   `"230891299745176"`, so `story()` and `stories()` failed with `.decoding` for any story retrieved with `fromRelease`.
+- A `[Story<T>?]` field is now a story relation. Each story in it that can't be resolved, or that closes a cycle at
+  the `resolveLevel` depth, decodes as `nil` in its place, so the stories that can be resolved are kept. A
+  `[Story<T>]?` field now fails decoding when one of its stories can't be resolved, as a `[Story<T>]` field does,
+  rather than decoding as `nil`, which could not be told apart from an absent field. It is `nil` only when the field
+  is absent or `null`. Model the field as `[Story<T>?]` to keep the stories that can be resolved.
+- A `Story<T>?` field now fails decoding when its story resolves but a required relation in its content can't be
+  resolved, rather than decoding as `nil` and hiding the modelling error.
 - Fixed `story()` and `stories()` failing with `.decoding` when the copy in the URL cache no longer decoded, for
   example after a required field was added to a block, before the fresh copy arrived. A cached copy that does not
   decode is now passed over, and only the fresh copy failing to decode is reported.
@@ -21,11 +28,6 @@
 - Added decoding of a Number field's text, such as `"42"`, into `Int` and the other integer types, `Double`, `Float`
   and `Decimal`, and sorting and filtering by a `Float` or `Decimal` field as a decimal. A blank Number field decodes
   as `nil` for an optional property.
-- A `[Story<T>?]` field is now a story relation. Each story in it that can't be resolved, or that closes a cycle at
-  the `resolveLevel` depth, decodes as `nil` in its place, so the stories that can be resolved are kept. A
-  `[Story<T>]?` field now fails decoding when one of its stories can't be resolved, as a `[Story<T>]` field does,
-  rather than decoding as `nil`, which could not be told apart from an absent field. It is `nil` only when the field
-  is absent or `null`. Model the field as `[Story<T>?]` to keep the stories that can be resolved.
 
 **1.1.0**
 

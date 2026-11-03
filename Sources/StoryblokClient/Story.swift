@@ -334,14 +334,15 @@ extension KeyedDecodingContainer {
         if (try? decode(String.self, forKey: key)) == "" { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
-        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
+        } catch DecodingError.dataCorrupted(let context) where context.isRelationError(at: codingPath + [key]) {
             return nil
         }
     }
 
     /// Decodes a list of story relations, each story that cannot be resolved (no store, missing rels) or that
     /// closes a cycle at the depth limit decoding as `nil` in its place, so the stories that can be resolved are
-    /// kept. Any other failure still throws.
+    /// kept. Any other failure still throws, including a required relation in a resolved story's content
+    /// that cannot be resolved.
     public func decode<T: Decodable>(_ type: [Story<T>?].Type, forKey key: Key) throws -> [Story<T>?] {
         var container = try nestedUnkeyedContainer(forKey: key)
         var stories: [Story<T>?] = []
@@ -367,8 +368,17 @@ private extension UnkeyedDecodingContainer {
         let decoder = try superDecoder()
         do {
             return try Story<T>(from: decoder)
-        } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {
+        } catch DecodingError.dataCorrupted(let context) where context.isRelationError(at: decoder.codingPath) {
             return nil
         }
+    }
+}
+
+private extension DecodingError.Context {
+    /// `true` when this is the relation error for the story at `path` itself, rather than one from a
+    /// required relation in its content, which must still throw.
+    func isRelationError(at path: [any CodingKey]) -> Bool {
+        underlyingError is StoryRelationError
+            && codingPath.map(\.stringValue) == path.map(\.stringValue)
     }
 }
