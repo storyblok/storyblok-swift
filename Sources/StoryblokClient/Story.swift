@@ -224,23 +224,23 @@ extension Story : Decodable {
     }
 
     public init(from decoder: any Decoder) throws {
+        // A Story field carries a string rather than an inline story object when it is a relation.
+        let placeholder = (try? decoder.singleValueContainer()).flatMap { try? $0.decode(String.self) }
+
         // A single-option field sourced from stories sends "" when no story is selected. The
         // optional overload of `decodeIfPresent` returns nil for it before reaching here, so only
         // a required field throws, and an enclosing optional story does not swallow the error.
-        if let single = try? decoder.singleValueContainer(), (try? single.decode(String.self)) == "" {
+        if placeholder == "" {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "No story selected (model as optional (Story<T>?) to decode as nil)"
+                    debugDescription: "No story selected. A blank Single-Option field decodes as nil only into a Story<T>? property."
                 )
             )
         }
 
-        // When a Story field carries a UUID placeholder string instead of an inline
-        // story object, resolve it from the RelationStore in userInfo.
-        if let single = try? decoder.singleValueContainer(),
-           let uuidString = try? single.decode(String.self),
-           UUID(uuidString: uuidString) != nil {
+        // A UUID placeholder is resolved from the RelationStore in userInfo.
+        if let uuidString = placeholder, UUID(uuidString: uuidString) != nil {
             let key = uuidString.lowercased()
             guard let store = decoder.userInfo[.storyblokRelations] as? RelationStore,
               let subdecoder = store.decoders[key] else {

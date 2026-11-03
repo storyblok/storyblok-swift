@@ -797,6 +797,51 @@ final class BlockLibraryMacroTests: XCTestCase {
         )
     }
 
+    func test_decodesOptionalSpelledAsGenericTypeIfPresent() {
+        assertMacroExpansion(
+            """
+            @BlockLibrary
+            enum Block {
+                case event(startsAt: Optional<Date>, endsAt: Swift.Optional<Date>, venue: Optional<Story<Block>>)
+                enum EventCodingKeys: String, CodingKey {
+                    case startsAt, endsAt, venue
+                }
+            }
+            """,
+            expandedSource: """
+            enum Block {
+                case event(startsAt: Optional<Date>, endsAt: Swift.Optional<Date>, venue: Optional<Story<Block>>)
+                enum EventCodingKeys: String, CodingKey {
+                    case startsAt, endsAt, venue
+                }
+
+                nonisolated static let relations: String = "event.venue"
+
+                nonisolated init(from decoder: any Decoder) throws {
+                    let container = try decoder.container(keyedBy: BlockCodingKeys.self)
+                    let component = try container.decode(String.self, forKey: .component)
+                    switch component {
+                    case "event":
+                        let caseContainer = try decoder.container(keyedBy: EventCodingKeys.self)
+                        self = .event(
+                            startsAt: try caseContainer.decodeIfPresent(Date.self, forKey: .startsAt),
+                            endsAt: try caseContainer.decodeIfPresent(Date.self, forKey: .endsAt),
+                            venue: try caseContainer.decodeIfPresent(Story<Block>.self, forKey: .venue)
+                        )
+                    default:
+                        throw DecodingError.dataCorruptedError(forKey: .component, in: container, debugDescription: "Unknown component: \\(component)")
+                    }
+                }
+
+                enum BlockCodingKeys: String, CodingKey {
+                    case component
+                }
+            }
+            """,
+            macros: macros
+        )
+    }
+
     // MARK: - Diagnostics
 
     func test_errorWhenStoryRelationTypeIsNotVisibleToMacro() {
