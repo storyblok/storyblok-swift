@@ -614,9 +614,7 @@ enum Content {
 
 ### Number field
 
-A Number field sends its value as text, such as `"42"` or `"4.5"`, or `""` when it is blank. Model it as `Int`, `Int64`, `Double`, `Float` or `Decimal`, and as an optional to decode a blank field as `nil`. Text that isn't a plain decimal, such as `"1e3"` or `"12abc"`, fails to decode.
-
-> Important: Declare a model with an `Int`, `Int64`, `Double` or `Float` property in a file that imports StoryblokClient. In a file that doesn't, the standard library's decoding of those types wins, and a Number field fails to decode.
+A Number field sends its value as text, such as `"42"` or `"4.5"`, or `""` when it is blank. Model it as a number type, such as `Int`, `Double` or `Decimal`, and as an optional to decode a blank field as `nil`. Text that a JSON number couldn't hold, such as `"12abc"` or `"4.5"` for an `Int`, fails to decode.
 
 ### Single-Option field
 
