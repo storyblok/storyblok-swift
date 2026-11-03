@@ -36,6 +36,8 @@ struct ContentResponse<Payload: Decodable>: Decodable {
     let payload: Payload
 
     init(from decoder: any Decoder) throws {
+        // Everything below, rels included, decodes through `NumberTextDecoder`, so number types read Number fields.
+        let decoder = NumberTextDecoder(base: decoder)
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         if let store = decoder.userInfo[.storyblokRelations] as? RelationStore,

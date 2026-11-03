@@ -7,6 +7,7 @@ enum ShopBlock: Decodable {
     case product(Product)
     case discount(percent: Int?, label: String)
     case bundle(Bundle)
+    case listing(Listing)
 
     struct Product: Decodable {
         let sku: String
@@ -16,6 +17,7 @@ enum ShopBlock: Decodable {
         let tax: Decimal
         let reorderAt: Int?
         let views: Int64
+        let sizes: [Int]?
         let launchedAt: Date?
     }
 
@@ -23,7 +25,34 @@ enum ShopBlock: Decodable {
         let title: String
         let product: Story<Product>?
     }
+
+    struct Listing: Decodable {
+        let manual: URL
+        let images: [URL]?
+        let codes: Codes
+    }
 }
+
+/// Decodes each element of an array as a whole number if it can, and as text if not, as a custom `init(from:)` may
+/// try one type and then another.
+struct Codes: Decodable {
+    enum Code: Equatable { case number(Int), text(String) }
+    let values: [Code]
+
+    init(from decoder: any Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+        var values: [Code] = []
+        while !container.isAtEnd {
+            if let number = try? container.decode(Int.self) {
+                values.append(.number(number))
+            } else {
+                values.append(.text(try container.decode(String.self)))
+            }
+        }
+        self.values = values
+    }
+}
+
 
 @Suite struct NumberTextDecodingTests {
 
@@ -57,10 +86,11 @@ enum ShopBlock: Decodable {
         weight: String = #""0.25""#,
         tax: String = #""0.2""#,
         reorderAt: String = #""3""#,
-        views: String = #""5000000000""#
+        views: String = #""5000000000""#,
+        sizes: String = #"["38", "40"]"#
     ) -> String {
         """
-        {"component": "product", "sku": "42", "stock": \(stock), "price": \(price), "weight": \(weight), "tax": \(tax), "reorderAt": \(reorderAt), "views": \(views), "launchedAt": "2025-04-02 10:30"}
+        {"component": "product", "sku": "42", "stock": \(stock), "price": \(price), "weight": \(weight), "tax": \(tax), "reorderAt": \(reorderAt), "views": \(views), "sizes": \(sizes), "launchedAt": "2025-04-02 10:30"}
         """
     }
 
@@ -82,13 +112,14 @@ enum ShopBlock: Decodable {
         #expect(product.tax == Decimal(string: "0.2"))
         #expect(product.reorderAt == 3)
         #expect(product.views == 5_000_000_000)
+        #expect(product.sizes == [38, 40])
         #expect(product.launchedAt == Date(timeIntervalSince1970: 1_743_589_800))
     }
 
     @Test
     func `JSON numbers still decode into number types`() throws {
         let product = try decodeProduct(
-            product(stock: "12", price: "4.5", weight: "0.25", tax: "0.2", reorderAt: "3", views: "5000000000")
+            product(stock: "12", price: "4.5", weight: "0.25", tax: "0.2", reorderAt: "3", views: "5000000000", sizes: "[38, 40]")
         )
         #expect(product.stock == 12)
         #expect(product.price == 4.5)
@@ -96,6 +127,7 @@ enum ShopBlock: Decodable {
         #expect(product.tax == Decimal(string: "0.2"))
         #expect(product.reorderAt == 3)
         #expect(product.views == 5_000_000_000)
+        #expect(product.sizes == [38, 40])
     }
 
     @Test
@@ -134,27 +166,26 @@ enum ShopBlock: Decodable {
         #expect(throws: DecodingError.self) { try decodeProduct(product(stock: stock)) }
     }
 
+    @Test(arguments: [#""+12""#, #""012""#, #""-012""#, #""1e2""#])
+    func `Text outside the JSON number grammar throws for a whole number`(stock: String) {
+        #expect(throws: DecodingError.self) { try decodeProduct(product(stock: stock)) }
+    }
+
     @Test(arguments: [
-        #""four""#,
-        #""12abc""#,     // a number followed by text
-        #""1,5""#,       // a decimal comma
-        #""-""#,
-        #"" ""#,
-        #""nan""#,
-        #""inf""#,
-        #""0x10""#,
-        #""1e3""#,       // an exponent, which the Visual Editor never writes
+        #""four""#, #""4.5abc""#, #""4,5""#, #""-""#, #"" ""#, #""nan""#, #""inf""#, #""0x10""#,
+        #""+4.5""#, #""04.5""#, #"".5""#, #""5.""#,
     ])
-    func `Text that is not a plain decimal throws for a decimal`(text: String) {
+    func `Text that is not a JSON number throws for a decimal`(text: String) {
         #expect(throws: DecodingError.self) { try decodeProduct(product(tax: text)) }
         #expect(throws: DecodingError.self) { try decodeProduct(product(price: text)) }
         #expect(throws: DecodingError.self) { try decodeProduct(product(weight: text)) }
     }
 
     @Test
-    func `A number too large for a Float throws rather than decoding as infinity`() {
-        let text = #""1\#(String(repeating: "0", count: 39))""#
-        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: text)) }
+    func `A number out of range throws rather than decoding as infinity`() {
+        #expect(throws: DecodingError.self) { try decodeProduct(product(price: #""1e999""#)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(weight: #""1e50""#)) }
+        #expect(throws: DecodingError.self) { try decodeProduct(product(tax: #""1e999""#)) }
     }
 
     @Test
@@ -190,22 +221,31 @@ enum ShopBlock: Decodable {
     }
 
     @Test
-    func `A mismatch that is not text does not ask the decoder for a super decoder`() {
-        struct Plain: Decodable { let stock: Int }
-
-        #expect(throws: DecodingError.self) { try Plain(from: BoolsDecoder()) }
+    func `A model in a file that does not import StoryblokClient decodes number text`() throws {
+        let decoder = StoryblokClient<ShopBlock>.decoder(resolveLevel: 1)
+        let json = #"{"story": {"stock": "12", "tax": "0.2"}, "rels": []}"#
+        let model = try decoder.decode(ContentResponse<ForeignProduct>.self, from: Data(json.utf8)).payload
+        #expect(model.stock == 12)
+        #expect(model.tax == Decimal(string: "0.2"))
     }
 
     @Test
-    func `A model in a file that does not import StoryblokClient reads text only as a Decimal`() throws {
-        let decoder = StoryblokClient<ShopBlock>.decoder(resolveLevel: 1)
+    func `URLs decode from text as JSONDecoder reads them`() throws {
+        let block = try decode("""
+            {"component": "listing", "manual": "https://a.storyblok.com/f/1/manual.pdf", "images": ["https://a.storyblok.com/f/1/a.jpg"], "codes": []}
+            """)
+        guard case .listing(let listing) = block else { Issue.record("Expected .listing"); return }
+        #expect(listing.manual == URL(string: "https://a.storyblok.com/f/1/manual.pdf"))
+        #expect(listing.images == [URL(string: "https://a.storyblok.com/f/1/a.jpg")!])
+    }
 
-        let model = try decoder.decode(ForeignProduct.self, from: Data(#"{"stock": 12, "tax": "0.2"}"#.utf8))
-        #expect(model.tax == Decimal(string: "0.2"))
-        // The standard library's `Int` overload wins in that file, as the UserGuide says.
-        #expect(throws: DecodingError.self) {
-            try decoder.decode(ForeignProduct.self, from: Data(#"{"stock": "12", "tax": 1}"#.utf8))
-        }
+    @Test
+    func `An array element that fails to decode can be decoded again as another type`() throws {
+        let block = try decode("""
+            {"component": "listing", "manual": "https://example.com", "codes": ["A1", "7", 8, "B2"]}
+            """)
+        guard case .listing(let listing) = block else { Issue.record("Expected .listing"); return }
+        #expect(listing.codes.values == [.text("A1"), .number(7), .number(8), .text("B2")])
     }
 
     @Test
@@ -227,41 +267,3 @@ enum ShopBlock: Decodable {
     }
 }
 
-/// A decoder whose every value is `true`, and whose `superDecoder(forKey:)` must not be reached, since a custom
-/// decoder's may trap.
-private struct BoolsDecoder: Decoder {
-    struct Unsupported: Error {}
-
-    var codingPath: [any CodingKey] { [] }
-    var userInfo: [CodingUserInfoKey: Any] { [:] }
-
-    func container<Key: CodingKey>(keyedBy type: Key.Type) -> KeyedDecodingContainer<Key> {
-        KeyedDecodingContainer(Container())
-    }
-    func unkeyedContainer() throws -> any UnkeyedDecodingContainer { throw Unsupported() }
-    func singleValueContainer() throws -> any SingleValueDecodingContainer { throw Unsupported() }
-
-    struct Container<Key: CodingKey>: KeyedDecodingContainerProtocol {
-        var codingPath: [any CodingKey] { [] }
-        var allKeys: [Key] { [] }
-
-        func contains(_ key: Key) -> Bool { true }
-        func decodeNil(forKey key: Key) -> Bool { false }
-        func decode<T: Decodable>(_ type: T.Type, forKey key: Key) throws -> T {
-            guard let value = true as? T else {
-                throw DecodingError.typeMismatch(T.self, .init(codingPath: [key], debugDescription: "Only true"))
-            }
-            return value
-        }
-        func nestedContainer<NestedKey: CodingKey>(
-            keyedBy type: NestedKey.Type,
-            forKey key: Key
-        ) throws -> KeyedDecodingContainer<NestedKey> { throw Unsupported() }
-        func nestedUnkeyedContainer(forKey key: Key) throws -> any UnkeyedDecodingContainer { throw Unsupported() }
-        func superDecoder() throws -> any Decoder { throw Unsupported() }
-        func superDecoder(forKey key: Key) throws -> any Decoder {
-            Issue.record("superDecoder(forKey:) reached for a value that is not text")
-            throw Unsupported()
-        }
-    }
-}
