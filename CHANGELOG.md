@@ -12,9 +12,6 @@
   another page. `Story` keeps its `content` behind a reference, so the struct no longer contains itself, which Swift
   rejected, and a block library enum holding a `Story` of itself no longer needs to be `indirect`. `content` is now a
   read-only computed property, so reading it is unchanged.
-- Fixed a date field left blank, which Storyblok sends as `""`, failing the whole response. A `Date?` property now
-  decodes it as `nil`, through a new `KeyedDecodingContainer.decodeIfPresent(_:forKey:)` overload for `Date`. A blank
-  non-optional `Date` still throws.
 - Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
   `UUID?` and `Story<T>?` now decode it as `nil`. A `@BlockLibrary` associated value spelled `Optional<T>` is now
   decoded, and its relations resolved, as one spelled `T?` is.
