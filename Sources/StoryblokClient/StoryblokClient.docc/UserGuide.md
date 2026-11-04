@@ -602,7 +602,8 @@ struct Event: Decodable {
 }
 ```
 
-> Note: A blank value decodes as `nil` where Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
+> Note: A blank value decodes as `nil` where ``StoryblokClient`` decodes a response, and Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
+> - with a decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy
 > - an element of an array, such as `[Date?]`
 > - a generic property, such as `T?` where `T` is `Date`
 > - a custom `init(from:)` that calls `decode(Date?.self, forKey:)` rather than `decodeIfPresent(Date.self, forKey:)`
