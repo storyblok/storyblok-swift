@@ -5,12 +5,24 @@ import URLSessionExtension
 @Suite(.serialized) struct `MAPI: Releases` {
 
     /**
+     * Check if conflicts exist in a release
+     * https://www.storyblok.com/docs/api/management/releases/check-conflict-in-release
+     */
+    @Test
+    func `Check Conflict in Release`() async throws {
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
+        let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/18/check_conflicts")
+        let (data, _) = try await storyblok.data(for: request)
+        print(try JSONSerialization.jsonObject(with: data))
+    }
+
+    /**
      * This endpoint allows you to create a new release.
      * https://www.storyblok.com/docs/api/management/releases/create-a-release
      */
     @Test
     func `Create a Release`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -33,7 +45,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Release`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/18")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -46,19 +58,19 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single Release`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/18")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
     /**
-     * Returns an array of releases.
+     * Returns an array of releases
      * https://www.storyblok.com/docs/api/management/releases/retrieve-multiple-releases
      */
     @Test
     func `Retrieve Multiple Releases`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -70,7 +82,7 @@ import URLSessionExtension
      */
     @Test
     func `Update a Release`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/releases/123")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [

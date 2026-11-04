@@ -10,13 +10,14 @@ import URLSessionExtension
      */
     @Test
     func `Create a Datasource Entry`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "datasource_entry": [
                 "datasource_id": 12345,
                 "name": "newsletter_text",
+                "position": 1,
                 "value": "Subscribe to our newsletter.",
             ],
         ])
@@ -30,7 +31,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Datasource Entry`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -43,7 +44,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single Datasource Entry`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -54,8 +55,8 @@ import URLSessionExtension
      * https://www.storyblok.com/docs/api/management/datasource-entries/retrieve-multiple-datasource-entries
      */
     @Test
-    func `Retrieve Multiple Datasource Entries`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+    func `Retrieve Multiple Datasource Entries Management API`() async throws {
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/")
         request.url!.append(queryItems: [
             URLQueryItem(name: "datasource_id", value: "123"),
@@ -71,12 +72,13 @@ import URLSessionExtension
      */
     @Test
     func `Update a Datasource Entry`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/158405385177293")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "datasource_entry": [
                 "name": "updated_newsletter_text",
+                "position": 1,
                 "value": "Update: Subscribe to our updated newsletter.",
             ],
         ])
@@ -90,8 +92,8 @@ import URLSessionExtension
      */
     @Test
     func `Update a Datasource Entry 2`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/52")
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
+        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/datasource_entries/158405385177293")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "datasource_entry": [

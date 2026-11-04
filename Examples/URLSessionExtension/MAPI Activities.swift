@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single Activity`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/activities/1234312323")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -22,7 +22,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Activities`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/activities/")
         request.url!.append(queryItems: [
             URLQueryItem(name: "created_at_gte", value: "2018-12-14"),
