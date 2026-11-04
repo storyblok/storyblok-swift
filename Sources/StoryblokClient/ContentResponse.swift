@@ -36,6 +36,8 @@ struct ContentResponse<Payload: Decodable>: Decodable {
     let payload: Payload
 
     init(from decoder: any Decoder) throws {
+        // Everything below, rels included, decodes through `ContentDecoder`, so a blank field decodes as nil.
+        let decoder = ContentDecoder(base: decoder)
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         if let store = decoder.userInfo[.storyblokRelations] as? RelationStore,

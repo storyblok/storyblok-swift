@@ -193,8 +193,6 @@ struct PageContent: BlockLibrary {
 }
 ```
 
-A hand-written `init(from:)` should decode an optional date or UUID with `decodeIfPresent(Date.self, forKey:)`, so that a blank one decodes as `nil`, as described under Date/Time field.
-
 ## Creating a client
 
 The ``StoryblokClient`` type has a single initializer, ``StoryblokClient/init(library:accessToken:version:region:language:fallbackLanguage:cv:requestsPerSecond:configuration:delegate:delegateQueue:)``, which builds the [`URLSession`](https://developer.apple.com/documentation/foundation/urlsession) it uses. Pass it a `configuration`, a `delegate` and a `delegateQueue` to control that session.
@@ -458,6 +456,8 @@ enum Content {
 
 > Important: A `Story<T>` relation field's type argument `T` must be the enclosing block library `enum` or one of its nested structs, so the macro can discover its relation fields.
 
+An Option field, single or multi, whose source is stories also sends story UUIDs, so model it as `Story<T>?` or `[Story<T>]?` in the same way. A single option with no story selected sends `""`, which an optional `Story<T>?` decodes as `nil` and a non-optional `Story<T>` fails to decode.
+
 A nested struct can relate to stories of its own type, such as a page whose `related` field picks another page. A ``Story`` keeps its content behind a reference, so neither the struct nor the enum needs to be `indirect`:
 
 ```swift
@@ -468,7 +468,6 @@ struct Page {
 ```
 
 A page that relates to itself is a cycle, so model the field as optional, as <doc:UserGuide#Circular-relations> explains.
-An Option field, single or multi, whose source is stories also sends story UUIDs, so model it as `Story<T>?` or `[Story<T>]?` in the same way. A single option with no story selected sends `""`, which an optional `Story<T>?` decodes as `nil` and a non-optional `Story<T>` fails to decode.
 
 ### Controlling resolution depth
 
@@ -602,13 +601,7 @@ struct Event: Decodable {
 }
 ```
 
-> Note: A blank value decodes as `nil` where ``StoryblokClient`` decodes a response, and Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
-> - with a decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy
-> - an element of an array, such as `[Date?]`
-> - a generic property, such as `T?` where `T` is `Date`
-> - a custom `init(from:)` that calls `decode(Date?.self, forKey:)` rather than `decodeIfPresent(Date.self, forKey:)`
-> - a type in a module that doesn't import StoryblokClient, or, with `MemberImportVisibility`, in a file that doesn't
-> - a ``BlockLibrary()`` associated value whose optional type is a typealias
+> Note: A blank value decodes as `nil` into any `Date?` or `UUID?` in a response ``StoryblokClient`` decodes. A decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy, still fails to decode it.
 
 ### Single-Option field
 
