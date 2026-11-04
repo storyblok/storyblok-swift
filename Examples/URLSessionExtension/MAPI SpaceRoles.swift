@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Create a Space Role`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/space_roles/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -75,7 +75,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Space Role`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/space_roles/18")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -88,7 +88,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single Space Role`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/space_roles/18")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -100,7 +100,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Space Roles`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/space_roles/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -112,7 +112,7 @@ import URLSessionExtension
      */
     @Test
     func `Update a Space Role`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/space_roles/18")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [

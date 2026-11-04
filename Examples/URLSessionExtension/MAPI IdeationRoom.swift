@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Create an Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -52,7 +52,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete an Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/123ab45c-6d78-9101-11ef-213gh1i4j1k5")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -60,12 +60,12 @@ import URLSessionExtension
     }
 
     /**
-     * This endpoint allows restoring an idea using the uuid. Use deleted idea's id value for idea_id. This endpoint also restores the idea's discussion comments.
+     * This endpoint allows restoring an idea using the uuid. Use deleted idea&#39;s id value for idea_id. This endpoint also restores the idea&#39;s discussion comments.
      * https://www.storyblok.com/docs/api/management/ideation-room/restore-an-idea
      */
     @Test
     func `Restore an Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/123ab45c-6d78-9101-11ef-213gh1i4j1k5")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -77,7 +77,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Discussions in Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/1a2b3456-c7d8-9ef1-gh01-11i2jk13l14m/discussions")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -89,7 +89,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Ideas`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -101,47 +101,33 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve One Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/1a2b3456-c7d8-9ef1-gh01-11i2jk13l14m")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
     /**
-     * Update an idea using an idea uuid. In the request body, it's required to pass the idea object.
+     * Update an idea using its UUID.
      * https://www.storyblok.com/docs/api/management/ideation-room/update-an-idea
      */
     @Test
     func `Update an Idea`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/ab123cd4-5e6f-7gh8-9ij1-01k112l13m1n")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "idea": [
-                "assignee": nil,
-                "author": [
-                    "avatar": "avatars/67891/838dcb304c/avatar.jpg",
-                    "friendly_name": "Jon Doe",
-                    "id": 67891,
-                    "userid": "test@email.com",
-                ],
+                "assignee_id": nil,
                 "bookmarks": [ ],
                 "content": [ ],
-                "deleted_at": nil,
                 "description": "First idea",
                 "internal_tag_ids": [
-                    "12345",
-                ],
-                "internal_tags_list": [
-                    [
-                        "id": 12345,
-                        "name": "docs",
-                    ],
+                    12345,
                 ],
                 "is_private": true,
                 "name": "My first idea",
                 "status": "draft",
-                "stories": [ ],
                 "story_ids": [ ],
             ],
         ])

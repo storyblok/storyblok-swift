@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Create a Comment`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/456/comments")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -33,7 +33,7 @@ import URLSessionExtension
      */
     @Test
     func `Create a Discussion`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/stories/12367/discussions")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -70,7 +70,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Comment`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/456/comments/789")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -83,7 +83,7 @@ import URLSessionExtension
      */
     @Test
     func `Resolve a Discussion`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/49468")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -101,7 +101,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Specific Discussion`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/49473")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -113,7 +113,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Idea Discussions Comments`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ideas/1a2b3456-c7d8-9ef1-gh01-11i2jk13l14m/discussions")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -125,7 +125,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Comments from a Specific Discussion`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/49471/comments")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -137,7 +137,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Discussions`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/stories/1234/discussions")
         request.url!.append(queryItems: [
             URLQueryItem(name: "per_page", value: "1"),
@@ -154,7 +154,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve My Discussions`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/mentioned_discussions/me")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -166,7 +166,7 @@ import URLSessionExtension
      */
     @Test
     func `Update a Comment`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/discussions/2345/comments/456")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [

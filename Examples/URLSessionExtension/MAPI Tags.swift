@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Create a Tag`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -29,7 +29,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Tag`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags/test-tag")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -41,8 +41,8 @@ import URLSessionExtension
      * https://www.storyblok.com/docs/api/management/tags/retrieve-multiple-tags
      */
     @Test
-    func `Retrieve Multiple Tags`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+    func `Retrieve Multiple Tags Management API`() async throws {
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags/")
         request.url!.append(queryItems: [
             URLQueryItem(name: "search", value: "Featured")
@@ -56,8 +56,8 @@ import URLSessionExtension
      * https://www.storyblok.com/docs/api/management/tags/retrieve-multiple-tags
      */
     @Test
-    func `Retrieve Multiple Tags 2`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+    func `Retrieve Multiple Tags Management API 2`() async throws {
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags/")
         request.url!.append(queryItems: [
             URLQueryItem(name: "all_tags", value: "true"),
@@ -74,7 +74,7 @@ import URLSessionExtension
      */
     @Test
     func `Tag Bulk Association`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags/bulk_association")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -100,7 +100,7 @@ import URLSessionExtension
      */
     @Test
     func `Update a Tag`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/tags/Featured")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [

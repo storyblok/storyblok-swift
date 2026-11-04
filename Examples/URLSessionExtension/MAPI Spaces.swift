@@ -5,12 +5,12 @@ import URLSessionExtension
 @Suite(.serialized) struct `MAPI: Spaces` {
 
     /**
-     * Trigger the backup task for your space. Make sure you've configured backups in your space options.
+     * Trigger the backup task for your space. Make sure you&#39;ve configured backups in your space options.
      * https://www.storyblok.com/docs/api/management/spaces/backup-a-space
      */
     @Test
     func `Backup a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/backups")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [ ])
@@ -24,7 +24,7 @@ import URLSessionExtension
      */
     @Test
     func `Create a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -42,7 +42,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -55,7 +55,7 @@ import URLSessionExtension
      */
     @Test
     func `Duplicate a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -74,7 +74,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -86,24 +86,23 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Spaces`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
     }
 
     /**
-     * Update a space using the numeric ID. You can only able to update the properties mentioned here.
+     * Update a space using the numeric ID.
      * https://www.storyblok.com/docs/api/management/spaces/update-a-space
      */
     @Test
     func `Update a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "space": [
-                "id": 12422,
                 "name": "Updated Example Space",
             ],
         ])

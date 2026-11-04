@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Create an AI Style Group in an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "orgs/me/ai_style_groups")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -33,7 +33,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete an AI Style Group from an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "orgs/me/ai_style_groups/123456")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -46,7 +46,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Default AI Style Groups in an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "orgs/me/default_ai_style_groups")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -58,7 +58,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple AI Style Groups in an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "orgs/me/ai_style_groups")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -70,7 +70,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single AI Style Group in an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "orgs/me/ai_style_groups/123456")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -82,7 +82,7 @@ import URLSessionExtension
      */
     @Test
     func `Set Default AI Style Groups for an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "orgs/me/default_ai_style_groups")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -101,7 +101,7 @@ import URLSessionExtension
      */
     @Test
     func `Update an AI Style Group in an Organization`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "orgs/me/ai_style_groups/123456")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -124,7 +124,7 @@ import URLSessionExtension
      */
     @Test
     func `Create an AI Style Group in a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ai_style_groups")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -147,7 +147,7 @@ import URLSessionExtension
      */
     @Test
     func `Delete an AI Style Group from a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ai_style_groups/67499417567240")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -160,7 +160,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Default AI Style Groups in a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/default_ai_style_groups")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -172,7 +172,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple AI Style Groups in a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ai_style_groups")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -184,7 +184,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve a Single AI Style Group in a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ai_style_groups/67499417567240")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -196,7 +196,7 @@ import URLSessionExtension
      */
     @Test
     func `Set Default AI Style Groups for a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/default_ai_style_groups")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -215,7 +215,7 @@ import URLSessionExtension
      */
     @Test
     func `Update an AI Style Group in a Space`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/ai_style_groups/67499417567240")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [

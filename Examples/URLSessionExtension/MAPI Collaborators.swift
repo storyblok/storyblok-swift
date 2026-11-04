@@ -10,7 +10,7 @@ import URLSessionExtension
      */
     @Test
     func `Add a Collaborator`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -31,7 +31,7 @@ import URLSessionExtension
      */
     @Test
     func `Add a Collaborator 2`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -52,7 +52,7 @@ import URLSessionExtension
      */
     @Test
     func `Add a Collaborator 3`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
@@ -71,33 +71,12 @@ import URLSessionExtension
     }
 
     /**
-     * Add a user with SSO using the 
-     * https://www.storyblok.com/docs/api/management/collaborators/add-a-user-with-sso
-     */
-    @Test
-    func `Add a User with SSO`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
-        var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
-        request.httpMethod = "POST"
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "collaborator": [
-                "email": "api@storyblok.com",
-                "role": "editor",
-                "space_role_id": 18,
-                "sso_id": "123456789",
-            ],
-        ])
-        let (data, _) = try await storyblok.data(for: request)
-        print(try JSONSerialization.jsonObject(with: data))
-    }
-
-    /**
-     * Delete a collaborator using their 
+     * Delete a collaborator using their `collaborator_id` or `sso_id`
      * https://www.storyblok.com/docs/api/management/collaborators/delete-a-collaborator
      */
     @Test
     func `Delete a Collaborator`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/2362")
         request.httpMethod = "DELETE"
         let (data, _) = try await storyblok.data(for: request)
@@ -110,7 +89,7 @@ import URLSessionExtension
      */
     @Test
     func `Retrieve Multiple Collaborators`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         let request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/")
         let (data, _) = try await storyblok.data(for: request)
         print(try JSONSerialization.jsonObject(with: data))
@@ -122,7 +101,7 @@ import URLSessionExtension
      */
     @Test
     func `Update a Collaborator Roles and Permissions`() async throws {
-        let storyblok = URLSession(storyblok: .mapi(accessToken: .oauth("YOUR_OAUTH_TOKEN")))
+        let storyblok = URLSession(storyblok: .mapi(accessToken: .personal("YOUR_PERSONAL_ACCESS_TOKEN")))
         var request = URLRequest(storyblok: storyblok, path: "spaces/288868932106293/collaborators/2362")
         request.httpMethod = "PUT"
         request.httpBody = try JSONSerialization.data(withJSONObject: [
