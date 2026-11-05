@@ -348,7 +348,7 @@ client.stories { (query: inout StoriesQuery<Content.Article>) in
 }
 ```
 
-A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. A number field may still be modelled as a `String`, since that is how Storyblok serialises it (see <doc:UserGuide#Number-field>). Its type cannot settle the ordering, so `as:` states it:
+A field's Swift type picks its ordering: a whole number is ordered numerically, a decimal likewise, and everything else as text, which is also the right ordering for an ISO-8601 date. Storyblok serialises a number field as text, though, so a field holding a number may be modelled as a `String`. Its type cannot settle the ordering, so `as:` states it:
 
 ```swift
 client.stories { (query: inout StoriesQuery<Content.Product>) in
@@ -588,29 +588,20 @@ print(page.image.filename)
 print(page.image.alt ?? "")
 ```
 
-### Number field
+### Date/Time field
 
-Storyblok serialises a number field's value as text, such as `"42"` or `"4.5"`. The client decodes that text into a number type: `Int` and the other integer types, `Double`, `Float` and `Decimal`. It decodes a JSON number into them as usual too. Text that is not a number of that type, such as `"4.5"` for an `Int`, throws a `DecodingError`. A blank number field, sent as `""`, decodes as `nil` for an optional property and throws for a required one.
+A Date/Time field decodes into `Date`. The client reads ISO 8601 dates, with or without fractional seconds, and the `yyyy-MM-dd HH:mm` and `yyyy-MM-dd` formats the field sends, in UTC.
+
+An editor can leave the field blank, which Storyblok sends as `""`. Model it as `Date?`, so a blank field decodes as `nil`: a non-optional `Date` fails to decode it, and with it the whole story. Model a required field as `Date?` too. A draft can still have it blank: content written through the Management API isn't checked for required fields until it's published, and stories saved before the field was made required keep their blank value.
 
 ```swift
-@BlockLibrary
-enum Content {
-    case product(Product)
-
-    struct Product: Decodable {
-        let stock: Int        // "42"
-        let price: Decimal    // "4.5"
-        let weight: Double?   // "" decodes as nil
-    }
+struct Event: Decodable {
+    let title: String
+    let startsAt: Date?
 }
 ```
 
-> Note: A blank value decodes as `nil` where Swift's synthesized `Decodable` conformance or the ``BlockLibrary()`` macro decodes a `Date?` or `UUID?` property. It still fails to decode:
-> - an element of an array, such as `[Date?]`
-> - a generic property, such as `T?` where `T` is `Date`
-> - a custom `init(from:)` that calls `decode(Date?.self, forKey:)` rather than `decodeIfPresent(Date.self, forKey:)`
-> - a type in a module that doesn't import StoryblokClient, or, with `MemberImportVisibility`, in a file that doesn't
-> - a ``BlockLibrary()`` associated value whose optional type is a typealias
+> Note: A blank value decodes as `nil` into any `Date?` or `UUID?` in a response ``StoryblokClient`` decodes. A decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy, still fails to decode it.
 
 ### Number field
 

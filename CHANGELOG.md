@@ -2,6 +2,16 @@
 
 **main**
 
+- Fixed `story()` and `stories()` failing with `.decoding` when the copy in the URL cache no longer decoded, for
+  example after a required field was added to a block, before the fresh copy arrived. A cached copy that does not
+  decode is now passed over, and only the fresh copy failing to decode is reported.
+- Fixed `StoryblokClient.Error.decoding` describing every failure as "The data couldn't be read because it isn't in
+  the correct format." Its `message` and `localizedDescription` now say what did not match, where in the response, and
+  why, such as a circular or unresolved story relation or a missing key.
+- A content struct can now hold a `Story` of its own type, such as a page whose `related: Story<Page>?` field picks
+  another page. `Story` keeps its `content` behind a reference, so the struct no longer contains itself, which Swift
+  rejected, and a block library enum holding a `Story` of itself no longer needs to be `indirect`. `content` is now a
+  read-only computed property, so reading it is unchanged.
 - Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
   `UUID?` and `Story<T>?` now decode it as `nil`. A `@BlockLibrary` associated value spelled `Optional<T>` is now
   decoded, and its relations resolved, as one spelled `T?` is.
