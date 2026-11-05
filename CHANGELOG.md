@@ -1,6 +1,6 @@
 ### Changelog
 
-**main**
+**2.0.0**
 
 - BREAKING CHANGE: `Story.releaseId` is now a `String?` instead of an `Int64?`, matching `fromRelease` in
   `StoryQuery` and `StoriesQuery`. The Content Delivery API sends a story's `release_id` as a string, such as
