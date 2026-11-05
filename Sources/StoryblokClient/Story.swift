@@ -59,8 +59,8 @@ public struct Story<Content : Decodable> {
     /// Group ID (UUID), shared between stories defined as alternates.
     public let groupId: UUID
 
-    /// Current release ID (if requested via the `from_release` parameter).
-    public let releaseId: Int64?
+    /// Current release ID (if requested via the `from_release` parameter), such as `"230891299745176"`.
+    public let releaseId: String?
 
     /// Language code of the current language version (if requested via the `language` parameter).
     public let language: String
@@ -98,7 +98,7 @@ public struct Story<Content : Decodable> {
         parentId: Int64?,
         metadata: [String: String]?,
         groupId: UUID,
-        releaseId: Int64?,
+        releaseId: String?,
         language: String,
         path: String?,
         alternates: [Alternate],
@@ -292,7 +292,7 @@ extension Story : Decodable {
         parentId = try container.decodeIfPresent(Int64.self, forKey: .parentId)
         metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata)
         groupId = try container.decode(UUID.self, forKey: .groupId)
-        releaseId = try container.decodeIfPresent(Int64.self, forKey: .releaseId)
+        releaseId = try container.decodeIfPresent(String.self, forKey: .releaseId)
         language = try container.decode(String.self, forKey: .language)
         path = try container.decodeIfPresent(String.self, forKey: .path)
         alternates = try container.decode([Alternate].self, forKey: .alternates)

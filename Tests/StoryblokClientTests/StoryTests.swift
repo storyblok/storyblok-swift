@@ -38,7 +38,7 @@ import Testing
             "parent_id": 1,
             "meta_data": null,
             "group_id": "57350688-5a28-49d1-b5a9-086ae0d4c0d2",
-            "release_id": 1,
+            "release_id": "230891299745176",
             "lang": "default",
             "path": "/home",
             "alternates": [
@@ -94,7 +94,7 @@ import Testing
         #expect(story.parentId == 1)
         #expect(story.metadata == nil)
         #expect(story.groupId.uuidString.lowercased() == "57350688-5a28-49d1-b5a9-086ae0d4c0d2")
-        #expect(story.releaseId == 1)
+        #expect(story.releaseId == "230891299745176")
         #expect(story.language == "default")
         #expect(story.path == "/home")
         #expect(story.defaultFullSlug == "home/")
