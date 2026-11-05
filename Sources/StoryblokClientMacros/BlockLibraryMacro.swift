@@ -370,24 +370,40 @@ private func isStoryType(_ type: TypeSyntax) -> Bool {
        element.name.text == "Story" {
         return true
     }
-    if let optional = type.as(OptionalTypeSyntax.self) {
-        return isStoryType(optional.wrappedType)
+    if let wrapped = optionalWrappedType(type) {
+        return isStoryType(wrapped)
     }
     return false
 }
 
 private func isOptionalType(_ type: TypeSyntax) -> Bool {
-    type.is(OptionalTypeSyntax.self)
+    optionalWrappedType(type) != nil
 }
 
 private func unwrapOptional(_ type: TypeSyntax) -> TypeSyntax {
+    optionalWrappedType(type) ?? type
+}
+
+/// The wrapped type of an optional spelled `T?`, `Optional<T>` or `Swift.Optional<T>`, or `nil` for any other type.
+/// A typealias for an optional can't be seen through, as the macro only has the syntax.
+private func optionalWrappedType(_ type: TypeSyntax) -> TypeSyntax? {
     if let optional = type.as(OptionalTypeSyntax.self) {
         return optional.wrappedType
     }
-    return type
+    let arguments: GenericArgumentListSyntax?
+    if let identifier = type.as(IdentifierTypeSyntax.self), identifier.name.text == "Optional" {
+        arguments = identifier.genericArgumentClause?.arguments
+    } else if let member = type.as(MemberTypeSyntax.self), member.name.text == "Optional",
+              member.baseType.trimmedDescription == "Swift" {
+        arguments = member.genericArgumentClause?.arguments
+    } else {
+        return nil
+    }
+    guard let arguments, arguments.count == 1 else { return nil }
+    return arguments.first?.argument.as(TypeSyntax.self)
 }
 
-/// Returns the type argument `T` from a `Story<T>`, `[Story<T>]`, or `Story<T>?` type.
+/// Returns the type argument `T` from a `Story<T>`, `[Story<T>]`, or optional `Story<T>?` type.
 private func storyTypeArgument(_ type: TypeSyntax) -> String? {
     if let id = type.as(IdentifierTypeSyntax.self), id.name.text == "Story",
        let arg = id.genericArgumentClause?.arguments.first {
@@ -399,8 +415,8 @@ private func storyTypeArgument(_ type: TypeSyntax) -> String? {
        let arg = element.genericArgumentClause?.arguments.first {
         return arg.argument.as(TypeSyntax.self)?.trimmedDescription
     }
-    if let optional = type.as(OptionalTypeSyntax.self) {
-        return storyTypeArgument(optional.wrappedType)
+    if let wrapped = optionalWrappedType(type) {
+        return storyTypeArgument(wrapped)
     }
     return nil
 }

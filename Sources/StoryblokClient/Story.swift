@@ -59,8 +59,8 @@ public struct Story<Content : Decodable> {
     /// Group ID (UUID), shared between stories defined as alternates.
     public let groupId: UUID
 
-    /// Current release ID (if requested via the `from_release` parameter).
-    public let releaseId: Int64?
+    /// Current release ID (if requested via the `from_release` parameter), such as `"230891299745176"`.
+    public let releaseId: String?
 
     /// Language code of the current language version (if requested via the `language` parameter).
     public let language: String
@@ -98,7 +98,7 @@ public struct Story<Content : Decodable> {
         parentId: Int64?,
         metadata: [String: String]?,
         groupId: UUID,
-        releaseId: Int64?,
+        releaseId: String?,
         language: String,
         path: String?,
         alternates: [Alternate],
@@ -224,11 +224,23 @@ extension Story : Decodable {
     }
 
     public init(from decoder: any Decoder) throws {
-        // When a Story field carries a UUID placeholder string instead of an inline
-        // story object, resolve it from the RelationStore in userInfo.
-        if let single = try? decoder.singleValueContainer(),
-           let uuidString = try? single.decode(String.self),
-           UUID(uuidString: uuidString) != nil {
+        // A Story field carries a string rather than an inline story object when it is a relation.
+        let placeholder = (try? decoder.singleValueContainer()).flatMap { try? $0.decode(String.self) }
+
+        // A single-option field sourced from stories sends "" when no story is selected. The
+        // optional overload of `decodeIfPresent` returns nil for it before reaching here, so only
+        // a required field throws, and an enclosing optional story does not swallow the error.
+        if placeholder == "" {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "No story selected. A blank Single-Option field decodes as nil only into a Story<T>? property."
+                )
+            )
+        }
+
+        // A UUID placeholder is resolved from the RelationStore in userInfo.
+        if let uuidString = placeholder, UUID(uuidString: uuidString) != nil {
             let key = uuidString.lowercased()
             guard let store = decoder.userInfo[.storyblokRelations] as? RelationStore,
               let subdecoder = store.decoders[key] else {
@@ -280,7 +292,7 @@ extension Story : Decodable {
         parentId = try container.decodeIfPresent(Int64.self, forKey: .parentId)
         metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata)
         groupId = try container.decode(UUID.self, forKey: .groupId)
-        releaseId = try container.decodeIfPresent(Int64.self, forKey: .releaseId)
+        releaseId = try container.decodeIfPresent(String.self, forKey: .releaseId)
         language = try container.decode(String.self, forKey: .language)
         path = try container.decodeIfPresent(String.self, forKey: .path)
         alternates = try container.decode([Alternate].self, forKey: .alternates)
@@ -313,11 +325,12 @@ extension Story: Identifiable {}
 
 extension KeyedDecodingContainer {
     /// Specialised overloads for optional story-relation fields. When a UUID placeholder cannot
-    /// be resolved (no store, missing rels) or a circular reference hits the depth limit, the
-    /// field decodes as `nil` instead of throwing. Non-optional fields use `decode`, which does
-    /// not go through these overloads, so unresolved/circular errors still propagate for them.
+    /// be resolved (no store, missing rels), a circular reference hits the depth limit, or no story
+    /// is selected (`""`), the field decodes as `nil` instead of throwing. Non-optional fields use
+    /// `decode`, which does not go through these overloads, so these errors still propagate for them.
     public func decodeIfPresent<T: Decodable>(_ type: Story<T>.Type, forKey key: Key) throws -> Story<T>? {
         guard contains(key), !(try decodeNil(forKey: key)) else { return nil }
+        if (try? decode(String.self, forKey: key)) == "" { return nil }
         do {
             return try decode(Story<T>.self, forKey: key)
         } catch DecodingError.dataCorrupted(let context) where context.underlyingError is StoryRelationError {

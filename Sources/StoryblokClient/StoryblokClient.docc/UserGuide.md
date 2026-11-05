@@ -456,6 +456,8 @@ enum Content {
 
 > Important: A `Story<T>` relation field's type argument `T` must be the enclosing block library `enum` or one of its nested structs, so the macro can discover its relation fields.
 
+An Option field, single or multi, whose source is stories also sends story UUIDs, so model it as `Story<T>?` or `[Story<T>]?` in the same way. A single option with no story selected sends `""`, which an optional `Story<T>?` decodes as `nil` and a non-optional `Story<T>` fails to decode.
+
 A nested struct can relate to stories of its own type, such as a page whose `related` field picks another page. A ``Story`` keeps its content behind a reference, so neither the struct nor the enum needs to be `indirect`:
 
 ```swift
@@ -473,7 +475,7 @@ The `resolveLevel` parameter of ``StoryblokClient/story(_:resolveLevel:query:)-(
 
 - `1` (the default) resolves direct relations.
 - Higher values resolve relations of relations.
-- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID` (or `String`) to receive the raw UUIDs instead.
+- `0` disables relation resolution. Optional `Story<T>` fields then decode as `nil` and non-optional `Story<T>` fields fail decoding — model relation fields as `UUID?` (or `String`) to receive the raw UUIDs instead.
 
 ```swift
 client.story("home", resolveLevel: 2)
@@ -486,7 +488,7 @@ When relations form a cycle, resolution stops at the configured depth. How the b
 - An **optional** relation (`Story<T>?` or `[Story<T>]?`) decodes as `nil` at the cycle boundary, breaking the cycle gracefully.
 - A **non-optional** relation (`Story<T>`) throws a `DecodingError` when a cycle is detected.
 
-Model fields that may participate in cycles as optional, or as a `UUID` (or `String`), to avoid decoding failures.
+Model fields that may participate in cycles as optional, or as a `UUID?` (or `String`), to avoid decoding failures.
 
 > Tip: The maximum number of relations that can be resolved is 50 stories per request. This is a Storyblok API limitation.
 
@@ -585,6 +587,31 @@ enum Content {
 print(page.image.filename)
 print(page.image.alt ?? "")
 ```
+
+### Date/Time field
+
+A Date/Time field decodes into `Date`. The client reads ISO 8601 dates, with or without fractional seconds, and the `yyyy-MM-dd HH:mm` and `yyyy-MM-dd` formats the field sends, in UTC.
+
+An editor can leave the field blank, which Storyblok sends as `""`. Model it as `Date?`, so a blank field decodes as `nil`: a non-optional `Date` fails to decode it, and with it the whole story. Model a required field as `Date?` too. A draft can still have it blank: content written through the Management API isn't checked for required fields until it's published, and stories saved before the field was made required keep their blank value.
+
+```swift
+struct Event: Decodable {
+    let title: String
+    let startsAt: Date?
+}
+```
+
+> Note: A blank value decodes as `nil` into any `Date?` or `UUID?` in a response ``StoryblokClient`` decodes. A decoder of your own, such as a `JSONDecoder` decoding a ``/URLSessionExtension`` response or a saved copy, still fails to decode it.
+
+### Number field
+
+A Number field sends its value as text, such as `"42"` or `"4.5"`, or `""` when it is blank. Model it as a number type, such as `Int`, `Double` or `Decimal`, and as an optional to decode a blank field as `nil`. Text that a JSON number couldn't hold, such as `"12abc"` or `"4.5"` for an `Int`, fails to decode.
+
+### Single-Option field
+
+A Single-Option field sends the selected option's value as a string, or `""` when nothing is selected, so a `String` receives `""`.
+
+With stories as its source, it sends the selected story's UUID. Model it as `Story<T>?` to resolve the story (see Story relations above), or as `UUID?` to receive the UUID. Either one decodes a blank field as `nil`.
 
 ## Caching
 

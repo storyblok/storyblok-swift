@@ -340,7 +340,9 @@ public final class StoryblokClient<Library: BlockLibrary>: Sendable {
             if let date = localDateTimeFormatter.date(from: string) { return date }
             throw DecodingError.dataCorruptedError(
                 in: try decoder.singleValueContainer(),
-                debugDescription: "Cannot decode date from string: \(string)"
+                debugDescription: string.isEmpty
+                    ? "Cannot decode date from an empty string. A blank Date/Time field decodes as nil only into a Date? property."
+                    : "Cannot decode date from string: \(string)"
             )
         }
         if let relStore {

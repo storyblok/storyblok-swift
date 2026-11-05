@@ -2,6 +2,9 @@
 
 **main**
 
+- BREAKING CHANGE: `Story.releaseId` is now a `String?` instead of an `Int64?`, matching `fromRelease` in
+  `StoryQuery` and `StoriesQuery`. The Content Delivery API sends a story's `release_id` as a string, such as
+  `"230891299745176"`, so `story()` and `stories()` failed with `.decoding` for any story retrieved with `fromRelease`.
 - Fixed `story()` and `stories()` failing with `.decoding` when the copy in the URL cache no longer decoded, for
   example after a required field was added to a block, before the fresh copy arrived. A cached copy that does not
   decode is now passed over, and only the fresh copy failing to decode is reported.
@@ -12,6 +15,12 @@
   another page. `Story` keeps its `content` behind a reference, so the struct no longer contains itself, which Swift
   rejected, and a block library enum holding a `Story` of itself no longer needs to be `indirect`. `content` is now a
   read-only computed property, so reading it is unchanged.
+- Fixed a blank date or single-option story field, which Storyblok sends as `""`, failing the whole response: `Date?`,
+  `UUID?` and `Story<T>?` now decode it as `nil`. A `@BlockLibrary` associated value spelled `Optional<T>` is now
+  decoded, and its relations resolved, as one spelled `T?` is.
+- Added decoding of a Number field's text, such as `"42"`, into `Int` and the other integer types, `Double`, `Float`
+  and `Decimal`, and sorting and filtering by a `Float` or `Decimal` field as a decimal. A blank Number field decodes
+  as `nil` for an optional property.
 
 **1.1.0**
 
