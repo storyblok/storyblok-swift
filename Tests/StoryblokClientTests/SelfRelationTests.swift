@@ -8,6 +8,7 @@ import Testing
 enum SelfRelationBlock {
     case page(Page)
     case article(Article)
+    case listing(Listing)
     case featured(article: Story<SelfRelationBlock>?)
 
     struct Page: Hashable, Sendable {
@@ -19,6 +20,11 @@ enum SelfRelationBlock {
         let title: String
         let related: Story<Article>
     }
+
+    struct Listing {
+        let title: String
+        let related: [Story<Listing>?]
+    }
 }
 
 /// A content struct whose field relates it to a story of its own type, as a page's `related` page does.
@@ -27,11 +33,12 @@ struct SelfRelationTests {
 
     private static let home = "11111111-1111-1111-1111-111111111111"
 
-    /// A response for a story of `component` titled Home whose `field` is Home itself.
-    private func relatedToItself(_ component: String, field: String = "related") -> Data {
+    /// A response for a story of `component` titled Home whose `field` is Home itself, or a list of only Home.
+    private func relatedToItself(_ component: String, field: String = "related", inList: Bool = false) -> Data {
+        let home = inList ? #"["\#(Self.home)"]"# : #""\#(Self.home)""#
         let story = """
             {"id": 1, "uuid": "\(Self.home)", "name": "Home",
-             "content": {"component": "\(component)", "title": "Home", "\(field)": "\(Self.home)"},
+             "content": {"component": "\(component)", "title": "Home", "\(field)": \(home)},
              "slug": "home", "full_slug": "home", "created_at": "2025-07-09T14:35:26.851Z", "published_at": null,
              "first_published_at": null, "updated_at": null, "sort_by_date": null, "position": 0, "tag_list": [],
              "is_startpage": false, "parent_id": null, "meta_data": null,
@@ -49,7 +56,7 @@ struct SelfRelationTests {
 
     @Test
     func `a story of the content's own type is a relation`() {
-        #expect(SelfRelationBlock.relations == "article.related,featured.article,page.related")
+        #expect(SelfRelationBlock.relations == "article.related,featured.article,listing.related,page.related")
     }
 
     @Test
@@ -70,6 +77,17 @@ struct SelfRelationTests {
 
         #expect(story.content.related?.content.title == "Home")
         #expect(story.content.related?.content.related == nil)
+    }
+
+    @Test
+    func `a list of optional stories of the content's own type resolves to the relation depth`() throws {
+        let story = try decode(relatedToItself("listing", inList: true), as: SelfRelationBlock.Listing.self)
+
+        let related = try #require(story.content.related.first ?? nil)
+        #expect(story.content.related.count == 1)
+        #expect(related.content.title == "Home")
+        #expect(related.content.related.count == 1)
+        #expect(related.content.related.first.map { $0 == nil } == true)
     }
 
     @Test
