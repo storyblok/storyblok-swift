@@ -2,6 +2,9 @@
 
 **main**
 
+- BREAKING CHANGE: `Story.releaseId` is now a `String?` instead of an `Int64?`, matching `fromRelease` in
+  `StoryQuery` and `StoriesQuery`. The Content Delivery API sends a story's `release_id` as a string, such as
+  `"230891299745176"`, so `story()` and `stories()` failed with `.decoding` for any story retrieved with `fromRelease`.
 - Fixed `story()` and `stories()` failing with `.decoding` when the copy in the URL cache no longer decoded, for
   example after a required field was added to a block, before the fresh copy arrived. A cached copy that does not
   decode is now passed over, and only the fresh copy failing to decode is reported.
