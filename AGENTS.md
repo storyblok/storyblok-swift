@@ -26,7 +26,9 @@ One package (`Package.swift`, swift-tools-version 6.2) with four library product
   uses with `xcodebuild`.
 
 Platforms: macOS 13, iOS 16, tvOS 16, watchOS 9. Public types that need newer APIs are annotated
-`@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)`.
+`@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)`. These are deployment floors, not
+tested versions: the README's Requirements section lists what we test, and the docs site's
+`/docs/libraries/swift/*` pages repeat it. Update all three together.
 
 ## Commands
 

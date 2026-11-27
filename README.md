@@ -30,6 +30,14 @@ Follow the guide to learn how to fetch and render content, use a custom content 
 
 https://www.storyblok.com/docs/guides/apple-platforms
 
+## ✅ Requirements
+
+- **Swift** 6.2 or later (Xcode 26 or later)
+- **iOS** 17 or later
+- **macOS**, **tvOS** and **watchOS**: the latest versions
+
+`Package.swift` lets apps deploy as far back as iOS 16, macOS 13, tvOS 16 and watchOS 9, but we only test the versions above: the [JetNews sample](Samples/JetNews) on the iOS simulator, and the test suite in CI on the latest macOS, tvOS and watchOS.
+
 ## 📦 Products
 
 This package consists of the following libraries:
